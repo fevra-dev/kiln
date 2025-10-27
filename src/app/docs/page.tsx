@@ -11,7 +11,7 @@
  */
 
 import Link from 'next/link';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentWindow } from '@/components/docs/DocumentWindow';
 import { marked } from 'marked';
@@ -86,7 +86,7 @@ function DocsPageContent() {
     return acc;
   }, {} as Record<string, DocLink[]>);
 
-  const handleOpenDoc = async (doc: DocLink) => {
+  const handleOpenDoc = useCallback(async (doc: DocLink) => {
     // Check if window is already open
     const existingWindow = openWindows.find(w => w.doc.path === doc.path);
     if (existingWindow) {
@@ -143,7 +143,7 @@ function DocsPageContent() {
       setTopZIndex(newZIndex);
       setWindowZIndices(prev => ({ ...prev, [newWindow.id]: newZIndex }));
     }
-  };
+  }, [openWindows, topZIndex, handleFocusWindow]);
 
   const handleCloseWindow = (id: string) => {
     setOpenWindows(prev => prev.filter(w => w.id !== id));

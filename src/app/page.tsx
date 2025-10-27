@@ -8,7 +8,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 export default function HomePage() {
   const [bootComplete, setBootComplete] = useState(false);
@@ -114,13 +114,13 @@ function BootSequence() {
   const [currentLine, setCurrentLine] = useState(0);
   const [displayText, setDisplayText] = useState('');
   
-  const messages = [
+  const messages = useMemo(() => [
     'INITIALIZING TELEBURN PROTOCOL...',
     'LOADING CRYPTOGRAPHIC MODULES...',
     'CONNECTING TO SOLANA MAINNET...',
     'CONNECTING TO BITCOIN NETWORK...',
     'SYSTEM READY'
-  ];
+  ], []);
 
   useEffect(() => {
     if (currentLine < messages.length) {

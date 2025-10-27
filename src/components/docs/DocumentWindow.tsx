@@ -10,7 +10,7 @@
  * @version 0.1.1
  */
 
-import { FC, useState, useRef, useEffect, ReactNode } from 'react';
+import { FC, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
 
 interface DocumentWindowProps {
   id: string;
@@ -53,14 +53,14 @@ export const DocumentWindow: FC<DocumentWindowProps> = ({
     }
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging) {
       setPosition({
         x: e.clientX - dragOffset.x,
         y: e.clientY - dragOffset.y,
       });
     }
-  };
+  }, [isDragging, dragOffset]);
 
   const handleMouseUp = () => {
     setIsDragging(false);
