@@ -702,7 +702,7 @@ export async function checkPNFTStatus(
 
     // Check if it's a pNFT by looking for freeze authority
     // This is a simplified check - in practice you'd parse the metadata more thoroughly
-    const tokenInfo = await connection.getTokenSupply(mint);
+    // const tokenInfo = await connection.getTokenSupply(mint);
     
     // For now, return basic info - this would need more sophisticated parsing
     // to detect pNFT status and freeze state
