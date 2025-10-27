@@ -1,0 +1,435 @@
+// src/lib/dry-run.ts
+/**
+ * KILN.1 Dry Run Service
+ * 
+ * Simulates entire teleburn flow without signing or broadcasting:
+ * 1. Build all transactions (seal, retire, optional URI update)
+ * 2. Decode each transaction to show human-readable details
+ * 3. Simulate each transaction on-chain (no side effects)
+ * 4. Calculate total fees
+ * 5. Identify any warnings or errors
+ * 6. Generate downloadable rehearsal receipt
+ * 
+ * CRITICAL: No transactions are signed or sent. Zero risk.
+ */
+
+import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { TransactionBuilder, TeleburnMethod, type SealTransactionParams, type RetireTransactionParams, type UpdateUriParams } from './transaction-builder';
+import { TransactionDecoder, type DecodedTransaction } from './transaction-decoder';
+
+/**
+ * Simulation result for a single transaction
+ */
+export interface SimulationResult {
+  success: boolean;
+  logs?: string[];
+  unitsConsumed?: number;
+  error?: string;
+}
+
+/**
+ * Dry run step (one transaction in the flow)
+ */
+export interface DryRunStep {
+  name: string;
+  description: string;
+  transaction: Transaction;
+  decoded: DecodedTransaction;
+  simulation: SimulationResult;
+  estimatedFee: number;
+}
+
+/**
+ * Complete dry run report
+ */
+export interface DryRunReport {
+  mode: 'dry-run';
+  timestamp: string;
+  mint: string;
+  inscriptionId: string;
+  method: TeleburnMethod;
+  steps: DryRunStep[];
+  totalEstimatedFee: number;
+  totalComputeUnits: number;
+  warnings: string[];
+  errors: string[];
+  success: boolean;
+}
+
+/**
+ * Dry run parameters
+ */
+export interface DryRunParams {
+  // Seal params
+  payer: PublicKey;
+  mint: PublicKey;
+  inscriptionId: string;
+  sha256: string;
+  authority?: PublicKey[];
+
+  // Retire params
+  owner: PublicKey;
+  method: TeleburnMethod;
+  amount?: bigint;
+
+  // Optional URI update
+  updateUri?: {
+    authority: PublicKey;
+    newUri: string;
+  };
+
+  // RPC
+  rpcUrl: string;
+}
+
+/**
+ * Dry Run Service
+ * 
+ * Orchestrates complete teleburn simulation without signing
+ */
+export class DryRunService {
+  private connection: Connection;
+  private builder: TransactionBuilder;
+  private decoder: TransactionDecoder;
+
+  constructor(rpcUrl: string) {
+    this.connection = new Connection(rpcUrl, 'confirmed');
+    this.builder = new TransactionBuilder(rpcUrl);
+    this.decoder = new TransactionDecoder(rpcUrl);
+  }
+
+  /**
+   * Execute complete dry run
+   * 
+   * Builds, decodes, and simulates all transactions in the teleburn flow.
+   * Returns comprehensive report with no side effects.
+   * 
+   * @param params - Dry run parameters
+   * @returns Complete dry run report
+   */
+  async executeDryRun(params: DryRunParams): Promise<DryRunReport> {
+    const steps: DryRunStep[] = [];
+    const warnings: string[] = [];
+    const errors: string[] = [];
+    let totalEstimatedFee = 0;
+    let totalComputeUnits = 0;
+
+    try {
+      // Step 1: Build SEAL transaction
+      const sealParams: SealTransactionParams = {
+        payer: params.payer,
+        mint: params.mint,
+        inscriptionId: params.inscriptionId,
+        sha256: params.sha256,
+        authority: params.authority,
+        rpcUrl: params.rpcUrl,
+      };
+
+      const sealTx = await this.builder.buildSealTransaction(sealParams);
+      const sealDecoded = await this.decoder.decodeTransaction(sealTx.transaction);
+      const sealSimulation = await this.simulateTransaction(sealTx.transaction);
+
+      steps.push({
+        name: 'seal',
+        description: sealTx.description,
+        transaction: sealTx.transaction,
+        decoded: sealDecoded,
+        simulation: sealSimulation,
+        estimatedFee: sealTx.estimatedFee,
+      });
+
+      totalEstimatedFee += sealTx.estimatedFee;
+      totalComputeUnits += sealSimulation.unitsConsumed || 0;
+
+      if (!sealSimulation.success) {
+        errors.push(`SEAL simulation failed: ${sealSimulation.error}`);
+      }
+
+      warnings.push(...sealDecoded.warnings);
+
+      // Step 2: Optional URI update
+      if (params.updateUri) {
+        const uriParams: UpdateUriParams = {
+          payer: params.payer,
+          authority: params.updateUri.authority,
+          mint: params.mint,
+          newUri: params.updateUri.newUri,
+          rpcUrl: params.rpcUrl,
+        };
+
+        const uriTx = await this.builder.buildUpdateUriTransaction(uriParams);
+        const uriDecoded = await this.decoder.decodeTransaction(uriTx.transaction);
+        const uriSimulation = await this.simulateTransaction(uriTx.transaction);
+
+        steps.push({
+          name: 'update-uri',
+          description: uriTx.description,
+          transaction: uriTx.transaction,
+          decoded: uriDecoded,
+          simulation: uriSimulation,
+          estimatedFee: uriTx.estimatedFee,
+        });
+
+        totalEstimatedFee += uriTx.estimatedFee;
+        totalComputeUnits += uriSimulation.unitsConsumed || 0;
+
+        if (!uriSimulation.success) {
+          warnings.push(`URI update simulation failed: ${uriSimulation.error}`);
+        }
+
+        warnings.push(...uriDecoded.warnings);
+      }
+
+      // Step 3: RETIRE transaction
+      const retireParams: RetireTransactionParams = {
+        payer: params.payer,
+        owner: params.owner,
+        mint: params.mint,
+        inscriptionId: params.inscriptionId,
+        sha256: params.sha256,
+        method: params.method,
+        amount: params.amount,
+        rpcUrl: params.rpcUrl,
+      };
+
+      const retireTx = await this.builder.buildRetireTransaction(retireParams);
+      const retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
+      const retireSimulation = await this.simulateTransaction(retireTx.transaction);
+
+      steps.push({
+        name: 'retire',
+        description: retireTx.description,
+        transaction: retireTx.transaction,
+        decoded: retireDecoded,
+        simulation: retireSimulation,
+        estimatedFee: retireTx.estimatedFee,
+      });
+
+      totalEstimatedFee += retireTx.estimatedFee;
+      totalComputeUnits += retireSimulation.unitsConsumed || 0;
+
+      if (!retireSimulation.success) {
+        errors.push(`RETIRE simulation failed: ${retireSimulation.error}`);
+      }
+
+      warnings.push(...retireDecoded.warnings);
+
+      // Additional validation checks
+      await this.validateDryRun(params, warnings, errors);
+
+    } catch (error) {
+      errors.push(`Dry run failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    const success = errors.length === 0;
+
+    return {
+      mode: 'dry-run',
+      timestamp: new Date().toISOString(),
+      mint: params.mint.toBase58(),
+      inscriptionId: params.inscriptionId,
+      method: params.method,
+      steps,
+      totalEstimatedFee,
+      totalComputeUnits,
+      warnings: [...new Set(warnings)], // Deduplicate
+      errors: [...new Set(errors)],     // Deduplicate
+      success,
+    };
+  }
+
+  /**
+   * Simulate a transaction on-chain without sending
+   * 
+   * @param transaction - Transaction to simulate
+   * @returns Simulation result
+   */
+  private async simulateTransaction(transaction: Transaction): Promise<SimulationResult> {
+    try {
+      // Ensure transaction has a recent blockhash
+      if (!transaction.recentBlockhash) {
+        const { blockhash } = await this.connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+      }
+
+      // Simulate transaction
+      const simulation = await this.connection.simulateTransaction(transaction, undefined, 'confirmed');
+
+      if (simulation.value.err) {
+        return {
+          success: false,
+          logs: simulation.value.logs || [],
+          error: JSON.stringify(simulation.value.err),
+        };
+      }
+
+      return {
+        success: true,
+        logs: simulation.value.logs || [],
+        unitsConsumed: simulation.value.unitsConsumed || 0,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Perform additional validation checks
+   * 
+   * @param params - Dry run parameters
+   * @param warnings - Array to add warnings to
+   * @param errors - Array to add errors to
+   */
+  private async validateDryRun(
+    params: DryRunParams,
+    warnings: string[],
+    errors: string[]
+  ): Promise<void> {
+    try {
+      // Check if payer has sufficient balance
+      const payerBalance = await this.connection.getBalance(params.payer);
+      const minimumBalance = 10_000_000; // 0.01 SOL
+
+      if (payerBalance < minimumBalance) {
+        warnings.push(`Payer balance (${payerBalance / 1e9} SOL) may be insufficient for transaction fees and rent`);
+      }
+
+      // Check if mint exists
+      const mintInfo = await this.connection.getAccountInfo(params.mint);
+      if (!mintInfo) {
+        errors.push(`Mint account ${params.mint.toBase58()} does not exist`);
+      }
+
+      // Check if owner has tokens to retire
+      // Note: This requires fetching token account - skipping for now to avoid complexity
+
+      // Validate inscription ID format
+      if (!/^[0-9a-f]{64}i\d+$/i.test(params.inscriptionId)) {
+        errors.push(`Invalid inscription ID format: ${params.inscriptionId}`);
+      }
+
+      // Validate SHA-256 format
+      if (!/^[0-9a-f]{64}$/i.test(params.sha256)) {
+        errors.push(`Invalid SHA-256 hash format: ${params.sha256}`);
+      }
+
+    } catch (error) {
+      warnings.push(`Validation check failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Generate downloadable rehearsal receipt (JSON)
+   * 
+   * @param report - Dry run report
+   * @returns JSON string ready for download
+   */
+  static generateRehearsalReceipt(report: DryRunReport): string {
+    // Create simplified receipt for user download
+    const receipt = {
+      mode: report.mode,
+      timestamp: report.timestamp,
+      mint: report.mint,
+      inscription: report.inscriptionId,
+      method: report.method,
+      
+      planned_transactions: report.steps.map((step) => ({
+        name: step.name,
+        description: step.description,
+        programs: step.decoded.instructions.map((ix) => ix.programName),
+        accounts: step.decoded.instructions.flatMap((ix) => 
+          ix.accounts.map((acc) => ({
+            pubkey: acc.pubkey,
+            roles: acc.roles,
+            label: acc.label,
+          }))
+        ),
+        estimated_fee_lamports: step.estimatedFee,
+        estimated_fee_sol: step.estimatedFee / 1e9,
+        simulation_success: step.simulation.success,
+        simulation_error: step.simulation.error,
+        compute_units: step.simulation.unitsConsumed,
+      })),
+
+      total_fees: {
+        lamports: report.totalEstimatedFee,
+        sol: report.totalEstimatedFee / 1e9,
+      },
+
+      total_compute_units: report.totalComputeUnits,
+
+      warnings: report.warnings,
+      errors: report.errors,
+      success: report.success,
+
+      metadata: {
+        generated_at: report.timestamp,
+        sbt01_version: '0.1.1',
+        tool: 'KILN.1 Teleburn Dry Run',
+      },
+    };
+
+    return JSON.stringify(receipt, null, 2);
+  }
+
+  /**
+   * Estimate total SOL cost for entire teleburn flow
+   * 
+   * @param params - Dry run parameters
+   * @returns Estimated total cost in SOL
+   */
+  async estimateTotalCost(params: DryRunParams): Promise<number> {
+    const report = await this.executeDryRun(params);
+    return report.totalEstimatedFee / 1e9; // Convert lamports to SOL
+  }
+
+  /**
+   * Quick validation check (fast, no full simulation)
+   * 
+   * @param params - Dry run parameters
+   * @returns Array of validation errors (empty if valid)
+   */
+  async quickValidate(params: DryRunParams): Promise<string[]> {
+    const errors: string[] = [];
+
+    // Format checks (fast, no RPC calls)
+    if (!/^[0-9a-f]{64}i\d+$/i.test(params.inscriptionId)) {
+      errors.push('Invalid inscription ID format');
+    }
+
+    if (!/^[0-9a-f]{64}$/i.test(params.sha256)) {
+      errors.push('Invalid SHA-256 hash format');
+    }
+
+    // Basic RPC checks
+    try {
+      const mintInfo = await this.connection.getAccountInfo(params.mint);
+      if (!mintInfo) {
+        errors.push('Mint account does not exist');
+      }
+
+      const payerBalance = await this.connection.getBalance(params.payer);
+      if (payerBalance < 5000) {
+        errors.push('Payer has insufficient balance');
+      }
+    } catch (error) {
+      errors.push(`RPC error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    return errors;
+  }
+}
+
+/**
+ * Helper function to create a dry run service instance
+ * 
+ * @param rpcUrl - Solana RPC URL
+ * @returns DryRunService instance
+ */
+export function createDryRunService(rpcUrl: string): DryRunService {
+  return new DryRunService(rpcUrl);
+}
+
