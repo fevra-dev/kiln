@@ -400,7 +400,7 @@ Teleburn Address Derivation
 
 **A:** Kiln Teleburn Protocol supports all Solana NFTs including Programmable NFTs (pNFTs):
 - **SPL Token NFTs**: Work perfectly with standard burn instructions
-- **Token-2022 pNFTs**: Use SPL Token program for compatibility (same as sol-incinerator)
+- **Token-2022 pNFTs**: Use SPL Token program for compatibility
 - **Frozen pNFTs**: Can be burned using SPL Token program approach
 - **All NFTs**: Compatible with existing burn tools and wallet interfaces
 
