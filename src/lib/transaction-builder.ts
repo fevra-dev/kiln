@@ -114,7 +114,7 @@ export class TransactionBuilder {
     const slot = 0; // Will be updated after confirmation
     const timestamp = 0; // Will be updated after confirmation
 
-    // Construct KILN-0.1.1 seal memo payload
+    // Construct KILN v0.1.1 seal memo payload
     const sealMemo: Sbt01Seal = {
       standard: 'KILN',
       version: '0.1.1',

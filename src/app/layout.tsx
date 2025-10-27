@@ -13,6 +13,14 @@ export const metadata: Metadata = {
   title: 'KILN ঌ TELEBURN PROTOCOL',
   description: '[CLASSIFIED] Cryptographically-verified teleburn protocol for permanent NFT migration. Proof of burn. Irreversible. No custody.',
   keywords: ['Solana', 'Bitcoin', 'Ordinals', 'NFT', 'Teleburn', 'KILN', 'Cryptography', 'Cypherpunk'],
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' }
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
