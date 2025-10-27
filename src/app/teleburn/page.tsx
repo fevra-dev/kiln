@@ -89,7 +89,7 @@ export default function TeleburnPage() {
               >
                 ঌ
               </a>
-              <h1 className="text-4xl font-bold text-terminal-text glow-text">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
                 [ Kiln Teleburn Protocol ]
               </h1>
             </div>

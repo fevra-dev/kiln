@@ -143,7 +143,7 @@ function BootSequence() {
       return () => clearInterval(typeInterval);
     }
     return undefined;
-  }, [currentLine]);
+  }, [currentLine, messages]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">

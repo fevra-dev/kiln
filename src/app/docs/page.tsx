@@ -109,8 +109,6 @@ function DocsPageContent() {
         throw new Error('Document is empty');
       }
       
-      console.log('Loaded document:', doc.title, 'Length:', content.length);
-      
       // Parse markdown to HTML
       const htmlContent = await marked.parse(content);
       
@@ -172,7 +170,7 @@ function DocsPageContent() {
         handleOpenDoc(doc);
       }
     }
-  }, [searchParams, hasOpenedFromUrl]);
+  }, [searchParams, hasOpenedFromUrl, handleOpenDoc]);
 
   return (
     <div className="min-h-screen bg-terminal-bg text-terminal-text font-mono p-6 pb-20">
@@ -188,7 +186,7 @@ function DocsPageContent() {
             >
               ঌ
             </a>
-            <h1 className="text-4xl font-bold text-terminal-text glow-text">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
               [ Kiln Teleburn Documentation ]
             </h1>
           </div>

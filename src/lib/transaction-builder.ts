@@ -110,7 +110,7 @@ export class TransactionBuilder {
     const { payer, mint, inscriptionId, sha256, authority } = params;
 
     // Get current blockchain state for accurate timestamps
-    const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+    const { blockhash, lastValidBlockHeight: _lastValidBlockHeight } = await this.connection.getLatestBlockhash();
     const slot = await this.connection.getSlot();
     const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
@@ -188,7 +188,7 @@ export class TransactionBuilder {
     const { payer, owner, mint, inscriptionId, sha256, method, amount = 1n } = params;
 
     // Get current blockchain state for accurate timestamps
-    const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+    const { blockhash, lastValidBlockHeight: _lastValidBlockHeight } = await this.connection.getLatestBlockhash();
     const slot = await this.connection.getSlot();
     const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 

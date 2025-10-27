@@ -100,7 +100,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [formData.inscriptionId]);
+  }, [formData.inscriptionId, formData.sha256]);
 
   const handleBlur = (field: keyof TeleburnFormData) => {
     setTouched(prev => ({ ...prev, [field]: true }));

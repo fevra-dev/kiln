@@ -77,7 +77,7 @@ export const DocumentWindow: FC<DocumentWindowProps> = ({
       };
     }
     return undefined;
-  }, [isDragging, isResizing, dragOffset]);
+  }, [isDragging, isResizing, dragOffset, handleMouseMove]);
 
   // Handle maximize/restore
   const handleMaximize = () => {
