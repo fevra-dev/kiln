@@ -210,6 +210,14 @@ export class DryRunService {
 
       if (!retireSimulation.success) {
         errors.push(`RETIRE simulation failed: ${retireSimulation.error}`);
+        
+        // Check if this is a pNFT freeze error
+        if (retireSimulation.error && typeof retireSimulation.error === 'string' && 
+            retireSimulation.error.includes('Account is frozen')) {
+          errors.push(`⚠️  PNFT DETECTED: This NFT appears to be a Programmable NFT (pNFT) with frozen transfer restrictions.`);
+          errors.push(`   pNFTs cannot be burned while frozen. Contact the freeze authority to unfreeze the account.`);
+          errors.push(`   Alternative: Use a different NFT or wait for freeze restrictions to be lifted.`);
+        }
       }
 
       warnings.push(...retireDecoded.warnings);

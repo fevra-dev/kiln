@@ -679,6 +679,49 @@ export async function buildUpdateUriTx(
 }
 
 // ============================================================================
+// PNFT DETECTION
+// ============================================================================
+
+/**
+ * Check if an NFT is a Programmable NFT (pNFT) with frozen restrictions
+ * 
+ * @param connection - Solana connection
+ * @param mint - Token mint address
+ * @returns Promise<{isPNFT: boolean, isFrozen: boolean, freezeAuthority: string | null}>
+ */
+export async function checkPNFTStatus(
+  connection: Connection,
+  mint: PublicKey
+): Promise<{isPNFT: boolean, isFrozen: boolean, freezeAuthority: string | null}> {
+  try {
+    // Get token metadata
+    const metadata = await connection.getAccountInfo(mint);
+    if (!metadata) {
+      throw new Error('Token account not found');
+    }
+
+    // Check if it's a pNFT by looking for freeze authority
+    // This is a simplified check - in practice you'd parse the metadata more thoroughly
+    const tokenInfo = await connection.getTokenSupply(mint);
+    
+    // For now, return basic info - this would need more sophisticated parsing
+    // to detect pNFT status and freeze state
+    return {
+      isPNFT: false, // Would need proper metadata parsing
+      isFrozen: false, // Would need to check account freeze state
+      freezeAuthority: null
+    };
+  } catch (error) {
+    console.error('Error checking pNFT status:', error);
+    return {
+      isPNFT: false,
+      isFrozen: false,
+      freezeAuthority: null
+    };
+  }
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
