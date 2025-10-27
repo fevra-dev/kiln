@@ -23,8 +23,15 @@ NFTs are trapped on their original blockchain with no native way to move between
 
 1. **Derive Address**: Create unique Solana address from Bitcoin inscription ID
 2. **Burn NFT**: Permanently destroy the NFT (supply → 0)
-3. **Record Memo**: Store inscription ID and burn details
+3. **Record Memo**: Store inscription ID and burn details with real-time timestamps
 4. **Verify Link**: Use inscription ID to verify burn legitimacy
+
+## NFT Compatibility
+
+- **✅ Standard NFTs**: SPL Token program NFTs work perfectly
+- **✅ Programmable NFTs (pNFTs)**: Token-2022 NFTs supported with SPL Token compatibility
+- **✅ Frozen pNFTs**: Can be burned using SPL Token program (same as sol-incinerator)
+- **✅ All Solana NFTs**: Compatible with existing burn tools and wallets
 
 ## Use Cases
 

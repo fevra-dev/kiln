@@ -177,10 +177,29 @@ try {
     console.error('Not enough SOL for transaction');
   } else if (error.message.includes('Invalid mint')) {
     console.error('NFT mint address is invalid');
+  } else if (error.message.includes('Account is frozen')) {
+    console.error('NFT is frozen - try using SPL Token program');
   } else {
     console.error('Transaction failed:', error);
   }
 }
+```
+
+### Token-2022 and pNFT Compatibility
+
+```typescript
+// The TransactionBuilder automatically handles Token-2022 compatibility
+const builder = new TransactionBuilder(rpcUrl);
+
+// For Token-2022 NFTs, the builder uses SPL Token program for compatibility
+// This matches the behavior of sol-incinerator and wallet burn tools
+const tokenProgram = await builder.detectTokenProgram(mint);
+// Returns TOKEN_PROGRAM_ID for maximum compatibility
+
+// All NFT types are supported:
+// ✅ SPL Token NFTs (standard)
+// ✅ Token-2022 pNFTs (programmable)
+// ✅ Frozen pNFTs (using SPL Token program)
 ```
 
 ## 🧪 Testing

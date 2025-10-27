@@ -190,6 +190,33 @@ Validates that an inscription ID has the correct format.
 - Domain separation prevents **cross-protocol attacks**
 - All transactions are **simulated before execution**
 
+## 🎯 NFT Compatibility
+
+### Supported NFT Types
+
+- **✅ SPL Token NFTs**: Standard Solana NFTs work perfectly
+- **✅ Token-2022 pNFTs**: Programmable NFTs supported with SPL Token compatibility
+- **✅ Frozen pNFTs**: Can be burned using SPL Token program (same as sol-incinerator)
+- **✅ All Solana NFTs**: Compatible with existing burn tools and wallets
+
+### Token Program Detection
+
+The `TransactionBuilder` automatically detects the token program:
+
+```typescript
+// Automatically detects Token-2022 but uses SPL Token for compatibility
+const tokenProgram = await builder.detectTokenProgram(mint);
+// Returns TOKEN_PROGRAM_ID for maximum compatibility
+```
+
+### Error Handling
+
+Common error scenarios and solutions:
+
+- **"Account is frozen"**: Use SPL Token program instead of Token-2022
+- **"Insufficient SOL"**: Ensure wallet has at least 0.00001 SOL for fees
+- **"Token account not found"**: Refresh wallet connection or check NFT ownership
+
 ## 📚 Examples
 
 See the [Integration Guide](/docs/INTEGRATION_GUIDE.md) for complete examples and use cases.

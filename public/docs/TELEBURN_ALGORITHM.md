@@ -396,6 +396,16 @@ Teleburn Address Derivation
 
 **A:** Implementation follows industry-standard cryptographic practices (SHA-256, Ed25519). External audit recommended before mainnet deployment.
 
+### Q: What about Token-2022 and pNFTs?
+
+**A:** Kiln Teleburn Protocol supports all Solana NFTs including Programmable NFTs (pNFTs):
+- **SPL Token NFTs**: Work perfectly with standard burn instructions
+- **Token-2022 pNFTs**: Use SPL Token program for compatibility (same as sol-incinerator)
+- **Frozen pNFTs**: Can be burned using SPL Token program approach
+- **All NFTs**: Compatible with existing burn tools and wallet interfaces
+
+The protocol automatically detects Token-2022 mints but uses SPL Token program for maximum compatibility.
+
 ---
 
 ## References
