@@ -54,7 +54,7 @@ export interface DecodedInstruction {
   instructionName: string;
   accounts: DecodedAccount[];
   data?: string; // Hex-encoded data
-  decodedData?: Record<string, any>; // Parsed instruction data
+  decodedData?: Record<string, unknown>; // Parsed instruction data
 }
 
 /**
@@ -139,8 +139,10 @@ export class TransactionDecoder {
     // Decode each instruction
     for (let i = 0; i < transaction.instructions.length; i++) {
       const ix = transaction.instructions[i];
-      const decoded = await this.decodeInstruction(ix, i, transaction);
-      instructions.push(decoded);
+      if (ix) {
+        const decoded = await this.decodeInstruction(ix, i, transaction);
+        instructions.push(decoded);
+      }
     }
 
     // Estimate fee
@@ -182,8 +184,8 @@ export class TransactionDecoder {
    */
   private async decodeInstruction(
     instruction: TransactionInstruction,
-    index: number,
-    transaction: Transaction
+    _index: number,
+    _transaction: Transaction
   ): Promise<DecodedInstruction> {
     const programId = instruction.programId.toBase58();
     const programName = KNOWN_PROGRAMS[programId] || `Unknown Program (${programId.slice(0, 8)}...)`;
@@ -204,7 +206,7 @@ export class TransactionDecoder {
 
     // Decode instruction based on program
     let instructionName = 'Unknown Instruction';
-    let decodedData: Record<string, any> | undefined;
+    let decodedData: Record<string, unknown> | undefined;
 
     if (programId === MEMO_PROGRAM_ID.toBase58()) {
       instructionName = 'Add Memo';
@@ -255,7 +257,7 @@ export class TransactionDecoder {
    */
   private decodeTokenInstruction(instruction: TransactionInstruction): {
     name: string;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
   } {
     if (instruction.data.length === 0) {
       return { name: 'Unknown Token Instruction' };
@@ -317,7 +319,7 @@ export class TransactionDecoder {
   /**
    * Decode Transfer instruction data
    */
-  private decodeTransferInstruction(data: Buffer): Record<string, any> {
+  private decodeTransferInstruction(data: Buffer): Record<string, unknown> {
     if (data.length < 9) return { error: 'Invalid data length' };
     
     // Transfer layout: [u8 instruction, u64 amount]
@@ -328,7 +330,7 @@ export class TransactionDecoder {
   /**
    * Decode TransferChecked instruction data
    */
-  private decodeTransferCheckedInstruction(data: Buffer): Record<string, any> {
+  private decodeTransferCheckedInstruction(data: Buffer): Record<string, unknown> {
     if (data.length < 10) return { error: 'Invalid data length' };
     
     // TransferChecked layout: [u8 instruction, u64 amount, u8 decimals]
@@ -340,7 +342,7 @@ export class TransactionDecoder {
   /**
    * Decode Burn instruction data
    */
-  private decodeBurnInstruction(data: Buffer): Record<string, any> {
+  private decodeBurnInstruction(data: Buffer): Record<string, unknown> {
     if (data.length < 9) return { error: 'Invalid data length' };
     
     // Burn layout: [u8 instruction, u64 amount]
@@ -351,7 +353,7 @@ export class TransactionDecoder {
   /**
    * Decode BurnChecked instruction data
    */
-  private decodeBurnCheckedInstruction(data: Buffer): Record<string, any> {
+  private decodeBurnCheckedInstruction(data: Buffer): Record<string, unknown> {
     if (data.length < 10) return { error: 'Invalid data length' };
     
     // BurnChecked layout: [u8 instruction, u64 amount, u8 decimals]

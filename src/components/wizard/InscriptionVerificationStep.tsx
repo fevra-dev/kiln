@@ -136,7 +136,7 @@ export function InscriptionVerificationStep({
           </h3>
           <p className="mt-1 text-sm text-gray-600">
             Before sealing, we must verify the inscription content matches your expected hash.
-            This ensures you're not sealing to a corrupted or incorrect inscription.
+            This ensures you&apos;re not sealing to a corrupted or incorrect inscription.
           </p>
         </div>
       </div>
@@ -333,7 +333,7 @@ export function InscriptionVerificationStep({
         <p>
           ℹ️ <strong>Why verification is required:</strong> Sealing creates a permanent on-chain
           record linking your Solana NFT to a Bitcoin inscription. If the inscription content
-          doesn't match, the teleburn will be invalid and your NFT could be lost.
+          doesn&apos;t match, the teleburn will be invalid and your NFT could be lost.
         </p>
       </div>
     </div>

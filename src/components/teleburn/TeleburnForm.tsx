@@ -75,7 +75,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
           const result = await InscriptionVerifier.fetchAndHash(formData.inscriptionId);
           
           if (result.success && result.actualSha256) {
-            setFormData(prev => ({ ...prev, sha256: result.actualSha256 }));
+            setFormData(prev => ({ ...prev, sha256: result.actualSha256 || '' }));
             setHashFetchStatus(`✓ Auto-filled SHA-256 from inscription ${result.contentType ? `(${result.contentType})` : ''}`);
             
             // Clear status after 3 seconds

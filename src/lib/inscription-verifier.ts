@@ -16,7 +16,7 @@ import { isValidInscriptionId, isValidSha256 } from './schemas';
 // ============================================================================
 
 /** Ordinals API base URL */
-const ORDINALS_API_BASE = process.env.ORDINALS_API_URL || 'https://ordinals.com';
+const ORDINALS_API_BASE = process.env['ORDINALS_API_URL'] || 'https://ordinals.com';
 
 /** Timeout for inscription content fetch (30 seconds) */
 const FETCH_TIMEOUT_MS = 30000;

@@ -5,7 +5,7 @@
  * @version 0.1.1
  */
 
-import { PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 
 // ============================================================================
 // CONSTANTS

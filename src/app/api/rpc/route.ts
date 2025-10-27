@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const validated = rpcRequestSchema.parse(body);
 
     // Get server-side RPC URL (no NEXT_PUBLIC_ prefix)
-    const rpcUrl = process.env.SOLANA_RPC_URL;
+    const rpcUrl = process.env['SOLANA_RPC_URL'];
 
     if (!rpcUrl) {
       console.error('SOLANA_RPC_URL environment variable not configured');

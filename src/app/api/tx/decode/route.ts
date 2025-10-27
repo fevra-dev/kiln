@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const validated = decodeRequestSchema.parse(body);
 
     // Get RPC URL
-    const rpcUrl = validated.rpcUrl || process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
 
     // Deserialize transaction
     const transactionBuffer = Buffer.from(validated.transaction, 'base64');

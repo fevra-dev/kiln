@@ -67,7 +67,7 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
           sha256: formData.sha256,
           method: formData.method,
           // Use Helius RPC for mainnet
-          rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com',
+          rpcUrl: process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com',
         }),
       });
 

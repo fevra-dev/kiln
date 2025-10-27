@@ -146,7 +146,7 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
                 <div className="w-3 h-3 rounded-full bg-matrix-red/30"></div>
               </div>
               <div className="text-xs opacity-50">
-                {STEPS[currentStepIndex].label} // {STEPS[currentStepIndex].description}
+                {STEPS[currentStepIndex]?.label} {/* {STEPS[currentStepIndex]?.description} */}
               </div>
             </div>
             <div className="terminal-window-content p-8">

@@ -62,6 +62,7 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
       }, 1500);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [connected, publicKey, balance, onComplete]);
 
   return (

@@ -66,7 +66,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
 
     try {
       const connection = new Connection(
-        process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com',
+        process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com',
         'confirmed'
       );
 
@@ -214,7 +214,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           [ TRANSACTION SEQUENCE ]
         </div>
         
-        {txStates.map((tx, index) => (
+        {txStates.map((tx, _index) => (
           <div key={tx.name} className={`tx-status ${tx.status}`}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">

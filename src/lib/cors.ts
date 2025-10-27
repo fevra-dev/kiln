@@ -127,7 +127,7 @@ export function isOriginAllowed(request: Request): boolean {
  * ```
  */
 export function createCorsResponse(
-  data: any,
+  data: unknown,
   request: Request,
   init?: ResponseInit
 ): Response {

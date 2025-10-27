@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = verifyRequestSchema.parse(body);
 
-    const rpcUrl = validated.rpcUrl || process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
     const connection = new Connection(rpcUrl, 'confirmed');
 
     const mint = new PublicKey(validated.mint);
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    const mintData = mintAccount.value.data as any;
+    const mintData = mintAccount.value.data as { parsed: { info: { supply: string; decimals: number } } };
     const supply = mintData.parsed.info.supply;
     const decimals = mintData.parsed.info.decimals;
     

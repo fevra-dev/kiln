@@ -253,7 +253,7 @@ export class DryRunService {
       }
 
       // Simulate transaction
-      const simulation = await this.connection.simulateTransaction(transaction, undefined, 'confirmed');
+      const simulation = await this.connection.simulateTransaction(transaction, undefined, true);
 
       if (simulation.value.err) {
         return {

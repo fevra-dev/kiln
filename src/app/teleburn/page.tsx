@@ -24,7 +24,7 @@ import { Step1Connect } from '@/components/wizard/Step1Connect';
 import { Step2Verify } from '@/components/wizard/Step2Verify';
 import { Step3Preview } from '@/components/wizard/Step3Preview';
 import { Step4Execute } from '@/components/wizard/Step4Execute';
-import { InscriptionVerificationResult } from '@/lib/inscription-verifier';
+import { InscriptionVerificationResult } from '@/lib/types';
 
 /**
  * Teleburn Wizard Page
@@ -34,7 +34,7 @@ import { InscriptionVerificationResult } from '@/lib/inscription-verifier';
 export default function TeleburnPage() {
   const [currentStep, setCurrentStep] = useState<WizardStep>('connect');
   const [formData, setFormData] = useState<TeleburnFormData | null>(null);
-  const [verificationResult, setVerificationResult] = useState<InscriptionVerificationResult | null>(null);
+  const [, setVerificationResult] = useState<InscriptionVerificationResult | null>(null);
   const [showForm, setShowForm] = useState(true);
   const [isClient, setIsClient] = useState(false);
 

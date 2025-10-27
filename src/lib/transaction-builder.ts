@@ -15,7 +15,6 @@ import {
   PublicKey,
   Transaction,
   TransactionInstruction,
-  SystemProgram,
 } from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
@@ -26,7 +25,6 @@ import {
   createAssociatedTokenAccountIdempotentInstruction,
 } from '@solana/spl-token';
 import { deriveTeleburnAddress } from './teleburn';
-import { SolanaTimestampService } from './solana-timestamp';
 import type { Sbt01Seal, Sbt01Retire } from './types';
 
 // Memo Program ID
@@ -93,11 +91,9 @@ export interface BuiltTransaction {
  */
 export class TransactionBuilder {
   private connection: Connection;
-  private timestampService: SolanaTimestampService;
 
   constructor(rpcUrl: string) {
     this.connection = new Connection(rpcUrl, 'confirmed');
-    this.timestampService = new SolanaTimestampService(rpcUrl);
   }
 
   /**
@@ -129,6 +125,7 @@ export class TransactionBuilder {
       block_height: slot,
       inscription: {
         id: inscriptionId,
+        network: 'bitcoin-mainnet' as const,
       },
       solana: {
         mint: mint.toBase58(),
@@ -306,8 +303,7 @@ export class TransactionBuilder {
         // Add derived owner to memo for cryptographic verification
         // This proves the burn is linked to a specific Bitcoin inscription
         retireMemo.derived = { 
-          owner: derivedOwner.toBase58(),
-          algorithm: 'SHA-256(txid || index || salt)'
+          bump: 0 // TODO: Extract bump from derived owner
         };
 
         description = `TELEBURN: Burn token linked to inscription (derived: ${derivedOwner.toBase58().slice(0, 8)}...)`;
@@ -350,7 +346,7 @@ export class TransactionBuilder {
    * @returns Built transaction ready for signing
    */
   async buildUpdateUriTransaction(params: UpdateUriParams): Promise<BuiltTransaction> {
-    const { payer, authority, mint, newUri } = params;
+    const { payer, newUri } = params;
 
     // TODO: Implement Metaplex metadata update instruction
     // This requires @metaplex-foundation/mpl-token-metadata

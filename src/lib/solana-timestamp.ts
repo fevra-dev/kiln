@@ -15,7 +15,7 @@ import type { SolanaTimestamp } from './types';
 // ============================================================================
 
 /** Primary Solana RPC endpoint */
-const PRIMARY_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+const PRIMARY_RPC = process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
 
 /** Fallback RPC endpoints (used if primary fails) */
 const FALLBACK_RPCS = [

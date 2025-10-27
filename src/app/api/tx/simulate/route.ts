@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PublicKey } from '@solana/web3.js';
 import { z } from 'zod';
-import { createDryRunService } from '@/lib/dry-run';
+import { createDryRunService, DryRunService } from '@/lib/dry-run';
 import { TeleburnMethod } from '@/lib/transaction-builder';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const validated = simulateRequestSchema.parse(body);
 
     // Get RPC URL - use Helius for mainnet
-    const rpcUrl = validated.rpcUrl || process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
 
     // Parse public keys
     const payer = new PublicKey(validated.payer);
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate downloadable receipt
-    const receipt = createDryRunService(rpcUrl).constructor.generateRehearsalReceipt(report);
+    const receipt = DryRunService.generateRehearsalReceipt(report);
 
     // Return dry run report with CORS headers
     const corsHeaders = getCorsHeaders(request);

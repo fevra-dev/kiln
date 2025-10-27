@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const validated = retireRequestSchema.parse(body);
 
     // Get RPC URL from environment or use default
-    const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+    const rpcUrl = process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
 
     // Parse public keys
     const payer = new PublicKey(validated.payer);

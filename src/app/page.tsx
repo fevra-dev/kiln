@@ -16,14 +16,13 @@ export default function HomePage() {
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     if (password === 'iceland') {
       setPasswordEntered(true);
       setPasswordError(false);
       // Start boot sequence after typing animation completes
-      const timer = setTimeout(() => setBootComplete(true), 8000);
-    return () => clearTimeout(timer);
+      setTimeout(() => setBootComplete(true), 8000);
     } else {
       setPasswordError(true);
       setPassword('');
@@ -129,7 +128,7 @@ function BootSequence() {
       let charIndex = 0;
       
       const typeInterval = setInterval(() => {
-        if (charIndex < targetText.length) {
+        if (targetText && charIndex < targetText.length) {
           setDisplayText(targetText.substring(0, charIndex + 1));
           charIndex++;
         } else {
@@ -143,6 +142,7 @@ function BootSequence() {
 
       return () => clearInterval(typeInterval);
     }
+    return undefined;
   }, [currentLine]);
 
   return (

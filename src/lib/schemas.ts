@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { STANDARD, STANDARD_VERSION, TeleburnMethod, ChainNetwork } from './types';
+import { STANDARD, STANDARD_VERSION } from './types';
 
 // ============================================================================
 // BASE VALIDATORS

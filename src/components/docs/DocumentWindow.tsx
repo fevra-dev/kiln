@@ -23,7 +23,7 @@ interface DocumentWindowProps {
 }
 
 export const DocumentWindow: FC<DocumentWindowProps> = ({
-  id,
+  id: _id,
   title,
   children,
   onClose,
@@ -76,6 +76,7 @@ export const DocumentWindow: FC<DocumentWindowProps> = ({
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
+    return undefined;
   }, [isDragging, isResizing, dragOffset]);
 
   // Handle maximize/restore

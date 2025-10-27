@@ -14,7 +14,8 @@
  */
 
 import { FC, useState } from 'react';
-import { InscriptionVerifier, InscriptionVerificationResult } from '@/lib/inscription-verifier';
+import { InscriptionVerifier } from '@/lib/inscription-verifier';
+import { InscriptionVerificationResult } from '@/lib/types';
 
 interface Step2VerifyProps {
   inscriptionId: string;
@@ -86,7 +87,7 @@ export const Step2Verify: FC<Step2VerifyProps> = ({
             <div className="font-bold mb-1 text-matrix-red">CRITICAL VERIFICATION GATE</div>
             <div className="text-sm opacity-80">
               This step validates that your Bitcoin Ordinal inscription exists and matches
-              the content you're teleburning. <strong className="text-terminal-text">You cannot proceed without passing this check.</strong>
+              the content you&apos;re teleburning. <strong className="text-terminal-text">You cannot proceed without passing this check.</strong>
             </div>
           </div>
         </div>

@@ -11,7 +11,7 @@
  */
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentWindow } from '@/components/docs/DocumentWindow';
 import { marked } from 'marked';
@@ -71,7 +71,7 @@ interface OpenWindow {
   htmlContent: string;
 }
 
-export default function DocsPage() {
+function DocsPageContent() {
   const searchParams = useSearchParams();
   const [openWindows, setOpenWindows] = useState<OpenWindow[]>([]);
   const [topZIndex, setTopZIndex] = useState(1000);
@@ -82,7 +82,7 @@ export default function DocsPage() {
     if (!acc[doc.category]) {
       acc[doc.category] = [];
     }
-    acc[doc.category].push(doc);
+    acc[doc.category]!.push(doc);
     return acc;
   }, {} as Record<string, DocLink[]>);
 
@@ -348,6 +348,14 @@ export default function DocsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DocsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DocsPageContent />
+    </Suspense>
   );
 }
 

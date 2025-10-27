@@ -16,7 +16,7 @@ import { isValidPublicKey } from '@/lib/schemas';
 export default function VerifyPage() {
   const [mintAddress, setMintAddress] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{ status: string; mint: string; confidence: string; message?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleVerify = async (e: React.FormEvent) => {
