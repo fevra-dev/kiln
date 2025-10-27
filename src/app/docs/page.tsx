@@ -86,6 +86,12 @@ function DocsPageContent() {
     return acc;
   }, {} as Record<string, DocLink[]>);
 
+  const handleFocusWindow = useCallback((id: string) => {
+    const newZIndex = topZIndex + 1;
+    setTopZIndex(newZIndex);
+    setWindowZIndices(prev => ({ ...prev, [id]: newZIndex }));
+  }, [topZIndex]);
+
   const handleOpenDoc = useCallback(async (doc: DocLink) => {
     // Check if window is already open
     const existingWindow = openWindows.find(w => w.doc.path === doc.path);
@@ -152,12 +158,6 @@ function DocsPageContent() {
       delete newIndices[id];
       return newIndices;
     });
-  };
-
-  const handleFocusWindow = (id: string) => {
-    const newZIndex = topZIndex + 1;
-    setTopZIndex(newZIndex);
-    setWindowZIndices(prev => ({ ...prev, [id]: newZIndex }));
   };
 
   // Handle URL parameters to auto-open specific documents
