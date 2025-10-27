@@ -228,8 +228,9 @@ export class DryRunService {
             errors.push(`   Try refreshing the page or reconnecting your wallet.`);
           } else if (errorStr.includes('custom') && errorStr.includes('17')) {
             errors.push(`⚠️  TOKEN PROGRAM ERROR: Custom error 17 detected.`);
-            errors.push(`   This could be: frozen account, insufficient funds, or invalid authority.`);
-            errors.push(`   Check wallet SOL balance and ensure NFT is not frozen.`);
+            errors.push(`   This is most likely: Account is frozen (pNFT freeze restrictions)`);
+            errors.push(`   Check if this is a Programmable NFT (pNFT) with frozen transfers.`);
+            errors.push(`   Contact the freeze authority or use a different NFT.`);
           } else {
             errors.push(`❓ UNKNOWN ERROR: ${retireSimulation.error}`);
             errors.push(`   Try: 1) Check SOL balance 2) Refresh page 3) Reconnect wallet 4) Try different NFT`);
@@ -362,13 +363,12 @@ export class DryRunService {
     errors: string[]
   ): Promise<void> {
     try {
-      // Check SOL balance more thoroughly
+      // Check SOL balance (only warn, don't error - simulation will catch actual issues)
       const payerBalance = await this.connection.getBalance(params.payer);
       const estimatedFee = 0.00001; // ~0.00001 SOL for burn transaction
       
       if (payerBalance < estimatedFee * 1e9) {
-        errors.push(`💰 INSUFFICIENT SOL: Wallet has ${(payerBalance / 1e9).toFixed(6)} SOL, need at least ${estimatedFee} SOL`);
-        errors.push(`   Add more SOL to your wallet and try again.`);
+        warnings.push(`💰 LOW SOL BALANCE: Wallet has ${(payerBalance / 1e9).toFixed(6)} SOL, recommend at least ${estimatedFee} SOL`);
       }
 
       // Check if token account exists for the owner
