@@ -15,7 +15,7 @@ import { PublicKey } from '@solana/web3.js';
 export const STANDARD_VERSION = '0.1.1' as const;
 
 /** Standard identifier */
-export const STANDARD = 'KILN-TELEBURN' as const;
+export const STANDARD = 'KILN' as const;
 
 /** Domain separation string for derived owner algorithm */
 export const DOMAIN = 'ordinals.teleburn.sbt01.v1' as const;

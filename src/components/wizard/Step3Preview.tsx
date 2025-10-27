@@ -11,7 +11,7 @@
  * @version 0.1.1
  */
 
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { DryRunPreview } from '../teleburn/DryRunPreview';
@@ -43,9 +43,9 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
     if (publicKey && !report && !loading) {
       executeDryRun();
     }
-  }, [publicKey]);
+  }, [publicKey, executeDryRun, report, loading]);
 
-  const executeDryRun = async () => {
+  const executeDryRun = useCallback(async () => {
     if (!publicKey) {
       setError('Wallet not connected');
       return;
@@ -85,7 +85,7 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [publicKey, formData.mint, formData.inscriptionId, formData.sha256, formData.method]);
 
   const handleDownloadReceipt = () => {
     if (!report) return;
