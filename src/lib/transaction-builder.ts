@@ -380,7 +380,8 @@ export class TransactionBuilder {
       if (accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
         // For compatibility with tools like sol-incinerator, try SPL Token first
         // Many pNFTs can be burned with SPL Token program even if they're Token-2022
-        console.log(`Detected Token-2022 mint ${mint.toBase58()}, trying SPL Token program for compatibility`);
+        console.log(`Detected Token-2022 mint ${mint.toBase58()}, using SPL Token program for compatibility`);
+        console.log(`This should resolve "Account is frozen" errors for burnable pNFTs`);
         return TOKEN_PROGRAM_ID;
       }
 

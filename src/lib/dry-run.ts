@@ -207,6 +207,9 @@ export class DryRunService {
 
       totalEstimatedFee += retireTx.estimatedFee;
       totalComputeUnits += retireSimulation.unitsConsumed || 0;
+      
+      console.log(`Retire transaction fee: ${retireTx.estimatedFee} lamports (${retireTx.estimatedFee / 1e9} SOL)`);
+      console.log(`Total estimated fee so far: ${totalEstimatedFee} lamports (${totalEstimatedFee / 1e9} SOL)`);
 
       if (!retireSimulation.success) {
         errors.push(`RETIRE simulation failed: ${retireSimulation.error}`);
