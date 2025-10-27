@@ -383,11 +383,13 @@ export class DryRunService {
       } else {
         // Check token balance
         const tokenAccount = tokenAccounts.value[0];
-        const accountInfo = await this.connection.getTokenAccountBalance(tokenAccount.pubkey);
-        
-        if (accountInfo.value.uiAmount === 0) {
-          errors.push(`🔍 NO TOKENS: Token account exists but has 0 balance`);
-          errors.push(`   The NFT may have been transferred out of this wallet.`);
+        if (tokenAccount) {
+          const accountInfo = await this.connection.getTokenAccountBalance(tokenAccount.pubkey);
+          
+          if (accountInfo.value.uiAmount === 0) {
+            errors.push(`🔍 NO TOKENS: Token account exists but has 0 balance`);
+            errors.push(`   The NFT may have been transferred out of this wallet.`);
+          }
         }
       }
 
