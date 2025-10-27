@@ -211,12 +211,29 @@ export class DryRunService {
       if (!retireSimulation.success) {
         errors.push(`RETIRE simulation failed: ${retireSimulation.error}`);
         
-        // Check if this is a pNFT freeze error
-        if (retireSimulation.error && typeof retireSimulation.error === 'string' && 
-            retireSimulation.error.includes('Account is frozen')) {
-          errors.push(`⚠️  PNFT DETECTED: This NFT appears to be a Programmable NFT (pNFT) with frozen transfer restrictions.`);
-          errors.push(`   pNFTs cannot be burned while frozen. Contact the freeze authority to unfreeze the account.`);
-          errors.push(`   Alternative: Use a different NFT or wait for freeze restrictions to be lifted.`);
+        // Enhanced error detection for common issues
+        if (retireSimulation.error && typeof retireSimulation.error === 'string') {
+          const errorStr = retireSimulation.error.toLowerCase();
+          
+          // Check for specific error patterns
+          if (errorStr.includes('account is frozen')) {
+            errors.push(`⚠️  PNFT DETECTED: This NFT appears to be a Programmable NFT (pNFT) with frozen transfer restrictions.`);
+            errors.push(`   pNFTs cannot be burned while frozen. Contact the freeze authority to unfreeze the account.`);
+            errors.push(`   Alternative: Use a different NFT or wait for freeze restrictions to be lifted.`);
+          } else if (errorStr.includes('insufficient funds') || errorStr.includes('insufficient sol')) {
+            errors.push(`💰 INSUFFICIENT SOL: Your wallet doesn't have enough SOL to cover transaction fees.`);
+            errors.push(`   Required: ~0.000005 SOL minimum. Add more SOL to your wallet and try again.`);
+          } else if (errorStr.includes('account not found') || errorStr.includes('invalid account')) {
+            errors.push(`🔍 ACCOUNT ISSUE: Token account or associated token account may not exist.`);
+            errors.push(`   Try refreshing the page or reconnecting your wallet.`);
+          } else if (errorStr.includes('custom') && errorStr.includes('17')) {
+            errors.push(`⚠️  TOKEN PROGRAM ERROR: Custom error 17 detected.`);
+            errors.push(`   This could be: frozen account, insufficient funds, or invalid authority.`);
+            errors.push(`   Check wallet SOL balance and ensure NFT is not frozen.`);
+          } else {
+            errors.push(`❓ UNKNOWN ERROR: ${retireSimulation.error}`);
+            errors.push(`   Try: 1) Check SOL balance 2) Refresh page 3) Reconnect wallet 4) Try different NFT`);
+          }
         }
       }
 
@@ -224,6 +241,9 @@ export class DryRunService {
 
       // Additional validation checks
       await this.validateDryRun(params, warnings, errors);
+      
+      // Pre-transaction validation
+      await this.validatePreTransaction(params, warnings, errors);
 
     } catch (error) {
       errors.push(`Dry run failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -330,7 +350,53 @@ export class DryRunService {
   }
 
   /**
-   * Generate downloadable rehearsal receipt (JSON)
+   * Pre-transaction validation checks
+   * 
+   * @param params - Dry run parameters
+   * @param warnings - Warnings array
+   * @param errors - Errors array
+   */
+  private async validatePreTransaction(
+    params: DryRunParams,
+    warnings: string[],
+    errors: string[]
+  ): Promise<void> {
+    try {
+      // Check SOL balance more thoroughly
+      const payerBalance = await this.connection.getBalance(params.payer);
+      const estimatedFee = 0.00001; // ~0.00001 SOL for burn transaction
+      
+      if (payerBalance < estimatedFee * 1e9) {
+        errors.push(`💰 INSUFFICIENT SOL: Wallet has ${(payerBalance / 1e9).toFixed(6)} SOL, need at least ${estimatedFee} SOL`);
+        errors.push(`   Add more SOL to your wallet and try again.`);
+      }
+
+      // Check if token account exists for the owner
+      const tokenAccounts = await this.connection.getTokenAccountsByOwner(
+        params.owner,
+        { mint: params.mint }
+      );
+
+      if (tokenAccounts.value.length === 0) {
+        errors.push(`🔍 NO TOKEN ACCOUNT: Owner doesn't have an Associated Token Account for this NFT`);
+        errors.push(`   The NFT may not be in this wallet or the token account doesn't exist.`);
+      } else {
+        // Check token balance
+        const tokenAccount = tokenAccounts.value[0];
+        const accountInfo = await this.connection.getTokenAccountBalance(tokenAccount.pubkey);
+        
+        if (accountInfo.value.uiAmount === 0) {
+          errors.push(`🔍 NO TOKENS: Token account exists but has 0 balance`);
+          errors.push(`   The NFT may have been transferred out of this wallet.`);
+        }
+      }
+
+    } catch (error) {
+      warnings.push(`Pre-transaction validation failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
    * 
    * @param report - Dry run report
    * @returns JSON string ready for download
