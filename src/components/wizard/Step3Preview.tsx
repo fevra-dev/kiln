@@ -38,13 +38,6 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
   const [report, setReport] = useState<DryRunReport | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Execute dry run on mount
-  useEffect(() => {
-    if (publicKey && !report && !loading) {
-      executeDryRun();
-    }
-  }, [publicKey, executeDryRun, report, loading]);
-
   const executeDryRun = useCallback(async () => {
     if (!publicKey) {
       setError('Wallet not connected');
@@ -86,6 +79,13 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       setLoading(false);
     }
   }, [publicKey, formData.mint, formData.inscriptionId, formData.sha256, formData.method]);
+
+  // Execute dry run on mount
+  useEffect(() => {
+    if (publicKey && !report && !loading) {
+      executeDryRun();
+    }
+  }, [publicKey, executeDryRun, report, loading]);
 
   const handleDownloadReceipt = () => {
     if (!report) return;

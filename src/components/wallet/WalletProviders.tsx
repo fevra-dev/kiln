@@ -60,7 +60,7 @@ export const WalletProviders: FC<WalletProvidersProps> = ({
       // new SolflareWalletAdapter(),
       // new TorusWalletAdapter(),
     ],
-    [network]
+    []
   );
 
   return (
