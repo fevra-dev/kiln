@@ -45,7 +45,7 @@ export const WalletProviders: FC<WalletProvidersProps> = ({
     if (network === WalletAdapterNetwork.Mainnet) {
       // Use a more reliable RPC endpoint that doesn't block requests
       console.warn('⚠️ Using public mainnet RPC. Set NEXT_PUBLIC_SOLANA_RPC for better performance.');
-      return 'https://rpc.ankr.com/solana'; // Ankr public RPC endpoint
+      return 'https://solana-mainnet.rpc.extrnode.com'; // Extrnode public RPC
     }
     
     // For devnet
