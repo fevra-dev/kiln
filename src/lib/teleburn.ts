@@ -592,11 +592,18 @@ export async function buildTeleburnDerivedTx(
   const fromAta = await getAssociatedTokenAddress(mint, payer, false, tokenProgram);
   const toAta = await getAssociatedTokenAddress(mint, derivedOwner, true, tokenProgram);
   
+  // Get current blockchain state for accurate timestamps
+  const { blockhash } = await connection.getLatestBlockhash();
+  const slot = await connection.getSlot();
+  const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
+
   // Build memo payload
   const memoData = {
     standard: 'KILN',
     version: '0.1',
     action: 'teleburn-derived',
+    timestamp,
+    block_height: slot,
     inscription: {
       id: inscriptionId,
       network: 'bitcoin-mainnet'
@@ -632,8 +639,6 @@ export async function buildTeleburnDerivedTx(
   // Build transaction
   const tx = new Transaction().add(...ixs);
   tx.feePayer = payer;
-  
-  const { blockhash } = await connection.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
   
   return { tx, derivedOwner };

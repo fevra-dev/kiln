@@ -109,10 +109,10 @@ export class TransactionBuilder {
   async buildSealTransaction(params: SealTransactionParams): Promise<BuiltTransaction> {
     const { payer, mint, inscriptionId, sha256, authority } = params;
 
-    // Note: We'll get the actual timestamp and block height after transaction confirmation
-    // For now, use placeholder values that will be updated
-    const slot = 0; // Will be updated after confirmation
-    const timestamp = 0; // Will be updated after confirmation
+    // Get current blockchain state for accurate timestamps
+    const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+    const slot = await this.connection.getSlot();
+    const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
     // Construct KILN v0.1.1 seal memo payload
     const sealMemo: Sbt01Seal = {
@@ -157,11 +157,8 @@ export class TransactionBuilder {
       })
     );
 
-    // Set fee payer
+    // Set fee payer and blockhash
     transaction.feePayer = payer;
-
-    // Get recent blockhash
-    const { blockhash } = await this.connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
     // Estimate fee
@@ -190,10 +187,10 @@ export class TransactionBuilder {
   async buildRetireTransaction(params: RetireTransactionParams): Promise<BuiltTransaction> {
     const { payer, owner, mint, inscriptionId, sha256, method, amount = 1n } = params;
 
-    // Note: We'll get the actual timestamp and block height after transaction confirmation
-    // For now, use placeholder values that will be updated
-    const slot = 0; // Will be updated after confirmation
-    const timestamp = 0; // Will be updated after confirmation
+    // Get current blockchain state for accurate timestamps
+    const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+    const slot = await this.connection.getSlot();
+    const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
     // Get token program (support both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID)
     const tokenProgram = await this.detectTokenProgram(mint);
@@ -323,7 +320,6 @@ export class TransactionBuilder {
 
     // Set fee payer and blockhash
     transaction.feePayer = payer;
-    const { blockhash } = await this.connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
     // Estimate fee

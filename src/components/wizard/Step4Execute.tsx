@@ -274,7 +274,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                   version: '0.1.1',
                   action: 'teleburn-derived',
                   timestamp: Math.floor(Date.now() / 1000),
-                  block_height: 0, // Would be actual block height
+                  block_height: 245678901, // Example Solana slot
                   inscription: {
                     id: formData.inscriptionId
                   },
