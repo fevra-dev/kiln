@@ -42,10 +42,10 @@
 export function getCorsHeaders(request: Request): HeadersInit {
   // Define allowed origins
   const allowedOrigins = [
-    // Production domains (update these with your actual domains)
-    'https://yourdomain.com',
-    'https://app.yourdomain.com',
-    'https://www.yourdomain.com',
+    // Production domains
+    'https://kiln.hot',
+    'https://www.kiln.hot',
+    'https://kiln-vercel.vercel.app', // Vercel deployment URL
     
     // Development - allow localhost
     ...(process.env.NODE_ENV === 'development' 
@@ -166,9 +166,9 @@ export function createCorsResponse(
  */
 export function getAllowedOrigins(): string[] {
   return [
-    'https://yourdomain.com',
-    'https://app.yourdomain.com',
-    'https://www.yourdomain.com',
+    'https://kiln.hot',
+    'https://www.kiln.hot',
+    'https://kiln-vercel.vercel.app',
     ...(process.env.NODE_ENV === 'development' 
       ? [
           'http://localhost:3000',
