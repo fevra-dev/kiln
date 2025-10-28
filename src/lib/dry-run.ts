@@ -324,12 +324,8 @@ export class DryRunService {
           if (params.rpcUrl !== fallbackRpcUrl) {
             console.log(`🔄 DRY RUN: Switching from ${params.rpcUrl} to ${fallbackRpcUrl}`);
             
-            // Create new connection with fallback RPC
-            const { Connection } = await import('@solana/web3.js');
-            const fallbackConnection = new Connection(fallbackRpcUrl, 'confirmed');
-            
             // Create new dry run service with fallback RPC
-            const fallbackDryRun = new DryRunService(fallbackConnection);
+            const fallbackDryRun = new DryRunService(fallbackRpcUrl);
             
             // Try simulation with fallback RPC
             const fallbackSimulation = await fallbackDryRun.simulateTransaction(retireTx.transaction);
