@@ -77,6 +77,7 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       const data = await response.json();
       console.log('✅ CLIENT: Dry run completed successfully');
       console.log('📊 CLIENT: Report:', data.report);
+      console.log('🔍 CLIENT: Debug info:', data.debug);
       setReport(data.report);
 
     } catch (err) {

@@ -84,6 +84,10 @@ export async function POST(request: NextRequest) {
     const dryRun = createDryRunService(rpcUrl);
 
     // Execute dry run
+    console.log('🔄 API: Starting dry run execution...');
+    console.log('📋 API: Mint:', mint.toBase58());
+    console.log('📋 API: Inscription ID:', validated.inscriptionId);
+    
     const report = await dryRun.executeDryRun({
       payer,
       mint,
@@ -100,12 +104,23 @@ export async function POST(request: NextRequest) {
     // Generate downloadable receipt
     const receipt = DryRunService.generateRehearsalReceipt(report);
 
+    console.log('✅ API: Dry run completed successfully');
+    console.log('📊 API: Report success:', report.success);
+    console.log('📊 API: Report errors:', report.errors);
+
     // Return dry run report with CORS headers
     const corsHeaders = getCorsHeaders(request);
     return NextResponse.json({
       success: true,
       report,
       receipt, // JSON string for download
+      debug: {
+        mint: mint.toBase58(),
+        inscriptionId: validated.inscriptionId,
+        rpcUrl,
+        reportSuccess: report.success,
+        reportErrors: report.errors,
+      },
       metadata: {
         timestamp: report.timestamp,
         sbt01_version: '0.1.1',
