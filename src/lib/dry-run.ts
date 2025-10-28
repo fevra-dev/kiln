@@ -235,7 +235,12 @@ export class DryRunService {
       // CRITICAL DEBUG: Check actual token account state before simulation
       console.log(`🔍 DRY RUN: Checking token account state before simulation...`);
       const debugInfo: DryRunReport['debug'] = {
-        rpcUrl: params.rpcUrl
+        rpcUrl: params.rpcUrl,
+        tokenAccountState: {},
+        tokenAccountAddresses: undefined,
+        mintInfo: undefined,
+        fallbackSuccess: undefined,
+        fallbackRpcUrl: undefined
       };
       
       try {
