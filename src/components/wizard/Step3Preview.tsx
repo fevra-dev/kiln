@@ -44,11 +44,16 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       return;
     }
 
+    console.log('🚀 CLIENT: Starting dry run execution...');
+    console.log('📋 CLIENT: Mint:', formData.mint);
+    console.log('📋 CLIENT: Inscription ID:', formData.inscriptionId);
+
     setLoading(true);
     setError(null);
 
     try {
       // Call dry run API
+      console.log('🌐 CLIENT: Calling /api/tx/simulate...');
       const response = await fetch('/api/tx/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,6 +75,8 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       }
 
       const data = await response.json();
+      console.log('✅ CLIENT: Dry run completed successfully');
+      console.log('📊 CLIENT: Report:', data.report);
       setReport(data.report);
 
     } catch (err) {
