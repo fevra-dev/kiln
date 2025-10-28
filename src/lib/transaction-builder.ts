@@ -402,10 +402,11 @@ export class TransactionBuilder {
           const tokenSupply = await this.connection.getTokenSupply(mint);
           console.log(`📊 Token supply: ${tokenSupply.value.uiAmount}`);
           
-          // For Token-2022 mints, try TOKEN_2022_PROGRAM_ID first
-          // If that fails with "Account is frozen", we'll fall back to TOKEN_PROGRAM_ID
-          console.log(`🔧 Using TOKEN_2022_PROGRAM_ID for Token-2022 mint`);
-          return TOKEN_2022_PROGRAM_ID;
+          // For Token-2022 mints, use SPL Token program first (like sol-incinerator)
+          // This bypasses freeze restrictions that prevent burning with Token-2022 program
+          console.log(`🔧 Using SPL Token program for Token-2022 mint (sol-incinerator compatibility)`);
+          console.log(`🔧 This bypasses freeze restrictions for burnable pNFTs`);
+          return TOKEN_PROGRAM_ID;
         } catch (error) {
           console.warn(`⚠️ Failed to get token supply for ${mint.toBase58()}, defaulting to TOKEN_PROGRAM_ID:`, error);
           return TOKEN_PROGRAM_ID;

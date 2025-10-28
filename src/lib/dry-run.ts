@@ -216,10 +216,10 @@ export class DryRunService {
         
         console.log(`🔄 DRY RUN: Account frozen detected, trying alternative token program...`);
         
-        // Try building with forced TOKEN_PROGRAM_ID (SPL Token program)
+        // Try building with forced TOKEN_2022_PROGRAM_ID (Token-2022 program)
         const alternativeRetireTx = await this.builder.buildRetireTransaction({
           ...retireParams,
-          forceTokenProgram: 'TOKEN_PROGRAM_ID' // Force SPL Token program
+          forceTokenProgram: 'TOKEN_2022_PROGRAM_ID' // Force Token-2022 program
         });
         
         const alternativeSimulation = await this.simulateTransaction(alternativeRetireTx.transaction);
@@ -229,7 +229,7 @@ export class DryRunService {
           retireSimulation = alternativeSimulation;
           // Update the transaction and decoded data
           retireTx.transaction = alternativeRetireTx.transaction;
-          retireTx.description = alternativeRetireTx.description + ' (using SPL Token program fallback)';
+          retireTx.description = alternativeRetireTx.description + ' (using Token-2022 program fallback)';
         } else {
           console.log(`❌ DRY RUN: Alternative token program also failed`);
         }
