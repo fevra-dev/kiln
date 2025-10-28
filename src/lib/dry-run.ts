@@ -198,11 +198,21 @@ export class DryRunService {
       const retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
       let retireSimulation = await this.simulateTransaction(retireTx.transaction);
       
+      console.log(`🔍 DRY RUN: Initial simulation result:`, {
+        success: retireSimulation.success,
+        error: retireSimulation.error,
+        errorType: typeof retireSimulation.error
+      });
+      
       // If simulation fails with "Account is frozen", try with alternative token program
-      if (!retireSimulation.success && 
-          retireSimulation.error && 
-          typeof retireSimulation.error === 'string' &&
-          retireSimulation.error.toLowerCase().includes('account is frozen')) {
+      const errorStr = retireSimulation.error ? String(retireSimulation.error) : '';
+      const logsStr = retireSimulation.logs ? retireSimulation.logs.join(' ') : '';
+      const hasFrozenError = errorStr.toLowerCase().includes('account is frozen') ||
+                            errorStr.includes('Custom:17') ||
+                            errorStr.includes('0x11') ||
+                            logsStr.toLowerCase().includes('account is frozen');
+      
+      if (!retireSimulation.success && hasFrozenError) {
         
         console.log(`🔄 DRY RUN: Account frozen detected, trying alternative token program...`);
         
