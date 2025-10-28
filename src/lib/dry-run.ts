@@ -54,7 +54,41 @@ export interface DryRunReport {
   warnings: string[];
   errors: string[];
   success: boolean;
-  debug?: any; // Debug information for troubleshooting
+  debug?: {
+    tokenAccountAddresses?: {
+      mint: string;
+      owner: string;
+      ataSPL: string;
+      ataToken2022: string;
+    };
+    tokenAccountState?: {
+      splToken?: {
+        address: string;
+        exists: boolean;
+        amount: string;
+        isFrozen: boolean;
+        owner: string;
+        mint: string;
+      };
+      token2022?: {
+        address: string;
+        exists: boolean;
+        amount: string;
+        isFrozen: boolean;
+        owner: string;
+        mint: string;
+      };
+    };
+    mintInfo?: {
+      mint: string;
+      owner: string;
+      isToken2022: boolean;
+      isSPLToken: boolean;
+    };
+    rpcUrl?: string;
+    fallbackSuccess?: boolean;
+    fallbackRpcUrl?: string;
+  };
 }
 
 /**
@@ -200,9 +234,7 @@ export class DryRunService {
       
       // CRITICAL DEBUG: Check actual token account state before simulation
       console.log(`🔍 DRY RUN: Checking token account state before simulation...`);
-      const debugInfo: any = {
-        tokenAccountState: {},
-        mintInfo: {},
+      const debugInfo: DryRunReport['debug'] = {
         rpcUrl: params.rpcUrl
       };
       
