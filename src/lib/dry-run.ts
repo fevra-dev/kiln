@@ -280,7 +280,7 @@ export class DryRunService {
               mint: splAccount.mint.toBase58()
             };
             console.log(`🔍 DRY RUN: SPL Token account state:`, splAccountState);
-            debugInfo.tokenAccountState.splToken = splAccountState;
+            debugInfo.tokenAccountState!.splToken = splAccountState;
           } else {
             console.log(`🔍 DRY RUN: SPL Token account does not exist:`, ownerAtaSPL.toBase58());
           }
@@ -303,7 +303,7 @@ export class DryRunService {
               mint: token2022Account.mint.toBase58()
             };
             console.log(`🔍 DRY RUN: Token-2022 account state:`, token2022AccountState);
-            debugInfo.tokenAccountState.token2022 = token2022AccountState;
+            debugInfo.tokenAccountState!.token2022 = token2022AccountState;
           } else {
             console.log(`🔍 DRY RUN: Token-2022 account does not exist:`, ownerAtaToken2022.toBase58());
           }
