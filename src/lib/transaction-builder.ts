@@ -193,7 +193,9 @@ export class TransactionBuilder {
     const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
     // Get token program (support both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID)
+    console.log(`🚀 Building RETIRE transaction for mint: ${mint.toBase58()}`);
     const tokenProgram = await this.detectTokenProgram(mint);
+    console.log(`🎯 Selected token program: ${tokenProgram.toBase58()}`);
 
     // Get owner's ATA
     const ownerAta = getAssociatedTokenAddressSync(
@@ -371,24 +373,30 @@ export class TransactionBuilder {
    */
   private async detectTokenProgram(mint: PublicKey): Promise<PublicKey> {
     try {
+      console.log(`🔍 Detecting token program for mint: ${mint.toBase58()}`);
       const accountInfo = await this.connection.getAccountInfo(mint);
       if (!accountInfo) {
         throw new Error(`Mint account ${mint.toBase58()} not found`);
       }
 
+      console.log(`📋 Mint account owner: ${accountInfo.owner.toBase58()}`);
+      console.log(`📋 TOKEN_2022_PROGRAM_ID: ${TOKEN_2022_PROGRAM_ID.toBase58()}`);
+      console.log(`📋 TOKEN_PROGRAM_ID: ${TOKEN_PROGRAM_ID.toBase58()}`);
+
       // Check if owner is TOKEN_2022_PROGRAM_ID
       if (accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
         // For compatibility with tools like sol-incinerator, try SPL Token first
         // Many pNFTs can be burned with SPL Token program even if they're Token-2022
-        console.log(`Detected Token-2022 mint ${mint.toBase58()}, using SPL Token program for compatibility`);
-        console.log(`This should resolve "Account is frozen" errors for burnable pNFTs`);
+        console.log(`🎯 Detected Token-2022 mint ${mint.toBase58()}, using SPL Token program for compatibility`);
+        console.log(`🔧 This should resolve "Account is frozen" errors for burnable pNFTs`);
         return TOKEN_PROGRAM_ID;
       }
 
+      console.log(`✅ Using SPL Token program for standard mint: ${mint.toBase58()}`);
       return TOKEN_PROGRAM_ID;
     } catch (error) {
       // Default to TOKEN_PROGRAM_ID
-      console.warn(`Failed to detect token program for ${mint.toBase58()}, defaulting to TOKEN_PROGRAM_ID`);
+      console.warn(`⚠️ Failed to detect token program for ${mint.toBase58()}, defaulting to TOKEN_PROGRAM_ID:`, error);
       return TOKEN_PROGRAM_ID;
     }
   }
