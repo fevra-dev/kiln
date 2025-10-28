@@ -20,6 +20,7 @@ import {
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
   createBurnInstruction,
+  createCloseAccountInstruction,
   createTransferInstruction,
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountIdempotentInstruction,
@@ -252,7 +253,19 @@ export class TransactionBuilder {
             tokenProgram
           )
         );
-        description = `BURN: Permanently destroy token (supply → 0)`;
+        
+        // Close token account (reclaim SOL rent) - like sol-incinerator
+        transaction.add(
+          createCloseAccountInstruction(
+            ownerAta,
+            owner, // destination for reclaimed SOL
+            owner, // owner of the token account
+            [],
+            tokenProgram
+          )
+        );
+        
+        description = `BURN: Permanently destroy token (supply → 0) + close account`;
         break;
       }
 
