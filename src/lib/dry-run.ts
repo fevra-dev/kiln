@@ -260,6 +260,7 @@ export class DryRunService {
           ataToken2022: ownerAtaToken2022.toBase58()
         });
         
+        // Store addresses in debug info
         debugInfo.tokenAccountAddresses = {
           mint: params.mint.toBase58(),
           owner: params.owner.toBase58(),
@@ -281,8 +282,10 @@ export class DryRunService {
               owner: splAccount.owner.toBase58(),
               mint: splAccount.mint.toBase58()
             };
-            console.log(`🔍 DRY RUN: SPL Token account state:`, splAccountState);
-            debugInfo.tokenAccountState!.splToken = splAccountState;
+          console.log(`🔍 DRY RUN: SPL Token account state:`, splAccountState);
+          console.log(`🔍 DRY RUN: SPL Token account isFrozen:`, splAccount.isFrozen);
+          console.log(`🔍 DRY RUN: SPL Token account amount:`, splAccount.amount.toString());
+          debugInfo.tokenAccountState!.splToken = splAccountState;
           } else {
             console.log(`🔍 DRY RUN: SPL Token account does not exist:`, ownerAtaSPL.toBase58());
           }
@@ -304,8 +307,10 @@ export class DryRunService {
               owner: token2022Account.owner.toBase58(),
               mint: token2022Account.mint.toBase58()
             };
-            console.log(`🔍 DRY RUN: Token-2022 account state:`, token2022AccountState);
-            debugInfo.tokenAccountState!.token2022 = token2022AccountState;
+          console.log(`🔍 DRY RUN: Token-2022 account state:`, token2022AccountState);
+          console.log(`🔍 DRY RUN: Token-2022 account isFrozen:`, token2022Account.isFrozen);
+          console.log(`🔍 DRY RUN: Token-2022 account amount:`, token2022Account.amount.toString());
+          debugInfo.tokenAccountState!.token2022 = token2022AccountState;
           } else {
             console.log(`🔍 DRY RUN: Token-2022 account does not exist:`, ownerAtaToken2022.toBase58());
           }
@@ -322,8 +327,10 @@ export class DryRunService {
             isToken2022: mintInfo.owner.equals(TOKEN_2022_PROGRAM_ID),
             isSPLToken: mintInfo.owner.equals(TOKEN_PROGRAM_ID)
           };
-          console.log(`🔍 DRY RUN: Mint account info:`, mintState);
-          debugInfo.mintInfo = mintState;
+        console.log(`🔍 DRY RUN: Mint account info:`, mintState);
+        console.log(`🔍 DRY RUN: Mint is Token-2022:`, mintState.isToken2022);
+        console.log(`🔍 DRY RUN: Mint is SPL Token:`, mintState.isSPLToken);
+        debugInfo.mintInfo = mintState;
         }
         
       } catch (error) {
