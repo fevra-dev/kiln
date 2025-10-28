@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const validated = simulateRequestSchema.parse(body);
 
     // Get RPC URL - prioritize client-provided URL, then environment, then fallback
-    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
+    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://solana-rpc.publicnode.com';
     
     // Debug RPC URL selection
     console.log('🔍 API: RPC URL Debug:');
