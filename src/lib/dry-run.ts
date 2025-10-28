@@ -196,7 +196,34 @@ export class DryRunService {
       const retireTx = await this.builder.buildRetireTransaction(retireParams);
       console.log(`✅ DRY RUN: RETIRE transaction built successfully`);
       const retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
-      const retireSimulation = await this.simulateTransaction(retireTx.transaction);
+      let retireSimulation = await this.simulateTransaction(retireTx.transaction);
+      
+      // If simulation fails with "Account is frozen", try with alternative token program
+      if (!retireSimulation.success && 
+          retireSimulation.error && 
+          typeof retireSimulation.error === 'string' &&
+          retireSimulation.error.toLowerCase().includes('account is frozen')) {
+        
+        console.log(`🔄 DRY RUN: Account frozen detected, trying alternative token program...`);
+        
+        // Try building with forced TOKEN_PROGRAM_ID (SPL Token program)
+        const alternativeRetireTx = await this.builder.buildRetireTransaction({
+          ...retireParams,
+          forceTokenProgram: 'TOKEN_PROGRAM_ID' // Force SPL Token program
+        });
+        
+        const alternativeSimulation = await this.simulateTransaction(alternativeRetireTx.transaction);
+        
+        if (alternativeSimulation.success) {
+          console.log(`✅ DRY RUN: Alternative token program succeeded!`);
+          retireSimulation = alternativeSimulation;
+          // Update the transaction and decoded data
+          retireTx.transaction = alternativeRetireTx.transaction;
+          retireTx.description = alternativeRetireTx.description + ' (using SPL Token program fallback)';
+        } else {
+          console.log(`❌ DRY RUN: Alternative token program also failed`);
+        }
+      }
 
       steps.push({
         name: 'retire',

@@ -62,6 +62,7 @@ export interface RetireTransactionParams {
   method: TeleburnMethod;
   amount?: bigint; // Amount to retire (default: 1 for NFTs)
   rpcUrl?: string;
+  forceTokenProgram?: 'TOKEN_PROGRAM_ID' | 'TOKEN_2022_PROGRAM_ID'; // Force specific token program
 }
 
 /**
@@ -194,8 +195,17 @@ export class TransactionBuilder {
 
     // Get token program (support both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID)
     console.log(`🚀 Building RETIRE transaction for mint: ${mint.toBase58()}`);
-    const tokenProgram = await this.detectTokenProgram(mint);
-    console.log(`🎯 Selected token program: ${tokenProgram.toBase58()}`);
+    let tokenProgram: PublicKey;
+    
+    if (params.forceTokenProgram) {
+      // Use forced token program
+      tokenProgram = params.forceTokenProgram === 'TOKEN_PROGRAM_ID' ? TOKEN_PROGRAM_ID : TOKEN_2022_PROGRAM_ID;
+      console.log(`🔧 Forced token program: ${tokenProgram.toBase58()}`);
+    } else {
+      // Auto-detect token program
+      tokenProgram = await this.detectTokenProgram(mint);
+      console.log(`🎯 Auto-detected token program: ${tokenProgram.toBase58()}`);
+    }
 
     // Get owner's ATA
     const ownerAta = getAssociatedTokenAddressSync(
@@ -366,7 +376,7 @@ export class TransactionBuilder {
   }
 
   /**
-   * Detect which token program a mint uses
+   * Detect which token program a mint uses and check freeze state
    * 
    * @param mint - Mint address
    * @returns Token program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
@@ -385,11 +395,21 @@ export class TransactionBuilder {
 
       // Check if owner is TOKEN_2022_PROGRAM_ID
       if (accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
-        // For compatibility with tools like sol-incinerator, try SPL Token first
-        // Many pNFTs can be burned with SPL Token program even if they're Token-2022
-        console.log(`🎯 Detected Token-2022 mint ${mint.toBase58()}, using SPL Token program for compatibility`);
-        console.log(`🔧 This should resolve "Account is frozen" errors for burnable pNFTs`);
-        return TOKEN_PROGRAM_ID;
+        console.log(`🎯 Detected Token-2022 mint ${mint.toBase58()}`);
+        
+        // Try to get token supply to check if it's a pNFT
+        try {
+          const tokenSupply = await this.connection.getTokenSupply(mint);
+          console.log(`📊 Token supply: ${tokenSupply.value.uiAmount}`);
+          
+          // For Token-2022 mints, try TOKEN_2022_PROGRAM_ID first
+          // If that fails with "Account is frozen", we'll fall back to TOKEN_PROGRAM_ID
+          console.log(`🔧 Using TOKEN_2022_PROGRAM_ID for Token-2022 mint`);
+          return TOKEN_2022_PROGRAM_ID;
+        } catch (error) {
+          console.warn(`⚠️ Failed to get token supply for ${mint.toBase58()}, defaulting to TOKEN_PROGRAM_ID:`, error);
+          return TOKEN_PROGRAM_ID;
+        }
       }
 
       console.log(`✅ Using SPL Token program for standard mint: ${mint.toBase58()}`);
