@@ -219,7 +219,7 @@ export class DryRunService {
           const splAccountInfo = await this.connection.getAccountInfo(ownerAtaSPL);
           if (splAccountInfo) {
             const { unpackAccount } = await import('@solana/spl-token');
-            const splAccount = unpackAccount(ownerAtaSPL, splAccountInfo.data, TOKEN_PROGRAM_ID);
+            const splAccount = unpackAccount(ownerAtaSPL, splAccountInfo, TOKEN_PROGRAM_ID);
             console.log(`🔍 DRY RUN: SPL Token account state:`, {
               address: ownerAtaSPL.toBase58(),
               exists: true,
@@ -241,7 +241,7 @@ export class DryRunService {
           const token2022AccountInfo = await this.connection.getAccountInfo(ownerAtaToken2022);
           if (token2022AccountInfo) {
             const { unpackAccount } = await import('@solana/spl-token');
-            const token2022Account = unpackAccount(ownerAtaToken2022, token2022AccountInfo.data, TOKEN_2022_PROGRAM_ID);
+            const token2022Account = unpackAccount(ownerAtaToken2022, token2022AccountInfo, TOKEN_2022_PROGRAM_ID);
             console.log(`🔍 DRY RUN: Token-2022 account state:`, {
               address: ownerAtaToken2022.toBase58(),
               exists: true,
