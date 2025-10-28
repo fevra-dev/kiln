@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = simulateRequestSchema.parse(body);
 
-    // Get RPC URL - use Helius for mainnet
-    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
+    // Get RPC URL - use Allnodes for mainnet (same as client)
+    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://solana-rpc.publicnode.com';
 
     // Parse public keys
     const payer = new PublicKey(validated.payer);
