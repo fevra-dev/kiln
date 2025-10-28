@@ -383,8 +383,9 @@ export class DryRunService {
         
         // First, try alternative token program
         console.log(`🔄 DRY RUN: Trying alternative token program...`);
-        const alternativeTokenProgram = retireParams.tokenProgram.equals(TOKEN_PROGRAM_ID) ? 'TOKEN_2022_PROGRAM_ID' : 'TOKEN_PROGRAM_ID';
-        console.log(`🔄 DRY RUN: Current token program:`, retireParams.tokenProgram.toBase58());
+        // Since we're using SPL Token by default, try Token-2022 as alternative
+        const alternativeTokenProgram = 'TOKEN_2022_PROGRAM_ID';
+        console.log(`🔄 DRY RUN: Current token program: SPL Token (default)`);
         console.log(`🔄 DRY RUN: Trying alternative:`, alternativeTokenProgram);
         
         const alternativeRetireTx = await this.builder.buildRetireTransaction({
