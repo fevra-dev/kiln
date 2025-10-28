@@ -20,7 +20,6 @@ import {
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
   createBurnInstruction,
-  createCloseAccountInstruction,
   createTransferInstruction,
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountIdempotentInstruction,
