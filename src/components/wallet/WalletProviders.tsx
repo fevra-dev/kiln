@@ -34,7 +34,7 @@ export const WalletProviders: FC<WalletProvidersProps> = ({
   children, 
   network = WalletAdapterNetwork.Mainnet  // Mainnet for production
 }) => {
-  // Configure RPC endpoint
+  // Configure RPC endpoint with fallbacks
   const endpoint = useMemo(() => {
     // Use environment variable (Helius RPC for mainnet)
     if (process.env['NEXT_PUBLIC_SOLANA_RPC']) {
@@ -45,7 +45,8 @@ export const WalletProviders: FC<WalletProvidersProps> = ({
     if (network === WalletAdapterNetwork.Mainnet) {
       // Use a more reliable RPC endpoint that doesn't block requests
       console.warn('⚠️ Using public mainnet RPC. Set NEXT_PUBLIC_SOLANA_RPC for better performance.');
-      return 'https://solana-mainnet.rpc.extrnode.com'; // Extrnode public RPC
+      console.warn('📡 Using Allnodes public RPC: https://solana-rpc.publicnode.com');
+      return 'https://solana-rpc.publicnode.com'; // Allnodes public RPC (free, no auth required)
     }
     
     // For devnet
