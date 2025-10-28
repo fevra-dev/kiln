@@ -245,11 +245,19 @@ export class TransactionBuilder {
       case 'burn': {
         // CRITICAL: Thaw frozen account first (like sol-incinerator)
         // This resolves "Account is frozen" errors for pNFTs
+        
+        // First, we need to get the actual freeze authority from the mint
+        // For now, we'll try with the owner, but this might need to be the mint authority
+        console.log(`🔧 TRANSACTION BUILDER: Adding ThawAccount instruction...`);
+        console.log(`🔧 TRANSACTION BUILDER: Token account:`, ownerAta.toBase58());
+        console.log(`🔧 TRANSACTION BUILDER: Mint:`, mint.toBase58());
+        console.log(`🔧 TRANSACTION BUILDER: Freeze authority (owner):`, owner.toBase58());
+        
         transaction.add(
           createThawAccountInstruction(
             ownerAta,           // token account to thaw
             mint,              // mint
-            owner,             // freeze authority (typically the owner)
+            owner,             // freeze authority (might need to be mint authority)
             [],                // additional signers
             tokenProgram       // SPL Token program
           )
