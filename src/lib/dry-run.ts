@@ -192,7 +192,9 @@ export class DryRunService {
         rpcUrl: params.rpcUrl,
       };
 
+      console.log(`🔄 DRY RUN: Building RETIRE transaction...`);
       const retireTx = await this.builder.buildRetireTransaction(retireParams);
+      console.log(`✅ DRY RUN: RETIRE transaction built successfully`);
       const retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
       const retireSimulation = await this.simulateTransaction(retireTx.transaction);
 
