@@ -54,6 +54,7 @@ export interface DryRunReport {
   warnings: string[];
   errors: string[];
   success: boolean;
+  debug?: any; // Debug information for troubleshooting
 }
 
 /**
@@ -199,6 +200,12 @@ export class DryRunService {
       
       // CRITICAL DEBUG: Check actual token account state before simulation
       console.log(`🔍 DRY RUN: Checking token account state before simulation...`);
+      const debugInfo: any = {
+        tokenAccountState: {},
+        mintInfo: {},
+        rpcUrl: params.rpcUrl
+      };
+      
       try {
         const { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
         const { getAssociatedTokenAddressSync } = await import('@solana/spl-token');
@@ -214,20 +221,29 @@ export class DryRunService {
           ataToken2022: ownerAtaToken2022.toBase58()
         });
         
+        debugInfo.tokenAccountAddresses = {
+          mint: params.mint.toBase58(),
+          owner: params.owner.toBase58(),
+          ataSPL: ownerAtaSPL.toBase58(),
+          ataToken2022: ownerAtaToken2022.toBase58()
+        };
+        
         // Check SPL Token account state
         try {
           const splAccountInfo = await this.connection.getAccountInfo(ownerAtaSPL);
           if (splAccountInfo) {
             const { unpackAccount } = await import('@solana/spl-token');
             const splAccount = unpackAccount(ownerAtaSPL, splAccountInfo, TOKEN_PROGRAM_ID);
-            console.log(`🔍 DRY RUN: SPL Token account state:`, {
+            const splAccountState = {
               address: ownerAtaSPL.toBase58(),
               exists: true,
               amount: splAccount.amount.toString(),
               isFrozen: splAccount.isFrozen,
               owner: splAccount.owner.toBase58(),
               mint: splAccount.mint.toBase58()
-            });
+            };
+            console.log(`🔍 DRY RUN: SPL Token account state:`, splAccountState);
+            debugInfo.tokenAccountState.splToken = splAccountState;
           } else {
             console.log(`🔍 DRY RUN: SPL Token account does not exist:`, ownerAtaSPL.toBase58());
           }
@@ -241,14 +257,16 @@ export class DryRunService {
           if (token2022AccountInfo) {
             const { unpackAccount } = await import('@solana/spl-token');
             const token2022Account = unpackAccount(ownerAtaToken2022, token2022AccountInfo, TOKEN_2022_PROGRAM_ID);
-            console.log(`🔍 DRY RUN: Token-2022 account state:`, {
+            const token2022AccountState = {
               address: ownerAtaToken2022.toBase58(),
               exists: true,
               amount: token2022Account.amount.toString(),
               isFrozen: token2022Account.isFrozen,
               owner: token2022Account.owner.toBase58(),
               mint: token2022Account.mint.toBase58()
-            });
+            };
+            console.log(`🔍 DRY RUN: Token-2022 account state:`, token2022AccountState);
+            debugInfo.tokenAccountState.token2022 = token2022AccountState;
           } else {
             console.log(`🔍 DRY RUN: Token-2022 account does not exist:`, ownerAtaToken2022.toBase58());
           }
@@ -259,12 +277,14 @@ export class DryRunService {
         // Check mint account to see which program owns it
         const mintInfo = await this.connection.getAccountInfo(params.mint);
         if (mintInfo) {
-          console.log(`🔍 DRY RUN: Mint account info:`, {
+          const mintState = {
             mint: params.mint.toBase58(),
             owner: mintInfo.owner.toBase58(),
             isToken2022: mintInfo.owner.equals(TOKEN_2022_PROGRAM_ID),
             isSPLToken: mintInfo.owner.equals(TOKEN_PROGRAM_ID)
-          });
+          };
+          console.log(`🔍 DRY RUN: Mint account info:`, mintState);
+          debugInfo.mintInfo = mintState;
         }
         
       } catch (error) {
@@ -334,8 +354,12 @@ export class DryRunService {
               console.log(`✅ DRY RUN: Fallback RPC succeeded! RPC state inconsistency confirmed.`);
               retireSimulation = fallbackSimulation;
               retireTx.description = retireTx.description + ' (using fallback RPC)';
+              debugInfo.fallbackSuccess = true;
+              debugInfo.fallbackRpcUrl = fallbackRpcUrl;
             } else {
               console.log(`❌ DRY RUN: Fallback RPC also failed`);
+              debugInfo.fallbackSuccess = false;
+              debugInfo.fallbackRpcUrl = fallbackRpcUrl;
             }
           } else {
             console.log(`🔄 DRY RUN: Already using fallback RPC, no other RPC to try`);
@@ -414,6 +438,7 @@ export class DryRunService {
       warnings: [...new Set(warnings)], // Deduplicate
       errors: [...new Set(errors)],     // Deduplicate
       success,
+      debug: debugInfo, // Add debug information
     };
   }
 
