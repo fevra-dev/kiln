@@ -148,6 +148,16 @@ export class DryRunService {
     const errors: string[] = [];
     let totalEstimatedFee = 0;
     let totalComputeUnits = 0;
+    
+    // Initialize debug info for troubleshooting
+    const debugInfo: DryRunReport['debug'] = {
+      rpcUrl: params.rpcUrl,
+      tokenAccountState: {},
+      tokenAccountAddresses: undefined,
+      mintInfo: undefined,
+      fallbackSuccess: undefined,
+      fallbackRpcUrl: undefined
+    };
 
     try {
       // Step 1: Build SEAL transaction
@@ -234,14 +244,6 @@ export class DryRunService {
       
       // CRITICAL DEBUG: Check actual token account state before simulation
       console.log(`🔍 DRY RUN: Checking token account state before simulation...`);
-      const debugInfo: DryRunReport['debug'] = {
-        rpcUrl: params.rpcUrl,
-        tokenAccountState: {},
-        tokenAccountAddresses: undefined,
-        mintInfo: undefined,
-        fallbackSuccess: undefined,
-        fallbackRpcUrl: undefined
-      };
       
       try {
         const { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
