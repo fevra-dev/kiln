@@ -61,6 +61,12 @@ export async function POST(request: NextRequest) {
 
     // Get RPC URL - use Allnodes for mainnet (same as client)
     const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://solana-rpc.publicnode.com';
+    
+    // Debug RPC URL selection
+    console.log('🔍 API: RPC URL Debug:');
+    console.log('  - Client provided rpcUrl:', validated.rpcUrl);
+    console.log('  - Environment NEXT_PUBLIC_SOLANA_RPC:', process.env['NEXT_PUBLIC_SOLANA_RPC']);
+    console.log('  - Final selected rpcUrl:', rpcUrl);
 
     // Parse public keys
     const payer = new PublicKey(validated.payer);
