@@ -218,7 +218,7 @@ export class TransactionDecoder {
         try {
           const json = JSON.parse(memoText);
           if (json.standard === 'KILN' && json.action) {
-            instructionName = `KILN.1 ${json.action.toUpperCase()} Memo`;
+            instructionName = `KILN ${json.action.toUpperCase()} Memo`;
             decodedData = { sbt01: json };
           }
         } catch {
