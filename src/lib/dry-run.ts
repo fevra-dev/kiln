@@ -224,8 +224,7 @@ export class DryRunService {
               address: ownerAtaSPL.toBase58(),
               exists: true,
               amount: splAccount.amount.toString(),
-              isFrozen: splAccount.state === 2, // 2 = frozen state
-              state: splAccount.state,
+              isFrozen: splAccount.isFrozen,
               owner: splAccount.owner.toBase58(),
               mint: splAccount.mint.toBase58()
             });
@@ -246,8 +245,7 @@ export class DryRunService {
               address: ownerAtaToken2022.toBase58(),
               exists: true,
               amount: token2022Account.amount.toString(),
-              isFrozen: token2022Account.state === 2, // 2 = frozen state
-              state: token2022Account.state,
+              isFrozen: token2022Account.isFrozen,
               owner: token2022Account.owner.toBase58(),
               mint: token2022Account.mint.toBase58()
             });
