@@ -201,7 +201,8 @@ export class DryRunService {
       console.log(`🔍 DRY RUN: Initial simulation result:`, {
         success: retireSimulation.success,
         error: retireSimulation.error,
-        errorType: typeof retireSimulation.error
+        errorType: typeof retireSimulation.error,
+        logs: retireSimulation.logs
       });
       
       // If simulation fails with "Account is frozen", try with alternative token program
@@ -211,6 +212,13 @@ export class DryRunService {
                             errorStr.includes('Custom:17') ||
                             errorStr.includes('0x11') ||
                             logsStr.toLowerCase().includes('account is frozen');
+      
+      console.log(`🔍 DRY RUN: Frozen error detection:`, {
+        errorStr,
+        logsStr,
+        hasFrozenError,
+        willTryFallback: !retireSimulation.success && hasFrozenError
+      });
       
       if (!retireSimulation.success && hasFrozenError) {
         
