@@ -331,6 +331,22 @@ export class DryRunService {
         console.log(`🔍 DRY RUN: Mint is Token-2022:`, mintState.isToken2022);
         console.log(`🔍 DRY RUN: Mint is SPL Token:`, mintState.isSPLToken);
         debugInfo.mintInfo = mintState;
+        
+        // CRITICAL: Check which token account actually exists and has tokens
+        console.log(`🔍 DRY RUN: === TOKEN ACCOUNT ANALYSIS ===`);
+        if (debugInfo.tokenAccountState?.splToken?.exists && debugInfo.tokenAccountState?.splToken?.amount !== '0') {
+          console.log(`✅ DRY RUN: SPL Token account exists with tokens:`, debugInfo.tokenAccountState.splToken.amount);
+          console.log(`🔍 DRY RUN: SPL Token account frozen:`, debugInfo.tokenAccountState.splToken.isFrozen);
+        } else {
+          console.log(`❌ DRY RUN: SPL Token account does not exist or has no tokens`);
+        }
+        
+        if (debugInfo.tokenAccountState?.token2022?.exists && debugInfo.tokenAccountState?.token2022?.amount !== '0') {
+          console.log(`✅ DRY RUN: Token-2022 account exists with tokens:`, debugInfo.tokenAccountState.token2022.amount);
+          console.log(`🔍 DRY RUN: Token-2022 account frozen:`, debugInfo.tokenAccountState.token2022.isFrozen);
+        } else {
+          console.log(`❌ DRY RUN: Token-2022 account does not exist or has no tokens`);
+        }
         }
         
       } catch (error) {
@@ -367,9 +383,13 @@ export class DryRunService {
         
         // First, try alternative token program
         console.log(`🔄 DRY RUN: Trying alternative token program...`);
+        const alternativeTokenProgram = retireParams.tokenProgram.equals(TOKEN_PROGRAM_ID) ? 'TOKEN_2022_PROGRAM_ID' : 'TOKEN_PROGRAM_ID';
+        console.log(`🔄 DRY RUN: Current token program:`, retireParams.tokenProgram.toBase58());
+        console.log(`🔄 DRY RUN: Trying alternative:`, alternativeTokenProgram);
+        
         const alternativeRetireTx = await this.builder.buildRetireTransaction({
           ...retireParams,
-          forceTokenProgram: 'TOKEN_2022_PROGRAM_ID' // Force Token-2022 program
+          forceTokenProgram: alternativeTokenProgram
         });
         
         const alternativeSimulation = await this.simulateTransaction(alternativeRetireTx.transaction);
