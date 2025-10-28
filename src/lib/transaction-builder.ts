@@ -21,6 +21,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
   createBurnInstruction,
   createCloseAccountInstruction,
+  createThawAccountInstruction,
   createTransferInstruction,
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountIdempotentInstruction,
@@ -242,6 +243,18 @@ export class TransactionBuilder {
 
     switch (method) {
       case 'burn': {
+        // CRITICAL: Thaw frozen account first (like sol-incinerator)
+        // This resolves "Account is frozen" errors for pNFTs
+        transaction.add(
+          createThawAccountInstruction(
+            ownerAta,           // token account to thaw
+            mint,              // mint
+            owner,             // freeze authority (typically the owner)
+            [],                // additional signers
+            tokenProgram       // SPL Token program
+          )
+        );
+        
         // Burn instruction (reduces supply)
         transaction.add(
           createBurnInstruction(
@@ -265,7 +278,7 @@ export class TransactionBuilder {
           )
         );
         
-        description = `BURN: Permanently destroy token (supply → 0) + close account`;
+        description = `THAW + BURN: Unfreeze account, burn token (supply → 0) + close account`;
         break;
       }
 
