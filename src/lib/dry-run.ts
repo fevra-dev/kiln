@@ -17,6 +17,7 @@ import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import { TransactionBuilder, TeleburnMethod, type SealTransactionParams, type RetireTransactionParams, type UpdateUriParams } from './transaction-builder';
 import { TransactionDecoder, type DecodedTransaction } from './transaction-decoder';
 import { isPNFT } from './metaplex-burn';
+import { isPNFTViaSolIncinerator, checkAssetBurnability, checkSolIncineratorStatus } from './sol-incinerator';
 
 /**
  * Simulation result for a single transaction
@@ -240,34 +241,109 @@ export class DryRunService {
 
       console.log(`🔄 DRY RUN: Building RETIRE transaction...`);
       
-      // Check if this is a pNFT first
+      // Check if this is a pNFT first using multiple methods
       console.log(`🔍 DRY RUN: Checking if mint is a pNFT...`);
+      
+      // Method 1: Basic Token-2022 detection
       const isPNFTMint = await isPNFT(params.mint, this.connection);
-      console.log(`🔍 DRY RUN: Is pNFT: ${isPNFTMint}`);
+      console.log(`🔍 DRY RUN: Basic pNFT detection: ${isPNFTMint}`);
+      
+      // Method 2: Sol-Incinerator detection (more accurate)
+      let isPNFTViaAPI = false;
+      let solIncineratorAvailable = false;
+      
+      try {
+        solIncineratorAvailable = await checkSolIncineratorStatus();
+        console.log(`🔍 DRY RUN: Sol-Incinerator API available: ${solIncineratorAvailable}`);
+        
+        if (solIncineratorAvailable) {
+          isPNFTViaAPI = await isPNFTViaSolIncinerator(
+            params.mint.toBase58(),
+            params.owner.toBase58()
+          );
+          console.log(`🔍 DRY RUN: Sol-Incinerator pNFT detection: ${isPNFTViaAPI}`);
+        }
+      } catch (error) {
+        console.log(`🔍 DRY RUN: Sol-Incinerator detection failed:`, error);
+      }
+      
+      // Use the more accurate detection if available
+      const finalPNFTDetection = solIncineratorAvailable ? isPNFTViaAPI : isPNFTMint;
+      console.log(`🔍 DRY RUN: Final pNFT detection: ${finalPNFTDetection}`);
       
       let retireTx: { transaction: Transaction; description: string; estimatedFee: number };
       let retireSimulation: SimulationResult;
       
-      if (isPNFTMint) {
-        console.log(`🔥 DRY RUN: Detected pNFT - using Metaplex burn simulation`);
-        console.log(`⚠️ DRY RUN: Cannot simulate Metaplex burn in dry run mode`);
-        console.log(`💡 DRY RUN: pNFTs require actual Metaplex burn execution`);
+      if (finalPNFTDetection) {
+        console.log(`🔥 DRY RUN: Detected pNFT - checking Sol-Incinerator compatibility`);
         
-        // For pNFTs, we can't simulate the Metaplex burn in dry run
-        // We'll create a mock result indicating pNFT detection
-        retireSimulation = {
-          success: false,
-          error: 'pNFT detected - Metaplex burn required (cannot simulate)',
-          logs: ['pNFT detected', 'Metaplex burn required', 'Cannot simulate in dry run mode']
-        };
-        
-        // Create a mock transaction for display purposes
-        const mockTransaction = new Transaction();
-        retireTx = {
-          transaction: mockTransaction,
-          description: 'METAPLEX BURN: pNFT burn via Metaplex Token Metadata program',
-          estimatedFee: 5000 // Estimated fee for Metaplex burn
-        };
+        if (solIncineratorAvailable) {
+          console.log(`✅ DRY RUN: Sol-Incinerator available - can handle pNFT burning`);
+          
+          // Try to get preview from Sol-Incinerator
+          try {
+            const preview = await checkAssetBurnability(
+              params.mint.toBase58(),
+              params.owner.toBase58()
+            );
+            
+            if (preview) {
+              console.log(`✅ DRY RUN: Sol-Incinerator preview successful:`, preview);
+              
+              // Create a mock transaction for display purposes
+              const mockTransaction = new Transaction();
+              retireTx = {
+                transaction: mockTransaction,
+                description: `SOL-INCINERATOR BURN: ${preview.transactionType} (${preview.solanaReclaimed} SOL reclaimed)`,
+                estimatedFee: 5000 // Estimated fee
+              };
+              
+              retireSimulation = {
+                success: true,
+                logs: [
+                  `Sol-Incinerator compatible: ${preview.transactionType}`,
+                  `SOL to reclaim: ${preview.solanaReclaimed}`,
+                  `Asset type: ${preview.assetInfo.isProgrammableNFT ? 'Programmable NFT' : 'Standard NFT'}`,
+                  `Frozen status: ${preview.assetInfo.frozen ? 'Frozen' : 'Not frozen'}`
+                ]
+              };
+            } else {
+              throw new Error('Sol-Incinerator preview failed');
+            }
+          } catch (error) {
+            console.log(`❌ DRY RUN: Sol-Incinerator preview failed:`, error);
+            
+            // Fallback to error state
+            retireSimulation = {
+              success: false,
+              error: 'pNFT detected - Sol-Incinerator preview failed',
+              logs: ['pNFT detected', 'Sol-Incinerator preview failed', 'Cannot determine burn compatibility']
+            };
+            
+            const mockTransaction = new Transaction();
+            retireTx = {
+              transaction: mockTransaction,
+              description: 'SOL-INCINERATOR BURN: pNFT burn (preview failed)',
+              estimatedFee: 5000
+            };
+          }
+        } else {
+          console.log(`⚠️ DRY RUN: Sol-Incinerator not available - cannot handle pNFT`);
+          
+          // Sol-Incinerator not available
+          retireSimulation = {
+            success: false,
+            error: 'pNFT detected - Sol-Incinerator API not available',
+            logs: ['pNFT detected', 'Sol-Incinerator API not available', 'Cannot burn pNFT without Sol-Incinerator']
+          };
+          
+          const mockTransaction = new Transaction();
+          retireTx = {
+            transaction: mockTransaction,
+            description: 'SOL-INCINERATOR BURN: pNFT burn (API unavailable)',
+            estimatedFee: 5000
+          };
+        }
       } else {
         // Regular NFT - use SPL Token burn
         retireTx = await this.builder.buildRetireTransaction(retireParams);
@@ -276,8 +352,8 @@ export class DryRunService {
       
       const retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
       
-      // Only simulate if it's not a pNFT (pNFTs can't be simulated)
-      if (!isPNFTMint) {
+      // Only simulate if it's not a pNFT (pNFTs use Sol-Incinerator preview instead)
+      if (!finalPNFTDetection) {
         // CRITICAL DEBUG: Check actual token account state before simulation
         console.log(`🔍 DRY RUN: Checking token account state before simulation...`);
       
@@ -516,7 +592,7 @@ export class DryRunService {
       }
 
         warnings.push(...retireDecoded.warnings);
-      } // End of !isPNFTMint check
+      } // End of !finalPNFTDetection check
 
       // Additional validation checks
       await this.validateDryRun(params, warnings, errors);
