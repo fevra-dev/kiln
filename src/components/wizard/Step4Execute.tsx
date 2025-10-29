@@ -16,6 +16,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, Transaction } from '@solana/web3.js';
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { MemoDisplay } from '../teleburn/MemoDisplay';
+import { isPNFTViaSolIncinerator } from '@/lib/sol-incinerator';
 
 interface Step4ExecuteProps {
   formData: TeleburnFormData;
@@ -104,23 +105,58 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       // Step 2: Build and sign RETIRE transaction
       updateTxStatus(1, { status: 'signing' });
       
-      const retireResponse = await fetch('/api/tx/retire', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payer: publicKey.toBase58(),
-          owner: publicKey.toBase58(),
-          mint: formData.mint,
-          inscriptionId: formData.inscriptionId,
-          sha256: formData.sha256,
-          method: formData.method,
-        }),
-      });
-
-      if (!retireResponse.ok) throw new Error('Failed to build retire transaction');
+      // Check if this is a pNFT that needs Sol-Incinerator
+      console.log(`🔍 EXECUTION: Checking if ${formData.mint} is a pNFT...`);
+      const isPNFT = await isPNFTViaSolIncinerator(formData.mint, publicKey.toBase58());
+      console.log(`🔍 EXECUTION: pNFT detection result: ${isPNFT}`);
       
-      const retireData = await retireResponse.json();
-      const retireTx = Transaction.from(Buffer.from(retireData.transaction, 'base64'));
+      let retireData;
+      let retireTx;
+      
+      if (isPNFT) {
+        console.log(`🔥 EXECUTION: Using Sol-Incinerator for pNFT burn`);
+        
+        const solIncineratorResponse = await fetch('/api/tx/sol-incinerator-burn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assetId: formData.mint,
+            userPublicKey: publicKey.toBase58(),
+            autoCloseTokenAccounts: true
+          }),
+        });
+
+        if (!solIncineratorResponse.ok) {
+          const errorData = await solIncineratorResponse.json();
+          throw new Error(`Sol-Incinerator burn failed: ${errorData.error || 'Unknown error'}`);
+        }
+        
+        retireData = await solIncineratorResponse.json();
+        console.log(`✅ EXECUTION: Sol-Incinerator transaction created: ${retireData.transactionType}`);
+        
+        // Sol-Incinerator returns a serialized transaction string
+        retireTx = Transaction.from(Buffer.from(retireData.transaction, 'base64'));
+      } else {
+        console.log(`🔥 EXECUTION: Using regular SPL Token burn`);
+        
+        const retireResponse = await fetch('/api/tx/retire', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payer: publicKey.toBase58(),
+            owner: publicKey.toBase58(),
+            mint: formData.mint,
+            inscriptionId: formData.inscriptionId,
+            sha256: formData.sha256,
+            method: formData.method,
+          }),
+        });
+
+        if (!retireResponse.ok) throw new Error('Failed to build retire transaction');
+        
+        retireData = await retireResponse.json();
+        retireTx = Transaction.from(Buffer.from(retireData.transaction, 'base64'));
+      }
       
       const signedRetireTx = await signTransaction(retireTx);
       
