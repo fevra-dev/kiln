@@ -13,42 +13,8 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { WalletAdapter } from '@solana/wallet-adapter-base';
 
-// Dynamic imports for Metaplex to avoid build issues
-let createUmi: any;
-let publicKey: any;
-let unwrapOption: any;
-let base58: any;
-let burnV1: any;
-let fetchDigitalAssetWithAssociatedToken: any;
-let findMetadataPda: any;
-let TokenStandard: any;
-let walletAdapterIdentity: any;
-
-// Initialize Metaplex imports dynamically
-async function initMetaplex() {
-  if (!createUmi) {
-    try {
-      const umiBundle = await import('@metaplex-foundation/umi-bundle-defaults');
-      const tokenMetadata = await import('@metaplex-foundation/mpl-token-metadata');
-      const walletAdapter = await import('@metaplex-foundation/umi-signer-wallet-adapters');
-      
-      createUmi = umiBundle.createUmi;
-      publicKey = umiBundle.publicKey;
-      unwrapOption = umiBundle.unwrapOption;
-      base58 = umiBundle.base58;
-      
-      burnV1 = tokenMetadata.burnV1;
-      fetchDigitalAssetWithAssociatedToken = tokenMetadata.fetchDigitalAssetWithAssociatedToken;
-      findMetadataPda = tokenMetadata.findMetadataPda;
-      TokenStandard = tokenMetadata.TokenStandard;
-      
-      walletAdapterIdentity = walletAdapter.walletAdapterIdentity;
-    } catch (error) {
-      console.error('Failed to load Metaplex dependencies:', error);
-      throw new Error('Metaplex dependencies not available');
-    }
-  }
-}
+// Metaplex functionality is optional and only available in browser environment
+// This prevents build-time dependency resolution issues
 
 export interface MetaplexBurnParams {
   mint: PublicKey;
@@ -75,8 +41,20 @@ export async function burnPNFTWithMetaplex(
   try {
     console.log(`🔥 METAPLEX BURN: Starting pNFT burn for mint: ${params.mint.toBase58()}`);
     
-    // Initialize Metaplex dependencies
-    await initMetaplex();
+    // Check if we're in browser environment
+    if (typeof window === 'undefined') {
+      throw new Error('Metaplex burn only available in browser environment');
+    }
+    
+    // Dynamic import of Metaplex dependencies
+    const umiBundle = await import('@metaplex-foundation/umi-bundle-defaults');
+    const tokenMetadata = await import('@metaplex-foundation/mpl-token-metadata');
+    const walletAdapter = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+    
+    // Destructure the imports
+    const { createUmi, publicKey, unwrapOption, base58 } = umiBundle;
+    const { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, TokenStandard } = tokenMetadata;
+    const { walletAdapterIdentity } = walletAdapter;
     
     // Create Umi instance with wallet adapter
     const umi = createUmi(params.connection.rpcEndpoint)
@@ -168,8 +146,18 @@ export async function isPNFT(
   connection: Connection
 ): Promise<boolean> {
   try {
-    // Initialize Metaplex dependencies
-    await initMetaplex();
+    // Check if we're in browser environment
+    if (typeof window === 'undefined') {
+      return false; // Can't check pNFT status on server side
+    }
+    
+    // Dynamic import of Metaplex dependencies
+    const umiBundle = await import('@metaplex-foundation/umi-bundle-defaults');
+    const tokenMetadata = await import('@metaplex-foundation/mpl-token-metadata');
+    
+    // Destructure the imports
+    const { createUmi, publicKey } = umiBundle;
+    const { fetchDigitalAssetWithAssociatedToken, TokenStandard } = tokenMetadata;
     
     const umi = createUmi(connection.rpcEndpoint);
     const mintId = publicKey(mint.toBase58());

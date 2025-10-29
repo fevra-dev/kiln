@@ -26,7 +26,7 @@ import {
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountIdempotentInstruction,
 } from '@solana/spl-token';
-import { burnPNFTWithMetaplex, isPNFT } from './metaplex-burn';
+import { isPNFT } from './metaplex-burn';
 import { deriveTeleburnAddress } from './teleburn';
 import type { Sbt01Seal, Sbt01Retire } from './types';
 

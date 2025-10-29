@@ -16,7 +16,7 @@
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import { TransactionBuilder, TeleburnMethod, type SealTransactionParams, type RetireTransactionParams, type UpdateUriParams } from './transaction-builder';
 import { TransactionDecoder, type DecodedTransaction } from './transaction-decoder';
-import { burnPNFTWithMetaplex, isPNFT } from './metaplex-burn';
+import { isPNFT } from './metaplex-burn';
 
 /**
  * Simulation result for a single transaction
@@ -245,7 +245,7 @@ export class DryRunService {
       const isPNFTMint = await isPNFT(params.mint, this.connection);
       console.log(`🔍 DRY RUN: Is pNFT: ${isPNFTMint}`);
       
-      let retireTx: any;
+      let retireTx: { transaction: Transaction; description: string; estimatedFee: number };
       let retireSimulation: SimulationResult;
       
       if (isPNFTMint) {
@@ -273,6 +273,7 @@ export class DryRunService {
         retireTx = await this.builder.buildRetireTransaction(retireParams);
         console.log(`✅ DRY RUN: RETIRE transaction built successfully`);
       }
+      
       const retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
       
       // Only simulate if it's not a pNFT (pNFTs can't be simulated)
@@ -280,7 +281,7 @@ export class DryRunService {
         // CRITICAL DEBUG: Check actual token account state before simulation
         console.log(`🔍 DRY RUN: Checking token account state before simulation...`);
       
-      try {
+        try {
         const { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
         const { getAssociatedTokenAddressSync } = await import('@solana/spl-token');
         
@@ -384,11 +385,11 @@ export class DryRunService {
         }
         }
         
-      } catch (error) {
-        console.log(`🔍 DRY RUN: Error checking token account state:`, error);
-      }
-      
-        let retireSimulation = await this.simulateTransaction(retireTx.transaction);
+        } catch (error) {
+          console.log(`🔍 DRY RUN: Error checking token account state:`, error);
+        }
+        
+        retireSimulation = await this.simulateTransaction(retireTx.transaction);
       
       console.log(`🔍 DRY RUN: Initial simulation result:`, {
         success: retireSimulation.success,
@@ -514,7 +515,7 @@ export class DryRunService {
         }
       }
 
-      warnings.push(...retireDecoded.warnings);
+        warnings.push(...retireDecoded.warnings);
       } // End of !isPNFTMint check
 
       // Additional validation checks
