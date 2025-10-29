@@ -92,7 +92,11 @@ export async function POST(request: NextRequest) {
     // Execute dry run
     console.log('🔄 API: Starting dry run execution...');
     console.log('📋 API: Mint:', mint.toBase58());
+    console.log('📋 API: Owner:', owner.toBase58());
+    console.log('📋 API: Payer:', payer.toBase58());
     console.log('📋 API: Inscription ID:', validated.inscriptionId);
+    console.log('📋 API: Method:', validated.method);
+    console.log('📋 API: RPC URL:', rpcUrl);
     
     const report = await dryRun.executeDryRun({
       payer,
@@ -111,7 +115,11 @@ export async function POST(request: NextRequest) {
     const receipt = DryRunService.generateRehearsalReceipt(report);
 
     console.log('✅ API: Dry run completed successfully');
-    console.log('📊 API: Report success:', report.success);
+    console.log('📊 API: Report summary:');
+    console.log('  - Success:', report.success);
+    console.log('  - Errors count:', report.errors.length);
+    console.log('  - Steps count:', report.steps.length);
+    console.log('  - Warnings count:', report.warnings.length);
     console.log('📊 API: Report errors:', report.errors);
 
     // Return dry run report with CORS headers

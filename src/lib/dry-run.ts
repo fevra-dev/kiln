@@ -243,6 +243,8 @@ export class DryRunService {
       
       // Check if this is a pNFT first using multiple methods
       console.log(`🔍 DRY RUN: Checking if mint is a pNFT...`);
+      console.log(`🔍 DRY RUN: Mint address: ${params.mint.toBase58()}`);
+      console.log(`🔍 DRY RUN: Owner address: ${params.owner.toBase58()}`);
       
       // Method 1: Basic Token-2022 detection
       const isPNFTMint = await isPNFT(params.mint, this.connection);
@@ -253,23 +255,29 @@ export class DryRunService {
       let solIncineratorAvailable = false;
       
       try {
+        console.log(`🔍 DRY RUN: Checking Sol-Incinerator API status...`);
         solIncineratorAvailable = await checkSolIncineratorStatus();
         console.log(`🔍 DRY RUN: Sol-Incinerator API available: ${solIncineratorAvailable}`);
         
         if (solIncineratorAvailable) {
+          console.log(`🔍 DRY RUN: Attempting Sol-Incinerator pNFT detection...`);
           isPNFTViaAPI = await isPNFTViaSolIncinerator(
             params.mint.toBase58(),
             params.owner.toBase58()
           );
-          console.log(`🔍 DRY RUN: Sol-Incinerator pNFT detection: ${isPNFTViaAPI}`);
+          console.log(`🔍 DRY RUN: Sol-Incinerator pNFT detection result: ${isPNFTViaAPI}`);
+        } else {
+          console.log(`🔍 DRY RUN: Sol-Incinerator API not available, skipping API detection`);
         }
       } catch (error) {
         console.log(`🔍 DRY RUN: Sol-Incinerator detection failed:`, error);
+        console.log(`🔍 DRY RUN: Error details:`, error instanceof Error ? error.message : String(error));
       }
       
       // Use the more accurate detection if available
       const finalPNFTDetection = solIncineratorAvailable ? isPNFTViaAPI : isPNFTMint;
       console.log(`🔍 DRY RUN: Final pNFT detection: ${finalPNFTDetection}`);
+      console.log(`🔍 DRY RUN: Will use ${finalPNFTDetection ? 'pNFT handling' : 'regular NFT handling'}`);
       
       let retireTx: { transaction: Transaction; description: string; estimatedFee: number };
       let retireSimulation: SimulationResult;
