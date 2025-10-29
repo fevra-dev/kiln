@@ -78,10 +78,8 @@ export async function isPNFT(
   owner?: PublicKey
 ): Promise<boolean> {
   try {
-    // Check if we're in browser environment
-    if (typeof window === 'undefined') {
-      return false; // Can't check pNFT status on server side
-    }
+    // Note: This function now works on both server and client side
+    console.log(`🔍 PNFT CHECK: Starting pNFT detection (server-side: ${typeof window === 'undefined'})`);
     
     console.log(`🔍 PNFT CHECK: Starting comprehensive pNFT detection for mint: ${mint.toBase58()}`);
     
