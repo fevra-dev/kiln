@@ -10,21 +10,45 @@
  * 5. Reclaiming SOL rent
  */
 
-import {
-  createUmi,
-  publicKey,
-  unwrapOption,
-  base58,
-} from '@metaplex-foundation/umi-bundle-defaults';
-import {
-  burnV1,
-  fetchDigitalAssetWithAssociatedToken,
-  findMetadataPda,
-  TokenStandard,
-} from '@metaplex-foundation/mpl-token-metadata';
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { WalletAdapter } from '@solana/wallet-adapter-base';
+
+// Dynamic imports for Metaplex to avoid build issues
+let createUmi: any;
+let publicKey: any;
+let unwrapOption: any;
+let base58: any;
+let burnV1: any;
+let fetchDigitalAssetWithAssociatedToken: any;
+let findMetadataPda: any;
+let TokenStandard: any;
+let walletAdapterIdentity: any;
+
+// Initialize Metaplex imports dynamically
+async function initMetaplex() {
+  if (!createUmi) {
+    try {
+      const umiBundle = await import('@metaplex-foundation/umi-bundle-defaults');
+      const tokenMetadata = await import('@metaplex-foundation/mpl-token-metadata');
+      const walletAdapter = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+      
+      createUmi = umiBundle.createUmi;
+      publicKey = umiBundle.publicKey;
+      unwrapOption = umiBundle.unwrapOption;
+      base58 = umiBundle.base58;
+      
+      burnV1 = tokenMetadata.burnV1;
+      fetchDigitalAssetWithAssociatedToken = tokenMetadata.fetchDigitalAssetWithAssociatedToken;
+      findMetadataPda = tokenMetadata.findMetadataPda;
+      TokenStandard = tokenMetadata.TokenStandard;
+      
+      walletAdapterIdentity = walletAdapter.walletAdapterIdentity;
+    } catch (error) {
+      console.error('Failed to load Metaplex dependencies:', error);
+      throw new Error('Metaplex dependencies not available');
+    }
+  }
+}
 
 export interface MetaplexBurnParams {
   mint: PublicKey;
@@ -50,6 +74,9 @@ export async function burnPNFTWithMetaplex(
 ): Promise<MetaplexBurnResult> {
   try {
     console.log(`🔥 METAPLEX BURN: Starting pNFT burn for mint: ${params.mint.toBase58()}`);
+    
+    // Initialize Metaplex dependencies
+    await initMetaplex();
     
     // Create Umi instance with wallet adapter
     const umi = createUmi(params.connection.rpcEndpoint)
@@ -141,6 +168,9 @@ export async function isPNFT(
   connection: Connection
 ): Promise<boolean> {
   try {
+    // Initialize Metaplex dependencies
+    await initMetaplex();
+    
     const umi = createUmi(connection.rpcEndpoint);
     const mintId = publicKey(mint.toBase58());
     
