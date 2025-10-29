@@ -61,6 +61,7 @@ export interface SolIncineratorPreviewResponse {
 }
 
 const SOL_INCINERATOR_API_BASE = 'https://v1.api.sol-incinerator.com';
+const SOL_INCINERATOR_API_KEY = process.env['SOL_INCINERATOR_API_KEY'] || '833f505d-536d-4565-858d-66f1089d49c1';
 
 /**
  * Check if an asset can be burned using Sol-Incinerator
@@ -70,10 +71,12 @@ export async function checkAssetBurnability(
   userPublicKey: string,
   apiKey?: string
 ): Promise<SolIncineratorPreviewResponse | null> {
+  const finalApiKey = apiKey || SOL_INCINERATOR_API_KEY;
   try {
     console.log(`🔥 SOL-INCINERATOR: Checking burnability for asset: ${assetId}`);
     console.log(`🔥 SOL-INCINERATOR: User public key: ${userPublicKey}`);
     console.log(`🔥 SOL-INCINERATOR: API key provided: ${!!apiKey}`);
+    console.log(`🔥 SOL-INCINERATOR: Final API key: ${finalApiKey !== 'YOUR_SOL_INCINERATOR_API_KEY' ? 'VALID' : 'DEFAULT'}`);
     
     const requestBody = {
       userPublicKey,
@@ -85,7 +88,7 @@ export async function checkAssetBurnability(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(apiKey && { 'x-api-key': apiKey })
+        ...(finalApiKey && finalApiKey !== 'YOUR_SOL_INCINERATOR_API_KEY' && { 'x-api-key': finalApiKey })
       },
       body: JSON.stringify(requestBody)
     });
