@@ -72,6 +72,14 @@ export async function checkAssetBurnability(
 ): Promise<SolIncineratorPreviewResponse | null> {
   try {
     console.log(`🔥 SOL-INCINERATOR: Checking burnability for asset: ${assetId}`);
+    console.log(`🔥 SOL-INCINERATOR: User public key: ${userPublicKey}`);
+    console.log(`🔥 SOL-INCINERATOR: API key provided: ${!!apiKey}`);
+    
+    const requestBody = {
+      userPublicKey,
+      assetId
+    };
+    console.log(`🔥 SOL-INCINERATOR: Request body:`, requestBody);
     
     const response = await fetch(`${SOL_INCINERATOR_API_BASE}/burn/preview`, {
       method: 'POST',
@@ -79,14 +87,13 @@ export async function checkAssetBurnability(
         'Content-Type': 'application/json',
         ...(apiKey && { 'x-api-key': apiKey })
       },
-      body: JSON.stringify({
-        userPublicKey,
-        assetId
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
       console.log(`❌ SOL-INCINERATOR: Preview failed: ${response.status} ${response.statusText}`);
+      console.log(`❌ SOL-INCINERATOR: Error response:`, errorText);
       return null;
     }
 
