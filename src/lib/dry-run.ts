@@ -295,6 +295,7 @@ export class DryRunService {
       
       let retireTx: { transaction: Transaction; description: string; estimatedFee: number };
       let retireSimulation: SimulationResult;
+      let retireDecoded: DecodedTransaction | undefined;
       
       if (finalPNFTDetection) {
         console.log(`🔥 DRY RUN: Detected pNFT - checking Sol-Incinerator compatibility`);
@@ -366,13 +367,26 @@ export class DryRunService {
             estimatedFee: 5000
           };
         }
+        
+        // Add the pNFT retire step to the report
+        retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
+        steps.push({
+          name: 'retire',
+          description: retireTx.description,
+          transaction: retireTx.transaction,
+          decoded: retireDecoded,
+          simulation: retireSimulation,
+          estimatedFee: retireTx.estimatedFee,
+        });
+        
+        totalEstimatedFee += retireTx.estimatedFee;
+        totalComputeUnits += retireSimulation.unitsConsumed || 0;
+        
       } else {
         // Regular NFT - use SPL Token burn
         retireTx = await this.builder.buildRetireTransaction(retireParams);
         console.log(`✅ DRY RUN: RETIRE transaction built successfully`);
       }
-      
-      const retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
       
       // Only simulate if it's not a pNFT (pNFTs use Sol-Incinerator preview instead)
       if (!finalPNFTDetection) {
@@ -568,17 +582,21 @@ export class DryRunService {
         }
       }
 
-      steps.push({
-        name: 'retire',
-        description: retireTx.description,
-        transaction: retireTx.transaction,
-        decoded: retireDecoded,
-        simulation: retireSimulation,
-        estimatedFee: retireTx.estimatedFee,
-      });
+      // Add retire step for regular NFTs (pNFTs already added above)
+      if (!finalPNFTDetection) {
+        retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
+        steps.push({
+          name: 'retire',
+          description: retireTx.description,
+          transaction: retireTx.transaction,
+          decoded: retireDecoded,
+          simulation: retireSimulation,
+          estimatedFee: retireTx.estimatedFee,
+        });
 
-      totalEstimatedFee += retireTx.estimatedFee;
-      totalComputeUnits += retireSimulation.unitsConsumed || 0;
+        totalEstimatedFee += retireTx.estimatedFee;
+        totalComputeUnits += retireSimulation.unitsConsumed || 0;
+      }
       
       console.log(`Retire transaction fee: ${retireTx.estimatedFee} lamports (${retireTx.estimatedFee / 1e9} SOL)`);
       console.log(`Total estimated fee so far: ${totalEstimatedFee} lamports (${totalEstimatedFee / 1e9} SOL)`);
@@ -613,7 +631,9 @@ export class DryRunService {
         }
       }
 
-        warnings.push(...retireDecoded.warnings);
+        if (retireDecoded) {
+          warnings.push(...retireDecoded.warnings);
+        }
       } // End of !finalPNFTDetection check
 
       // Additional validation checks
