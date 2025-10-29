@@ -78,6 +78,14 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       console.log('✅ CLIENT: Dry run completed successfully');
       console.log('📊 CLIENT: Report:', data.report);
       console.log('🔍 CLIENT: Debug info:', data.debug);
+      
+      // Log pNFT detection results specifically
+      if (data.report?.debug?.pnftDetection) {
+        console.log('🔍 CLIENT: pNFT Detection Results:', data.report.debug.pnftDetection);
+      } else {
+        console.log('❌ CLIENT: pNFT Detection Results: NOT FOUND in debug object');
+        console.log('🔍 CLIENT: Available debug fields:', Object.keys(data.report?.debug || {}));
+      }
       setReport(data.report);
 
     } catch (err) {
