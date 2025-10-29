@@ -90,6 +90,12 @@ export interface DryRunReport {
     rpcUrl?: string;
     fallbackSuccess?: boolean;
     fallbackRpcUrl?: string;
+    pnftDetection?: {
+      basicDetection: boolean;
+      solIncineratorAvailable: boolean;
+      solIncineratorDetection: boolean;
+      finalDetection: boolean;
+    };
   };
 }
 
@@ -278,6 +284,14 @@ export class DryRunService {
       const finalPNFTDetection = solIncineratorAvailable ? isPNFTViaAPI : isPNFTMint;
       console.log(`🔍 DRY RUN: Final pNFT detection: ${finalPNFTDetection}`);
       console.log(`🔍 DRY RUN: Will use ${finalPNFTDetection ? 'pNFT handling' : 'regular NFT handling'}`);
+      
+      // Add pNFT detection results to debug info
+      debugInfo.pnftDetection = {
+        basicDetection: isPNFTMint,
+        solIncineratorAvailable,
+        solIncineratorDetection: isPNFTViaAPI,
+        finalDetection: finalPNFTDetection
+      };
       
       let retireTx: { transaction: Transaction; description: string; estimatedFee: number };
       let retireSimulation: SimulationResult;
