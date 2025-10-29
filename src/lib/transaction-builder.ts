@@ -26,6 +26,7 @@ import {
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountIdempotentInstruction,
 } from '@solana/spl-token';
+import { burnPNFTWithMetaplex, isPNFT } from './metaplex-burn';
 import { deriveTeleburnAddress } from './teleburn';
 import type { Sbt01Seal, Sbt01Retire } from './types';
 
@@ -189,6 +190,21 @@ export class TransactionBuilder {
    */
   async buildRetireTransaction(params: RetireTransactionParams): Promise<BuiltTransaction> {
     const { payer, owner, mint, inscriptionId, sha256, method, amount = 1n } = params;
+
+    // Check if this is a pNFT first
+    console.log(`🔍 TRANSACTION BUILDER: Checking if mint is a pNFT...`);
+    const isPNFTMint = await isPNFT(mint, this.connection);
+    console.log(`🔍 TRANSACTION BUILDER: Is pNFT: ${isPNFTMint}`);
+    
+    if (isPNFTMint) {
+      console.log(`🔥 TRANSACTION BUILDER: Detected pNFT - Metaplex burn required`);
+      console.log(`⚠️ TRANSACTION BUILDER: Cannot build SPL Token transaction for pNFT`);
+      console.log(`💡 TRANSACTION BUILDER: Use burnPNFTWithMetaplex() instead`);
+      
+      // For pNFTs, we can't build a traditional transaction
+      // The Metaplex burn must be handled separately
+      throw new Error('pNFT detected - use Metaplex burn instead of SPL Token burn');
+    }
 
     // Get current blockchain state for accurate timestamps
     const { blockhash } = await this.connection.getLatestBlockhash();

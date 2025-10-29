@@ -16,6 +16,7 @@
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import { TransactionBuilder, TeleburnMethod, type SealTransactionParams, type RetireTransactionParams, type UpdateUriParams } from './transaction-builder';
 import { TransactionDecoder, type DecodedTransaction } from './transaction-decoder';
+import { burnPNFTWithMetaplex, isPNFT } from './metaplex-burn';
 
 /**
  * Simulation result for a single transaction
@@ -238,12 +239,46 @@ export class DryRunService {
       };
 
       console.log(`🔄 DRY RUN: Building RETIRE transaction...`);
-      const retireTx = await this.builder.buildRetireTransaction(retireParams);
-      console.log(`✅ DRY RUN: RETIRE transaction built successfully`);
+      
+      // Check if this is a pNFT first
+      console.log(`🔍 DRY RUN: Checking if mint is a pNFT...`);
+      const isPNFTMint = await isPNFT(params.mint, this.connection);
+      console.log(`🔍 DRY RUN: Is pNFT: ${isPNFTMint}`);
+      
+      let retireTx: any;
+      let retireSimulation: SimulationResult;
+      
+      if (isPNFTMint) {
+        console.log(`🔥 DRY RUN: Detected pNFT - using Metaplex burn simulation`);
+        console.log(`⚠️ DRY RUN: Cannot simulate Metaplex burn in dry run mode`);
+        console.log(`💡 DRY RUN: pNFTs require actual Metaplex burn execution`);
+        
+        // For pNFTs, we can't simulate the Metaplex burn in dry run
+        // We'll create a mock result indicating pNFT detection
+        retireSimulation = {
+          success: false,
+          error: 'pNFT detected - Metaplex burn required (cannot simulate)',
+          logs: ['pNFT detected', 'Metaplex burn required', 'Cannot simulate in dry run mode']
+        };
+        
+        // Create a mock transaction for display purposes
+        const mockTransaction = new Transaction();
+        retireTx = {
+          transaction: mockTransaction,
+          description: 'METAPLEX BURN: pNFT burn via Metaplex Token Metadata program',
+          estimatedFee: 5000 // Estimated fee for Metaplex burn
+        };
+      } else {
+        // Regular NFT - use SPL Token burn
+        retireTx = await this.builder.buildRetireTransaction(retireParams);
+        console.log(`✅ DRY RUN: RETIRE transaction built successfully`);
+      }
       const retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
       
-      // CRITICAL DEBUG: Check actual token account state before simulation
-      console.log(`🔍 DRY RUN: Checking token account state before simulation...`);
+      // Only simulate if it's not a pNFT (pNFTs can't be simulated)
+      if (!isPNFTMint) {
+        // CRITICAL DEBUG: Check actual token account state before simulation
+        console.log(`🔍 DRY RUN: Checking token account state before simulation...`);
       
       try {
         const { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
@@ -353,7 +388,7 @@ export class DryRunService {
         console.log(`🔍 DRY RUN: Error checking token account state:`, error);
       }
       
-      let retireSimulation = await this.simulateTransaction(retireTx.transaction);
+        let retireSimulation = await this.simulateTransaction(retireTx.transaction);
       
       console.log(`🔍 DRY RUN: Initial simulation result:`, {
         success: retireSimulation.success,
@@ -480,6 +515,7 @@ export class DryRunService {
       }
 
       warnings.push(...retireDecoded.warnings);
+      } // End of !isPNFTMint check
 
       // Additional validation checks
       await this.validateDryRun(params, warnings, errors);
