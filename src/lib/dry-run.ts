@@ -246,8 +246,8 @@ export class DryRunService {
       console.log(`🔍 DRY RUN: Mint address: ${params.mint.toBase58()}`);
       console.log(`🔍 DRY RUN: Owner address: ${params.owner.toBase58()}`);
       
-      // Method 1: Basic Token-2022 detection
-      const isPNFTMint = await isPNFT(params.mint, this.connection);
+      // Method 1: Basic Token-2022 detection with frozen account check
+      const isPNFTMint = await isPNFT(params.mint, this.connection, params.owner);
       console.log(`🔍 DRY RUN: Basic pNFT detection: ${isPNFTMint}`);
       
       // Method 2: Sol-Incinerator detection (more accurate)
