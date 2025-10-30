@@ -254,10 +254,10 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         const retireTimestamp = burnTx?.blockTime ?? Math.floor(Date.now() / 1000);
         const retireSlot = burnTx?.slot ?? (await connection.getSlot());
 
-        // Compose RETIRE memo payload linked to the burn
-        const retireMemo = {
-          standard: 'KILN',
-          version: '0.1.1',
+          // Compose RETIRE memo payload linked to the burn
+          const retireMemo = {
+            standard: 'Kiln',
+            version: '0.1.1',
           action: 'teleburn-derived',
           timestamp: retireTimestamp,
           block_height: retireSlot,
@@ -454,7 +454,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
             <div className="mb-6">
               <MemoDisplay 
                 memo={{
-                  standard: 'KILN',
+                  standard: 'Kiln',
                   version: '0.1.1',
                   action: 'teleburn-derived',
                   timestamp: Math.floor(Date.now() / 1000),

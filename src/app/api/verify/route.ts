@@ -61,6 +61,82 @@ export async function POST(request: NextRequest) {
     const supply = mintData.parsed.info.supply;
     const decimals = mintData.parsed.info.decimals;
     
+    // Search for KILN memos in recent transaction history
+    let inscriptionId: string | undefined;
+    let sha256: string | undefined;
+    let sealSignature: string | undefined;
+    let burnSignature: string | undefined;
+    const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+    
+    try {
+      // Get recent signatures for the mint
+      const signatures = await connection.getSignaturesForAddress(mint, { limit: 50 });
+      
+      for (const sigInfo of signatures) {
+        try {
+          const tx = await connection.getTransaction(sigInfo.signature, {
+            commitment: 'confirmed',
+            maxSupportedTransactionVersion: 0,
+          });
+          
+          if (!tx) continue;
+          
+          // Check for memo instructions (handle both legacy and versioned)
+          const instructions = tx.transaction.message.instructions || [];
+          for (const instruction of instructions) {
+            const programId = 'programId' in instruction 
+              ? instruction.programId 
+              : tx.transaction.message.accountKeys[instruction.programIdIndex]?.pubkey;
+            
+            if (programId && programId.equals(MEMO_PROGRAM_ID)) {
+              try {
+                // Get memo data - handle both legacy (direct data) and versioned (accountKeys + data)
+                let memoBytes: Uint8Array | Buffer;
+                if ('data' in instruction && instruction.data) {
+                  memoBytes = instruction.data instanceof Uint8Array 
+                    ? instruction.data 
+                    : Buffer.from(instruction.data, 'base64');
+                } else if ('data' in instruction && typeof instruction.data === 'string') {
+                  memoBytes = Buffer.from(instruction.data, 'base64');
+                } else {
+                  continue;
+                }
+                
+                const memoData = new TextDecoder().decode(memoBytes);
+                const memoJson = JSON.parse(memoData);
+                
+                // Check if it's a Kiln memo (support both 'KILN' and 'Kiln' for backward compatibility)
+                if ((memoJson.standard === 'Kiln' || memoJson.standard === 'KILN') && memoJson.solana?.mint === validated.mint) {
+                  if ((memoJson.action === 'teleburn-seal' || memoJson.action === 'seal') && memoJson.inscription?.id) {
+                    inscriptionId = memoJson.inscription.id;
+                    sha256 = memoJson.media?.sha256;
+                    sealSignature = sigInfo.signature;
+                  } else if (
+                    // Check for teleburn actions (new inline format and old formats)
+                    (memoJson.action === 'teleburn' || 
+                     memoJson.action === 'teleburn-burn' || memoJson.action === 'teleburn-incinerate' || memoJson.action === 'teleburn-derived' ||
+                     memoJson.action === 'burn' || memoJson.action === 'incinerate' || memoJson.action === 'retire')
+                    && memoJson.inscription?.id
+                  ) {
+                    inscriptionId = inscriptionId || memoJson.inscription.id;
+                    sha256 = sha256 || memoJson.media?.sha256;
+                    burnSignature = sigInfo.signature;
+                  }
+                }
+              } catch {
+                // Not JSON or not a KILN memo, continue
+              }
+            }
+          }
+        } catch {
+          // Skip transactions that fail to parse
+          continue;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to search for KILN memos:', error);
+    }
+    
     // Determine status based on supply
     let status = 'unknown';
     let confidence = 'low';
@@ -70,10 +146,16 @@ export async function POST(request: NextRequest) {
       status = 'burned';
       confidence = 'high';
       message = 'NFT has been completely burned (supply = 0)';
+      if (inscriptionId) {
+        message += ` • Linked to Bitcoin inscription ${inscriptionId.slice(0, 16)}...`;
+      }
     } else {
       status = 'active';
       confidence = 'high';
       message = `NFT is still active (supply: ${supply})`;
+      if (inscriptionId) {
+        message += ` • Linked to Bitcoin inscription ${inscriptionId.slice(0, 16)}...`;
+      }
     }
 
     const corsHeaders = getCorsHeaders(request);
@@ -85,6 +167,10 @@ export async function POST(request: NextRequest) {
       decimals: decimals,
       confidence,
       message,
+      inscriptionId,
+      sha256,
+      sealSignature,
+      burnSignature,
     }, { headers: corsHeaders });
 
   } catch (error) {

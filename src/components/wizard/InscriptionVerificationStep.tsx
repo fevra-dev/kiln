@@ -33,6 +33,9 @@ interface InscriptionVerificationStepProps {
   
   /** Optional: Custom loading message */
   loadingMessage?: string;
+
+  /** Optional: Solana mint address to surface latest burn tx link */
+  mintAddress?: string;
 }
 
 // ============================================================================
@@ -69,6 +72,25 @@ export function InscriptionVerificationStep({
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState<InscriptionVerificationResult | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [latestBurn, setLatestBurn] = useState<{ signature: string; feePayer?: string } | null>(null);
+
+  // Fetch latest burn tx (best-effort) when a mint is provided
+  useEffect(() => {
+    const run = async () => {
+      try {
+        if (!mintAddress) return;
+        const { Connection } = await import('@solana/web3.js');
+        const { findLatestMetaplexTxForMint } = await import('@/lib/solana-tx');
+        const rpc = process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
+        const conn = new Connection(rpc, 'confirmed');
+        const hit = await findLatestMetaplexTxForMint(conn, mintAddress, 20);
+        if (hit) setLatestBurn({ signature: hit.signature, feePayer: hit.feePayer });
+      } catch {
+        // Non-fatal; hide section on failure
+      }
+    };
+    run();
+  }, [mintAddress]);
 
   // Auto-verify on mount if enabled
   useEffect(() => {
@@ -167,6 +189,25 @@ export function InscriptionVerificationStep({
             View on ordinals.com →
           </a>
         </div>
+
+        {latestBurn && (
+          <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-700">
+            <div className="font-medium mb-1">Latest Burn Transaction (Solana)</div>
+            <div className="space-x-2">
+              <a
+                href={`https://orb.helius.dev/tx/${latestBurn.signature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                View on Helius Orb →
+              </a>
+              {latestBurn.feePayer && (
+                <span className="text-xs text-gray-500">• Burned by wallet {latestBurn.feePayer}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Verification Button (only show if not verified or verifying) */}

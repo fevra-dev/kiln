@@ -28,7 +28,7 @@ import {
 } from '@solana/spl-token';
 import { isPNFT } from './metaplex-burn';
 import { deriveTeleburnAddress } from './teleburn';
-import type { Sbt01Seal, Sbt01Retire } from './types';
+import type { Sbt01Seal, Sbt01Retire, TeleburnMethod } from './types';
 
 // Memo Program ID
 export const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
@@ -38,8 +38,9 @@ export const INCINERATOR_ADDRESS = new PublicKey('1nc1nerator1111111111111111111
 
 /**
  * Teleburn method options
+ * Re-export from types for backward compatibility
  */
-export type TeleburnMethod = 'burn' | 'incinerate' | 'teleburn-derived';
+export type { TeleburnMethod };
 
 /**
  * Transaction builder parameters for seal
@@ -118,13 +119,13 @@ export class TransactionBuilder {
     const slot = await this.connection.getSlot();
     const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
-    // Construct KILN v0.1.1 seal memo payload
+    // Construct Kiln v0.1.1 seal memo payload
     const sealMemo: Sbt01Seal = {
-      standard: 'KILN',
+      standard: 'Kiln',
       version: '0.1.1',
       source_chain: 'solana-mainnet',
       target_chain: 'bitcoin-mainnet',
-      action: 'seal',
+      action: 'teleburn-seal',
       timestamp,
       block_height: slot,
       inscription: {
@@ -238,7 +239,7 @@ export class TransactionBuilder {
 
     // Build retire memo
     const retireMemo: Sbt01Retire = {
-      standard: 'KILN',
+      standard: 'Kiln',
       version: '0.1.1',
       action: method,
       timestamp,
@@ -258,7 +259,8 @@ export class TransactionBuilder {
     let description = '';
 
     switch (method) {
-      case 'burn': {
+      case 'teleburn-burn':
+      case 'burn': { // Support old 'burn' for backward compatibility
         // CRITICAL: Thaw frozen account first (like sol-incinerator)
         // This resolves "Account is frozen" errors for pNFTs
         
@@ -312,7 +314,8 @@ export class TransactionBuilder {
         break;
       }
 
-      case 'incinerate': {
+      case 'teleburn-incinerate':
+      case 'incinerate': { // Support old 'incinerate' for backward compatibility
         // Transfer to incinerator (provably unspendable)
         const incineratorAta = getAssociatedTokenAddressSync(
           mint,

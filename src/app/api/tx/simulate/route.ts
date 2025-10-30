@@ -29,7 +29,7 @@ const simulateRequestSchema = z.object({
 
   // Retire params
   owner: z.string().describe('Token owner public key'),
-  method: z.enum(['burn', 'incinerate', 'teleburn-derived']).describe('Retire method'),
+  method: z.enum(['teleburn-burn', 'teleburn-incinerate', 'teleburn-derived', 'burn', 'incinerate']).describe('Retire method'), // Includes old values for backward compatibility
   amount: z.string().optional().describe('Amount to retire (default: 1)'),
 
   // Optional URI update

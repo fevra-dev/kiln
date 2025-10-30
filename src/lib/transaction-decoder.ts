@@ -218,8 +218,10 @@ export class TransactionDecoder {
         // Try to parse as KILN.1 JSON
         try {
           const json = JSON.parse(memoText);
-          if (json.standard === 'KILN' && json.action) {
-            instructionName = `KILN ${json.action.toUpperCase()} Memo`;
+          if ((json.standard === 'Kiln' || json.standard === 'KILN') && json.action) {
+            // Format action name for display (remove 'teleburn-' prefix for cleaner display)
+            const actionDisplay = json.action.replace(/^teleburn-/, '').toUpperCase();
+            instructionName = `Kiln ${actionDisplay} Memo`;
             decodedData = { sbt01: json };
           }
         } catch {

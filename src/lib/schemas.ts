@@ -77,7 +77,7 @@ export const UrlSchema = z.string().url('Invalid URL format');
 /**
  * Validates teleburn method
  */
-export const TeleburnMethodSchema = z.enum(['burn', 'incinerate', 'teleburn-derived']);
+export const TeleburnMethodSchema = z.enum(['teleburn-burn', 'teleburn-incinerate', 'teleburn-derived', 'burn', 'incinerate']); // Includes old values for backward compatibility
 
 /**
  * Validates chain network
@@ -92,7 +92,7 @@ export const ChainNetworkSchema = z.enum([
 /**
  * Validates memo action
  */
-export const MemoActionSchema = z.enum(['seal', 'burn', 'incinerate', 'teleburn-derived']);
+export const MemoActionSchema = z.enum(['teleburn-seal', 'teleburn-burn', 'teleburn-incinerate', 'teleburn-derived', 'seal', 'burn', 'incinerate']); // Includes old values for backward compatibility
 
 // ============================================================================
 // MEMO PAYLOAD SCHEMAS
@@ -107,7 +107,7 @@ export const Sbt01SealSchema = z.object({
   version: z.literal(STANDARD_VERSION),
   source_chain: ChainNetworkSchema,
   target_chain: ChainNetworkSchema,
-  action: z.literal('seal'),
+  action: z.literal('teleburn-seal').or(z.literal('seal')), // Support both for backward compatibility
   timestamp: TimestampSchema,
   block_height: BlockHeightSchema,
   inscription: z.object({

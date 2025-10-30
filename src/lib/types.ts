@@ -14,8 +14,8 @@ import { PublicKey } from '@solana/web3.js';
 /** KILN standard version */
 export const STANDARD_VERSION = '0.1.1' as const;
 
-/** Standard identifier */
-export const STANDARD = 'KILN' as const;
+/** Standard identifier - using "Kiln" for branding consistency */
+export const STANDARD = 'Kiln' as const;
 
 /** Domain separation string for derived owner algorithm */
 export const DOMAIN = 'ordinals.teleburn.sbt01.v1' as const;
@@ -28,10 +28,10 @@ export const INCINERATOR_ADDRESS = '1nc1nerator11111111111111111111111111111111'
 // ============================================================================
 
 /** Teleburn method for retiring Solana tokens */
-export type TeleburnMethod = 'burn' | 'incinerate' | 'teleburn-derived';
+export type TeleburnMethod = 'teleburn-burn' | 'teleburn-incinerate' | 'teleburn-derived';
 
 /** Memo action type */
-export type MemoAction = 'seal' | TeleburnMethod;
+export type MemoAction = 'teleburn-seal' | TeleburnMethod;
 
 /** Blockchain network identifier */
 export type ChainNetwork = 'solana-mainnet' | 'solana-devnet' | 'bitcoin-mainnet' | 'bitcoin-testnet';
@@ -51,7 +51,7 @@ export type TeleburnStatus = 'burned' | 'incinerated' | 'derived-teleburned' | '
  * This creates an immutable on-chain record of the teleburn intent
  */
 export interface Sbt01Seal {
-  /** Standard identifier */
+  /** Protocol identifier */
   standard: typeof STANDARD;
   
   /** Standard version */
@@ -63,8 +63,8 @@ export interface Sbt01Seal {
   /** Target blockchain */
   target_chain: ChainNetwork;
   
-  /** Action type */
-  action: 'seal';
+  /** Action type - indicates this is a teleburn seal operation */
+  action: 'teleburn-seal';
   
   /** Unix epoch timestamp (seconds) - when seal was created */
   timestamp: number;
@@ -108,7 +108,7 @@ export interface Sbt01Seal {
  * This finalizes the teleburn and proves the token can never be used on Solana again
  */
 export interface Sbt01Retire {
-  /** Standard identifier */
+  /** Protocol identifier */
   standard: typeof STANDARD;
   
   /** Standard version */

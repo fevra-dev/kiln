@@ -16,7 +16,17 @@ import { isValidPublicKey } from '@/lib/schemas';
 export default function VerifyPage() {
   const [mintAddress, setMintAddress] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ status: string; mint: string; confidence: string; message?: string } | null>(null);
+  const [result, setResult] = useState<{
+    status: string;
+    mint: string;
+    confidence: string;
+    message?: string;
+    inscriptionId?: string;
+    sha256?: string;
+    sealSignature?: string;
+    burnSignature?: string;
+    supply?: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -150,6 +160,64 @@ export default function VerifyPage() {
                     <span className="opacity-70">Confidence:</span>
                     <span className="font-bold uppercase">{result.confidence}</span>
                   </div>
+                  {result.inscriptionId && (
+                    <div className="flex flex-col gap-2 pt-2 border-t border-terminal-text/20">
+                      <div className="flex justify-between">
+                        <span className="opacity-70">Bitcoin Inscription:</span>
+                        <span className="font-mono text-xs break-all text-right max-w-[60%]">
+                          {result.inscriptionId}
+                        </span>
+                      </div>
+                      {result.inscriptionId && (
+                        <a
+                          href={`https://ordinals.com/inscription/${result.inscriptionId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-400 hover:text-blue-300 hover:underline self-end"
+                        >
+                          View on ordinals.com →
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {result.sha256 && (
+                    <div className="flex justify-between pt-2 border-t border-terminal-text/20">
+                      <span className="opacity-70">SHA-256:</span>
+                      <span className="font-mono text-xs break-all text-right max-w-[60%]">
+                        {result.sha256.slice(0, 32)}...
+                      </span>
+                    </div>
+                  )}
+                  {result.sealSignature && (
+                    <div className="flex flex-col gap-1 pt-2 border-t border-terminal-text/20">
+                      <div className="flex justify-between">
+                        <span className="opacity-70">SEAL Tx:</span>
+                        <a
+                          href={`https://orb.helius.dev/tx/${result.sealSignature}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-400 hover:text-blue-300 hover:underline font-mono"
+                        >
+                          {result.sealSignature.slice(0, 16)}... →
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {result.burnSignature && (
+                    <div className="flex flex-col gap-1 pt-2 border-t border-terminal-text/20">
+                      <div className="flex justify-between">
+                        <span className="opacity-70">RETIRE Tx:</span>
+                        <a
+                          href={`https://orb.helius.dev/tx/${result.burnSignature}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-400 hover:text-blue-300 hover:underline font-mono"
+                        >
+                          {result.burnSignature.slice(0, 16)}... →
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {result.message && (
