@@ -597,10 +597,10 @@ export async function buildTeleburnDerivedTx(
   const slot = await connection.getSlot();
   const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
-  // Build memo payload
+  // Build memo payload with real-time values
   const memoData = {
     standard: 'KILN',
-    version: '0.1',
+    version: '0.1.1',
     action: 'teleburn-derived',
     timestamp,
     block_height: slot,

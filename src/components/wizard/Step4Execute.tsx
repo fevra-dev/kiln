@@ -183,7 +183,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
               { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
               { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
             ],
-            data: Buffer.from([41, 0]) // burnV1 instruction discriminator
+            data: Buffer.from([41]) // burnV1 instruction discriminator (just 41, not [41, 0])
           };
           
           // Create close account instruction to reclaim rent
