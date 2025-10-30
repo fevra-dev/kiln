@@ -45,11 +45,11 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
             </div>
             <div>
               <div className="font-bold text-lg">
-                {report.success ? 'SIMULATION SUCCESSFUL' : 'SIMULATION FAILED'}
+                {report.success ? 'READY TO TELEBURN' : 'SIMULATION FAILED'}
               </div>
               <div className="text-sm opacity-80">
                 {report.success 
-                  ? 'All transactions passed simulation. Ready to execute.'
+                  ? 'All systems verified. Your NFT is ready for teleburning!'
                   : 'Errors detected. Review issues before proceeding.'}
               </div>
             </div>

@@ -122,9 +122,10 @@ export class TransactionDecoder {
    * Decode a transaction into human-readable format
    * 
    * @param transaction - Transaction to decode
+   * @param skipUnsignedWarning - Skip "Transaction not signed" warning (for dry run)
    * @returns Decoded transaction details
    */
-  async decodeTransaction(transaction: Transaction): Promise<DecodedTransaction> {
+  async decodeTransaction(transaction: Transaction, skipUnsignedWarning = false): Promise<DecodedTransaction> {
     const warnings: string[] = [];
     const instructions: DecodedInstruction[] = [];
 
@@ -160,7 +161,7 @@ export class TransactionDecoder {
       warnings.push('Transaction missing recent blockhash');
     }
 
-    if (transaction.signatures.length === 0) {
+    if (transaction.signatures.length === 0 && !skipUnsignedWarning) {
       warnings.push('Transaction not signed');
     }
 

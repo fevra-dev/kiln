@@ -179,7 +179,7 @@ export class DryRunService {
       };
 
       const sealTx = await this.builder.buildSealTransaction(sealParams);
-      const sealDecoded = await this.decoder.decodeTransaction(sealTx.transaction);
+      const sealDecoded = await this.decoder.decodeTransaction(sealTx.transaction, true);
       const sealSimulation = await this.simulateTransaction(sealTx.transaction);
 
       steps.push({
@@ -211,7 +211,7 @@ export class DryRunService {
         };
 
         const uriTx = await this.builder.buildUpdateUriTransaction(uriParams);
-        const uriDecoded = await this.decoder.decodeTransaction(uriTx.transaction);
+        const uriDecoded = await this.decoder.decodeTransaction(uriTx.transaction, true);
         const uriSimulation = await this.simulateTransaction(uriTx.transaction);
 
         steps.push({
@@ -369,7 +369,7 @@ export class DryRunService {
         }
         
         // Add the pNFT retire step to the report
-        retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
+        retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction, true);
         steps.push({
           name: 'retire',
           description: retireTx.description,
@@ -584,7 +584,7 @@ export class DryRunService {
 
       // Add retire step for regular NFTs (pNFTs already added above)
       if (!finalPNFTDetection) {
-        retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction);
+        retireDecoded = await this.decoder.decodeTransaction(retireTx.transaction, true);
         steps.push({
           name: 'retire',
           description: retireTx.description,
