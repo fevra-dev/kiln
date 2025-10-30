@@ -32,7 +32,7 @@ export async function buildAndSendRegularBurnWithMemo(
   const collectionMetadata = collection ? findMetadataPda(umi, { mint: collection.key })[0] : undefined;
 
   let tb = transactionBuilder();
-  tb = withComputeBudget(tb, { microLamports: args.priorityMicrolamports });
+  tb = withComputeBudget(umi, tb, { microLamports: args.priorityMicrolamports });
 
   tb = tb.add(
     burnV1(umi, {

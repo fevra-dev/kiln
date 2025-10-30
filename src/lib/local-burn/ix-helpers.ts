@@ -1,19 +1,20 @@
 /**
  * Instruction helpers for compute budget and SPL memo in Umi builders.
  */
-import { publicKey, transactionBuilder, some } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, some, type Umi } from '@metaplex-foundation/umi';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
 
 /**
  * Attach compute budget instructions with sensible defaults.
  */
 export function withComputeBudget(
+  umi: Umi,
   tb: ReturnType<typeof transactionBuilder>,
   opts?: { cu?: number; microLamports?: number }
 ) {
   const cu = opts?.cu ?? 500_000;
   const microLamports = opts?.microLamports ?? 2_000;
-  return tb.add(setComputeUnitLimit({ units: cu })).add(setComputeUnitPrice({ microLamports }));
+  return tb.add(setComputeUnitLimit(umi, { units: cu })).add(setComputeUnitPrice(umi, { microLamports }));
 }
 
 /**
