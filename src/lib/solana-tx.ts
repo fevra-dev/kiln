@@ -32,10 +32,40 @@ export async function findLatestMetaplexTxForMint(
       });
       if (!tx) continue;
 
-      const hasMetaIx = tx.transaction.message.programIds().some((pid) => pid.equals(TOKEN_METADATA_PROGRAM_ID));
+      // Check if transaction has Metaplex Token Metadata program
+      // Handle both legacy and versioned transactions
+      let hasMetaIx = false;
+      if ('instructions' in tx.transaction.message) {
+        // Legacy transaction
+        const programIds = tx.transaction.message.programIds();
+        hasMetaIx = programIds.some((pid) => pid.equals(TOKEN_METADATA_PROGRAM_ID));
+      } else {
+        // Versioned transaction (V0)
+        // Check account keys (first staticAccountKeys, then lookup tables)
+        const metaPidStr = TOKEN_METADATA_PROGRAM_ID.toBase58();
+        const staticKeys = tx.transaction.message.staticAccountKeys || [];
+        hasMetaIx = staticKeys.some((key) => key.toBase58() === metaPidStr);
+        
+        // Also check in instructions (compile-time programs are in static keys)
+        if (!hasMetaIx && tx.transaction.message.compiledInstructions) {
+          for (const ix of tx.transaction.message.compiledInstructions) {
+            const programKeyIndex = ix.programIdIndex;
+            const programKey = staticKeys[programKeyIndex]?.toBase58();
+            if (programKey === metaPidStr) {
+              hasMetaIx = true;
+              break;
+            }
+          }
+        }
+      }
+      
       if (!hasMetaIx) continue;
 
-      const feePayer = tx.transaction.message.accountKeys[0]?.toBase58();
+      // Get fee payer (first account key)
+      const feePayer = 
+        'accountKeys' in tx.transaction.message
+          ? tx.transaction.message.accountKeys[0]?.toBase58()
+          : tx.transaction.message.staticAccountKeys[0]?.toBase58();
       return {
         signature: s.signature,
         slot: tx.slot,
