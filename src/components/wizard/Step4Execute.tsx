@@ -155,12 +155,33 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
             regularTx.feePayer = versionedMessage.staticAccountKeys[0];
             regularTx.recentBlockhash = versionedMessage.recentBlockhash;
             
+            console.log(`🔍 EXECUTION: Versioned message details:`, {
+              staticAccountKeys: versionedMessage.staticAccountKeys.length,
+              compiledInstructions: versionedMessage.compiledInstructions?.length || 0,
+              header: versionedMessage.header,
+              recentBlockhash: versionedMessage.recentBlockhash
+            });
+            
             // Add instructions from versioned message
             if (versionedMessage.compiledInstructions) {
-              for (const compiledIx of versionedMessage.compiledInstructions) {
+              console.log(`🔍 EXECUTION: Processing ${versionedMessage.compiledInstructions.length} compiled instructions`);
+              
+              for (let i = 0; i < versionedMessage.compiledInstructions.length; i++) {
+                const compiledIx = versionedMessage.compiledInstructions[i];
+                if (!compiledIx) {
+                  console.warn(`⚠️ EXECUTION: Skipping undefined instruction at index ${i}`);
+                  continue;
+                }
+                
+                console.log(`🔍 EXECUTION: Instruction ${i}:`, {
+                  programIdIndex: compiledIx.programIdIndex,
+                  accountKeyIndexes: compiledIx.accountKeyIndexes,
+                  dataLength: compiledIx.data.length
+                });
+                
                 const programId = versionedMessage.staticAccountKeys[compiledIx.programIdIndex];
                 if (!programId) {
-                  console.warn(`⚠️ EXECUTION: Skipping instruction with undefined programId`);
+                  console.warn(`⚠️ EXECUTION: Skipping instruction ${i} with undefined programId at index ${compiledIx.programIdIndex}`);
                   continue;
                 }
                 
@@ -179,16 +200,21 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                   })
                   .filter((account): account is NonNullable<typeof account> => account !== null);
                 
+                console.log(`🔍 EXECUTION: Adding instruction ${i} with ${accounts.length} accounts`);
+                
                 regularTx.add({
                   programId,
                   keys: accounts,
                   data: Buffer.from(compiledIx.data)
                 });
               }
+            } else {
+              console.warn(`⚠️ EXECUTION: No compiled instructions found in versioned message`);
             }
             
             retireTx = regularTx;
             console.log(`✅ EXECUTION: Versioned transaction converted to regular transaction for Phantom compatibility`);
+            console.log(`🔍 EXECUTION: Final transaction has ${retireTx.instructions.length} instructions`);
           } catch (versionedError) {
             // Fallback to regular transaction parsing
             retireTx = Transaction.from(transactionBuffer);
