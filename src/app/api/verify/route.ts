@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, type TransactionInstruction } from '@solana/web3.js';
 import { z } from 'zod';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
 
@@ -82,12 +82,12 @@ export async function POST(request: NextRequest) {
           if (!tx || !tx.transaction) continue;
           
           // Check for memo instructions (handle both legacy and versioned)
-          let instructions: any[] = [];
+          let instructions: Array<{ programId?: PublicKey | string; data?: Uint8Array | string; [key: string]: unknown }> = [];
           
           // Handle legacy transactions - message has instructions directly
           const message = tx.transaction.message;
           if ('instructions' in message && Array.isArray(message.instructions)) {
-            instructions = message.instructions;
+            instructions = message.instructions as typeof instructions;
           } 
           // Handle versioned transactions - need to use decompile or skip for now
           // Versioned transactions require lookup tables which we'd need to fetch

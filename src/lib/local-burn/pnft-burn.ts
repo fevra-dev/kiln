@@ -12,7 +12,7 @@
  * - Single transaction: no separate memo tx needed
  * - Gas efficient: one transaction instead of two
  */
-import { publicKey, transactionBuilder, base58 } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, base58, type Umi } from '@metaplex-foundation/umi';
 import {
   fetchDigitalAssetWithAssociatedToken,
   findMetadataPda,
@@ -28,7 +28,7 @@ import type { LocalBurnArgs } from './types';
  * Assemble and send a pNFT burn that includes a KILN memo inline.
  */
 export async function buildAndSendPnftBurnWithMemo(
-  umi: any,
+  umi: Umi,
   args: LocalBurnArgs
 ): Promise<{ signature: string }> {
   const mintPk = publicKey(args.mint);

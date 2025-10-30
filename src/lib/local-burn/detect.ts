@@ -1,7 +1,7 @@
 /**
  * NFT standard detection for local burn routing.
  */
-import { publicKey } from '@metaplex-foundation/umi';
+import { publicKey, type Umi } from '@metaplex-foundation/umi';
 import { fetchMetadata, TokenStandard } from '@metaplex-foundation/mpl-token-metadata';
 import type { NftStandard } from './types';
 
@@ -9,7 +9,7 @@ import type { NftStandard } from './types';
  * Detect whether a mint is PNFT or REGULAR using Metaplex metadata.
  * CORE can be added later via mpl-core.
  */
-export async function detectNftStandard(umi: any, mint: string): Promise<NftStandard> {
+export async function detectNftStandard(umi: Umi, mint: string): Promise<NftStandard> {
   try {
     const md = await fetchMetadata(umi, publicKey(mint));
     const std = md.tokenStandard;

@@ -1,7 +1,7 @@
 /**
  * Local regular NFT burn assembly with inline SPL Memo (single transaction).
  */
-import { publicKey, transactionBuilder, base58 } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, base58, type Umi } from '@metaplex-foundation/umi';
 import {
   fetchDigitalAssetWithAssociatedToken,
   findMetadataPda,
@@ -17,7 +17,7 @@ import type { LocalBurnArgs } from './types';
  * Assemble and send a regular NFT burn that includes a KILN memo inline.
  */
 export async function buildAndSendRegularBurnWithMemo(
-  umi: any,
+  umi: Umi,
   args: LocalBurnArgs
 ): Promise<{ signature: string }> {
   const mintPk = publicKey(args.mint);
