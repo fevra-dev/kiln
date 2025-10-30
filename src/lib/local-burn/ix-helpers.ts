@@ -36,8 +36,8 @@ export function withSplMemo(
       data,
     },
     signers: [],
-    // No additional on-chain bytes besides the instruction itself
-    bytesCreatedOnChain: some(0n),
+    // No additional on-chain bytes besides the instruction itself (memo is instruction data only)
+    bytesCreatedOnChain: 0,
   });
 }
 
