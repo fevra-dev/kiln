@@ -79,14 +79,32 @@ export async function POST(request: NextRequest) {
             maxSupportedTransactionVersion: 0,
           });
           
-          if (!tx) continue;
+          if (!tx || !tx.transaction) continue;
           
           // Check for memo instructions (handle both legacy and versioned)
-          const instructions = tx.transaction.message.instructions || [];
+          let instructions: any[] = [];
+          
+          // Handle legacy transactions - message has instructions directly
+          const message = tx.transaction.message;
+          if ('instructions' in message && Array.isArray(message.instructions)) {
+            instructions = message.instructions;
+          } 
+          // Handle versioned transactions - need to use decompile or skip for now
+          // Versioned transactions require lookup tables which we'd need to fetch
+          // For now, we'll skip parsing versioned transactions' instructions
+          // (Most teleburn memos will be in legacy transactions anyway)
+          
           for (const instruction of instructions) {
-            const programId = 'programId' in instruction 
-              ? instruction.programId 
-              : tx.transaction.message.accountKeys[instruction.programIdIndex]?.pubkey;
+            let programId: PublicKey | null = null;
+            
+            // Legacy instruction format - programId is a PublicKey
+            if ('programId' in instruction) {
+              if (instruction.programId instanceof PublicKey) {
+                programId = instruction.programId;
+              } else if (typeof instruction.programId === 'string' || 'toBase58' in instruction.programId) {
+                programId = new PublicKey(instruction.programId);
+              }
+            }
             
             if (programId && programId.equals(MEMO_PROGRAM_ID)) {
               try {
