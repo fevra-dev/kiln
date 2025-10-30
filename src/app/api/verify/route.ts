@@ -98,11 +98,13 @@ export async function POST(request: NextRequest) {
             let programId: PublicKey | null = null;
             
             // Legacy instruction format - programId is a PublicKey
-            if ('programId' in instruction) {
+            if ('programId' in instruction && instruction.programId !== undefined && instruction.programId !== null) {
               if (instruction.programId instanceof PublicKey) {
                 programId = instruction.programId;
-              } else if (typeof instruction.programId === 'string' || 'toBase58' in instruction.programId) {
+              } else if (typeof instruction.programId === 'string') {
                 programId = new PublicKey(instruction.programId);
+              } else if ('toBase58' in instruction.programId && typeof instruction.programId === 'object') {
+                programId = new PublicKey(instruction.programId as PublicKey | string);
               }
             }
             
