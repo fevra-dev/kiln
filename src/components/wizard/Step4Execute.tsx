@@ -243,6 +243,58 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       
       updateTxStatus(1, { status: 'success', signature: retireSig });
 
+      // Post-burn memo: write authoritative RETIRE proof with accurate on-chain time
+      try {
+        // Fetch the confirmed burn tx to get precise blockTime and slot
+        const burnTx = await connection.getTransaction(retireSig, {
+          commitment: 'confirmed',
+          maxSupportedTransactionVersion: 0
+        });
+
+        const retireTimestamp = burnTx?.blockTime ?? Math.floor(Date.now() / 1000);
+        const retireSlot = burnTx?.slot ?? (await connection.getSlot());
+
+        // Compose RETIRE memo payload linked to the burn
+        const retireMemo = {
+          standard: 'KILN',
+          version: '0.1.1',
+          action: 'teleburn-derived',
+          timestamp: retireTimestamp,
+          block_height: retireSlot,
+          inscription: {
+            id: formData.inscriptionId,
+          },
+          solana: {
+            mint: formData.mint,
+            burn_signature: retireSig,
+          },
+          media: {
+            sha256: formData.sha256,
+          },
+        };
+
+        // Build and send the memo transaction
+        const { PublicKey, TransactionInstruction } = await import('@solana/web3.js');
+        const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+        const memoTx = new Transaction();
+        memoTx.add(
+          new TransactionInstruction({
+            keys: [],
+            programId: MEMO_PROGRAM_ID,
+            data: Buffer.from(JSON.stringify(retireMemo), 'utf-8'),
+          })
+        );
+        memoTx.feePayer = publicKey;
+        const { blockhash: memoBh } = await connection.getLatestBlockhash('confirmed');
+        memoTx.recentBlockhash = memoBh;
+        const signedMemoTx = await signTransaction(memoTx);
+        const memoSig = await connection.sendRawTransaction(signedMemoTx.serialize());
+        await connection.confirmTransaction(memoSig, 'confirmed');
+        console.log(`✅ EXECUTION: Post-burn RETIRE memo confirmed: ${memoSig}`);
+      } catch (memoErr) {
+        console.warn('⚠️ EXECUTION: Failed to write post-burn memo (non-fatal):', memoErr);
+      }
+
       // Mark as completed
       setCompleted(true);
       // Remove automatic redirect - let user review Solscan links first
