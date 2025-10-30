@@ -147,11 +147,48 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           
           // Try to parse as versioned transaction first, then fallback to regular transaction
           try {
-            const { VersionedMessage } = await import('@solana/web3.js');
+            const { VersionedMessage, Transaction } = await import('@solana/web3.js');
             const versionedMessage = VersionedMessage.deserialize(transactionBuffer);
-            // Create a versioned transaction for signing
-            retireTx = new VersionedTransaction(versionedMessage);
-            console.log(`✅ EXECUTION: Versioned transaction parsed successfully from Base58`);
+            
+            // Convert versioned transaction to regular transaction for Phantom compatibility
+            const regularTx = new Transaction();
+            regularTx.feePayer = versionedMessage.staticAccountKeys[0];
+            regularTx.recentBlockhash = versionedMessage.recentBlockhash;
+            
+            // Add instructions from versioned message
+            if (versionedMessage.compiledInstructions) {
+              for (const compiledIx of versionedMessage.compiledInstructions) {
+                const programId = versionedMessage.staticAccountKeys[compiledIx.programIdIndex];
+                if (!programId) {
+                  console.warn(`⚠️ EXECUTION: Skipping instruction with undefined programId`);
+                  continue;
+                }
+                
+                const accounts = compiledIx.accountKeyIndexes
+                  .map(index => {
+                    const pubkey = versionedMessage.staticAccountKeys[index];
+                    if (!pubkey) {
+                      console.warn(`⚠️ EXECUTION: Skipping account with undefined pubkey at index ${index}`);
+                      return null;
+                    }
+                    return {
+                      pubkey,
+                      isSigner: index < versionedMessage.header.numRequiredSignatures,
+                      isWritable: index < versionedMessage.header.numRequiredSignatures + versionedMessage.header.numReadonlySignedAccounts
+                    };
+                  })
+                  .filter((account): account is NonNullable<typeof account> => account !== null);
+                
+                regularTx.add({
+                  programId,
+                  keys: accounts,
+                  data: Buffer.from(compiledIx.data)
+                });
+              }
+            }
+            
+            retireTx = regularTx;
+            console.log(`✅ EXECUTION: Versioned transaction converted to regular transaction for Phantom compatibility`);
           } catch (versionedError) {
             // Fallback to regular transaction parsing
             retireTx = Transaction.from(transactionBuffer);
@@ -185,18 +222,21 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       }
       
       // Sign the transaction (handles both regular and versioned transactions)
+      console.log(`🔍 EXECUTION: About to sign transaction. Type: ${retireTx instanceof VersionedTransaction ? 'VersionedTransaction' : 'Transaction'}`);
+      console.log(`🔍 EXECUTION: Transaction details:`, {
+        isVersioned: retireTx instanceof VersionedTransaction,
+        hasInstructions: 'instructions' in retireTx ? retireTx.instructions.length : 'N/A',
+        feePayer: 'feePayer' in retireTx ? retireTx.feePayer?.toString() : 'N/A',
+        recentBlockhash: 'recentBlockhash' in retireTx ? retireTx.recentBlockhash : 'N/A'
+      });
+      
       const signedRetireTx = await signTransaction(retireTx);
       
       // Broadcast retire transaction
       updateTxStatus(1, { status: 'broadcasting' });
       
-      // Handle both regular and versioned transactions for serialization
-      let serializedTx: Uint8Array;
-      if (signedRetireTx instanceof VersionedTransaction) {
-        serializedTx = signedRetireTx.serialize();
-      } else {
-        serializedTx = signedRetireTx.serialize();
-      }
+      // Serialize the signed transaction
+      const serializedTx = signedRetireTx.serialize();
       
       const retireSig = await connection.sendRawTransaction(serializedTx);
       
