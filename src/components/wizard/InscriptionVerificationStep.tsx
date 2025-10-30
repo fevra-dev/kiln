@@ -66,7 +66,8 @@ export function InscriptionVerificationStep({
   expectedSha256,
   onVerified,
   autoVerify = false,
-  loadingMessage = 'Verifying inscription content...'
+  loadingMessage = 'Verifying inscription content...',
+  mintAddress
 }: InscriptionVerificationStepProps) {
   // State management
   const [verifying, setVerifying] = useState(false);
