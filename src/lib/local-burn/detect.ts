@@ -12,9 +12,13 @@ import type { NftStandard } from './types';
 export async function detectNftStandard(umi: Umi, mint: string): Promise<NftStandard> {
   try {
     const md = await fetchMetadata(umi, publicKey(mint));
-    const std = md.tokenStandard;
-    if (std === TokenStandard.ProgrammableNonFungible) return 'PNFT';
-    if (std === TokenStandard.NonFungible || std === TokenStandard.NonFungibleEdition) return 'REGULAR';
+    
+    // tokenStandard is an Option<TokenStandard>, need to unwrap it
+    if (md.tokenStandard.__option === 'Some') {
+      const std = md.tokenStandard.value;
+      if (std === TokenStandard.ProgrammableNonFungible) return 'PNFT';
+      if (std === TokenStandard.NonFungible || std === TokenStandard.NonFungibleEdition) return 'REGULAR';
+    }
   } catch (e) {
     // Continue to throw for unknown assets; caller decides fallback
   }
