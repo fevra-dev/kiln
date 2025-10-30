@@ -155,21 +155,42 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
 
         retireData = await solIncineratorResponse.json();
         console.log(`✅ EXECUTION: Sol-Incinerator transaction created: ${retireData.transactionType}`);
-        console.log(`✅ EXECUTION: Transaction data length: ${retireData.transaction?.length || 'undefined'}`);
-        console.log(`✅ EXECUTION: Transaction data preview: ${retireData.transaction?.substring(0, 100) || 'undefined'}`);
+        const serializedPayload: string | undefined = retireData.transaction || retireData.serializedTransaction;
+        console.log(`✅ EXECUTION: Transaction data length: ${serializedPayload?.length || 'undefined'}`);
+        console.log(`✅ EXECUTION: Transaction data preview: ${serializedPayload?.substring(0, 100) || 'undefined'}`);
 
         // Parse the serialized transaction from Sol-Incinerator
         try {
-          const raw = Buffer.from(retireData.transaction, 'base64');
-          // Try versioned first
+          if (!serializedPayload || typeof serializedPayload !== 'string') {
+            throw new Error('Missing serialized transaction payload');
+          }
+
+          // Helper: attempt decode+parse using a provided buffer
+          const tryParse = (raw: Buffer) => {
+            // Try versioned first
+            try {
+              const vtx = VersionedTransaction.deserialize(raw);
+              console.log(`✅ EXECUTION: Parsed VersionedTransaction from Sol-Incinerator payload`);
+              return vtx as unknown as Transaction;
+            } catch {
+              // Fallback to legacy
+              const ltx = Transaction.from(raw);
+              console.log(`✅ EXECUTION: Parsed legacy Transaction from Sol-Incinerator payload`);
+              return ltx;
+            }
+          };
+
+          // First, assume base64
           try {
-            const vtx = VersionedTransaction.deserialize(raw);
-            retireTx = vtx as unknown as Transaction; // Wallet adapter can sign VersionedTransaction; we keep reference
-            console.log(`✅ EXECUTION: Parsed VersionedTransaction from Sol-Incinerator payload`);
-          } catch {
-            // Fallback to legacy
-            retireTx = Transaction.from(raw);
-            console.log(`✅ EXECUTION: Parsed legacy Transaction from Sol-Incinerator payload`);
+            const rawB64 = Buffer.from(serializedPayload, 'base64');
+            if (rawB64.length === 0) throw new Error('Empty buffer from base64 decode');
+            retireTx = tryParse(rawB64);
+          } catch (b64Err) {
+            console.warn(`⚠️ EXECUTION: Base64 parse failed, trying base58:`, b64Err);
+            // Fallback: base58
+            const { default: bs58 } = await import('bs58');
+            const rawB58 = Buffer.from(bs58.decode(serializedPayload));
+            retireTx = tryParse(rawB58);
           }
         } catch (parseErr) {
           console.error(`❌ EXECUTION: Failed to parse Sol-Incinerator transaction:`, parseErr);
