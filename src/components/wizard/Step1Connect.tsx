@@ -71,7 +71,7 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
       <div className="terminal-output mb-8">
         <div className="text-terminal-prompt mb-2">$ init_teleburn_session</div>
         <div className="text-terminal-text/70 text-sm mb-4">
-          {`> Initializing KILN.1 protocol...`}<br />
+          {`> Initializing Kiln protocol...`}<br />
           {`> Awaiting wallet authentication...`}<br />
           <span className="animate-terminal-blink">▊</span>
         </div>

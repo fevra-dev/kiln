@@ -174,7 +174,7 @@ function Header() {
           <div className="flex items-center gap-4">
             <div className="ascii-art text-xs">
 {`╔═══════════════════════════╗
-║  KILN-TELEBURN  v0.1.1    ║
+║  KILN  v0.1.1              ║
 ╚═══════════════════════════╝`}
             </div>
           </div>
@@ -259,7 +259,7 @@ function TerminalInterface() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
               <div className="code-block">
                 <div className="text-matrix-red/60 mb-2">PROTOCOL</div>
-                <div className="text-matrix-red">KILN-TELEBURN v0.1.1</div>
+                <div className="text-matrix-red">KILN v0.1.1</div>
           </div>
           <div className="code-block">
             <div className="text-matrix-red/60 mb-2">SECURITY</div>
@@ -267,7 +267,7 @@ function TerminalInterface() {
           </div>
           <div className="code-block">
             <div className="text-matrix-red/60 mb-2">STATUS</div>
-            <div className="text-terminal-green">OPERATIONAL</div>
+            <div className="text-terminal-red">OFFLINE</div>
           </div>
         </div>
       </div>
@@ -393,7 +393,7 @@ function Footer() {
         
         <div className="border-t border-matrix-red/20 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-sm text-matrix-red/60 font-mono">
-            KILN TELEBURN PROTOCOL v0.1.1
+            KILN v0.1.1
           </div>
           <div className="text-sm text-matrix-red/60 font-mono">
             BUILD.DATE: 2025-10-20
