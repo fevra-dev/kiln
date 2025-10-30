@@ -28,7 +28,12 @@ export const INCINERATOR_ADDRESS = '1nc1nerator11111111111111111111111111111111'
 // ============================================================================
 
 /** Teleburn method for retiring Solana tokens */
-export type TeleburnMethod = 'teleburn-burn' | 'teleburn-incinerate' | 'teleburn-derived';
+export type TeleburnMethod = 
+  | 'teleburn-burn' 
+  | 'teleburn-incinerate' 
+  | 'teleburn-derived'
+  | 'burn' // Backward compatibility: old name for teleburn-burn
+  | 'incinerate'; // Backward compatibility: old name for teleburn-incinerate
 
 /** Memo action type */
 export type MemoAction = 'teleburn-seal' | TeleburnMethod;
