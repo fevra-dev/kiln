@@ -1,7 +1,7 @@
 /**
  * Instruction helpers for compute budget and SPL memo in Umi builders.
  */
-import { publicKey, transactionBuilder, some, type Umi } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, type Umi } from '@metaplex-foundation/umi';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
 
 /**
