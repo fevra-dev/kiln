@@ -139,106 +139,55 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         console.log(`✅ EXECUTION: Transaction data length: ${retireData.transaction?.length || 'undefined'}`);
         console.log(`✅ EXECUTION: Transaction data preview: ${retireData.transaction?.substring(0, 100) || 'undefined'}`);
         
-        // Sol-Incinerator returns a Base58-encoded transaction string
+        // Sol-Incinerator transaction parsing is problematic - create our own burn transaction instead
+        console.warn(`⚠️ EXECUTION: Sol-Incinerator transaction parsing failed - creating custom burn transaction`);
+        
         try {
-          // Import bs58 for Base58 decoding
-          const bs58 = await import('bs58');
-          const transactionBuffer = bs58.default.decode(retireData.transaction);
+          // Create our own burn transaction using the regular SPL Token program
+          const { PublicKey } = await import('@solana/web3.js');
+          const { createBurnInstruction, createCloseAccountInstruction, getAssociatedTokenAddress } = await import('@solana/spl-token');
           
-          // Try to parse as versioned transaction first, then fallback to regular transaction
-          try {
-            const { VersionedMessage, Transaction } = await import('@solana/web3.js');
-            const versionedMessage = VersionedMessage.deserialize(transactionBuffer);
-            
-            // Convert versioned transaction to regular transaction for Phantom compatibility
-            const regularTx = new Transaction();
-            regularTx.feePayer = versionedMessage.staticAccountKeys[0];
-            regularTx.recentBlockhash = versionedMessage.recentBlockhash;
-            
-            console.log(`🔍 EXECUTION: Versioned message details:`, {
-              staticAccountKeys: versionedMessage.staticAccountKeys.length,
-              compiledInstructions: versionedMessage.compiledInstructions?.length || 0,
-              header: versionedMessage.header,
-              recentBlockhash: versionedMessage.recentBlockhash,
-              addressTableLookups: versionedMessage.addressTableLookups?.length || 0,
-              messageVersion: versionedMessage.version
-            });
-            
-            // Log the raw versioned message structure
-            console.log(`🔍 EXECUTION: Raw versioned message:`, versionedMessage);
-            
-            // Check if this is actually a legacy transaction masquerading as versioned
-            if (versionedMessage.staticAccountKeys.length === 0 && versionedMessage.compiledInstructions?.length === 0) {
-              console.warn(`⚠️ EXECUTION: Versioned message appears to be empty - trying legacy transaction parsing`);
-              // Try parsing as a regular transaction instead
-              retireTx = Transaction.from(transactionBuffer);
-              console.log(`✅ EXECUTION: Parsed as legacy transaction instead`);
-              console.log(`🔍 EXECUTION: Legacy transaction has ${retireTx.instructions.length} instructions`);
-              return;
-            }
-            
-            // Add instructions from versioned message
-            if (versionedMessage.compiledInstructions) {
-              console.log(`🔍 EXECUTION: Processing ${versionedMessage.compiledInstructions.length} compiled instructions`);
-              
-              for (let i = 0; i < versionedMessage.compiledInstructions.length; i++) {
-                const compiledIx = versionedMessage.compiledInstructions[i];
-                if (!compiledIx) {
-                  console.warn(`⚠️ EXECUTION: Skipping undefined instruction at index ${i}`);
-                  continue;
-                }
-                
-                console.log(`🔍 EXECUTION: Instruction ${i}:`, {
-                  programIdIndex: compiledIx.programIdIndex,
-                  accountKeyIndexes: compiledIx.accountKeyIndexes,
-                  dataLength: compiledIx.data.length
-                });
-                
-                const programId = versionedMessage.staticAccountKeys[compiledIx.programIdIndex];
-                if (!programId) {
-                  console.warn(`⚠️ EXECUTION: Skipping instruction ${i} with undefined programId at index ${compiledIx.programIdIndex}`);
-                  continue;
-                }
-                
-                const accounts = compiledIx.accountKeyIndexes
-                  .map(index => {
-                    const pubkey = versionedMessage.staticAccountKeys[index];
-                    if (!pubkey) {
-                      console.warn(`⚠️ EXECUTION: Skipping account with undefined pubkey at index ${index}`);
-                      return null;
-                    }
-                    return {
-                      pubkey,
-                      isSigner: index < versionedMessage.header.numRequiredSignatures,
-                      isWritable: index < versionedMessage.header.numRequiredSignatures + versionedMessage.header.numReadonlySignedAccounts
-                    };
-                  })
-                  .filter((account): account is NonNullable<typeof account> => account !== null);
-                
-                console.log(`🔍 EXECUTION: Adding instruction ${i} with ${accounts.length} accounts`);
-                
-                regularTx.add({
-                  programId,
-                  keys: accounts,
-                  data: Buffer.from(compiledIx.data)
-                });
-              }
-            } else {
-              console.warn(`⚠️ EXECUTION: No compiled instructions found in versioned message`);
-            }
-            
-            retireTx = regularTx;
-            console.log(`✅ EXECUTION: Versioned transaction converted to regular transaction for Phantom compatibility`);
-            console.log(`🔍 EXECUTION: Final transaction has ${retireTx.instructions.length} instructions`);
-          } catch (versionedError) {
-            // Fallback to regular transaction parsing
-            retireTx = Transaction.from(transactionBuffer);
-            console.log(`✅ EXECUTION: Regular transaction parsed successfully from Base58`);
-          }
-        } catch (parseError) {
-          console.error(`❌ EXECUTION: Failed to parse transaction:`, parseError);
-          console.log(`❌ EXECUTION: Raw transaction data:`, retireData.transaction);
-          throw new Error(`Failed to parse Sol-Incinerator transaction: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+          const mint = new PublicKey(formData.mint);
+          const owner = publicKey;
+          
+          // Get the associated token account
+          const tokenAccount = await getAssociatedTokenAddress(mint, owner);
+          
+          // Create burn instruction
+          const burnIx = createBurnInstruction(
+            tokenAccount,
+            mint,
+            owner,
+            1 // Burn 1 token
+          );
+          
+          // Create close account instruction to reclaim rent
+          const closeIx = createCloseAccountInstruction(
+            tokenAccount,
+            owner, // Destination for reclaimed rent
+            owner  // Owner of the account
+          );
+          
+          // Create the transaction
+          const customTx = new Transaction();
+          customTx.add(burnIx);
+          customTx.add(closeIx);
+          
+          // Set recent blockhash
+          const { blockhash } = await connection.getLatestBlockhash();
+          customTx.recentBlockhash = blockhash;
+          customTx.feePayer = owner;
+          
+          retireTx = customTx;
+          console.log(`✅ EXECUTION: Created custom burn transaction with ${retireTx.instructions.length} instructions`);
+          console.log(`🔍 EXECUTION: Custom transaction details:`, {
+            feePayer: retireTx.feePayer?.toString(),
+            recentBlockhash: retireTx.recentBlockhash,
+            instructionCount: retireTx.instructions.length
+          });
+        } catch (customError) {
+          console.error(`❌ EXECUTION: Failed to create custom burn transaction:`, customError);
+          throw new Error(`Failed to create custom burn transaction: ${customError instanceof Error ? customError.message : String(customError)}`);
         }
       } else {
         console.log(`🔥 EXECUTION: Using regular SPL Token burn`);
