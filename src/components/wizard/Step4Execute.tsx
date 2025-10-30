@@ -183,7 +183,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
               { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
               { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
             ],
-            data: Buffer.from([41]) // burnV1 instruction discriminator (just 41, not [41, 0])
+            data: Buffer.from([0x29, 0x00]) // burnV1 instruction discriminator (0x29 = 41, plus 0x00)
           };
           
           // Create close account instruction to reclaim rent
@@ -199,10 +199,12 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           customTx.add(burnV1Ix);
           customTx.add(closeIx);
           
-          // Set recent blockhash
-          const { blockhash } = await connection.getLatestBlockhash();
-          customTx.recentBlockhash = blockhash;
+          // Set recent blockhash and fee payer
           customTx.feePayer = owner;
+          
+          // Get fresh blockhash just before sending to avoid "Blockhash not found" errors
+          const { blockhash } = await connection.getLatestBlockhash('confirmed');
+          customTx.recentBlockhash = blockhash;
           
           retireTx = customTx;
           console.log(`✅ EXECUTION: Created Metaplex burnV1 transaction with ${retireTx.instructions.length} instructions`);
@@ -249,6 +251,13 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       });
       
       const signedRetireTx = await signTransaction(retireTx);
+      
+      // Update blockhash just before sending to avoid "Blockhash not found" errors
+      if ('recentBlockhash' in signedRetireTx) {
+        const { blockhash } = await connection.getLatestBlockhash('confirmed');
+        signedRetireTx.recentBlockhash = blockhash;
+        console.log(`🔄 EXECUTION: Updated blockhash to: ${blockhash}`);
+      }
       
       // Broadcast retire transaction
       updateTxStatus(1, { status: 'broadcasting' });
