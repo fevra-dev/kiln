@@ -34,7 +34,6 @@ export function withSplMemo(
       programId: MEMO_PROGRAM_ID,
       keys: [],
       data,
-      bytesCreatedOnChain: 0n,
     },
     signers: [],
     // No additional on-chain bytes besides the instruction itself
