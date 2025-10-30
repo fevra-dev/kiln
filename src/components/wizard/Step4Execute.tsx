@@ -16,7 +16,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, Transaction } from '@solana/web3.js';
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { MemoDisplay } from '../teleburn/MemoDisplay';
-import { isPNFTViaSolIncinerator } from '@/lib/sol-incinerator';
 
 interface Step4ExecuteProps {
   formData: TeleburnFormData;
@@ -105,9 +104,26 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       // Step 2: Build and sign RETIRE transaction
       updateTxStatus(1, { status: 'signing' });
       
-      // Check if this is a pNFT that needs Sol-Incinerator
-      console.log(`🔍 EXECUTION: Checking if ${formData.mint} is a pNFT...`);
-      const isPNFT = await isPNFTViaSolIncinerator(formData.mint, publicKey.toBase58());
+      // Check if this is a pNFT that needs Sol-Incinerator (server-side detection)
+      console.log(`🔍 EXECUTION: Checking if ${formData.mint} is a pNFT via server...`);
+      
+      // Use server-side pNFT detection to avoid CORS issues
+      const pnftCheckResponse = await fetch('/api/tx/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mint: formData.mint,
+          owner: publicKey.toBase58(),
+          inscriptionId: formData.inscriptionId,
+          sha256: formData.sha256,
+          method: formData.method,
+        }),
+      });
+
+      if (!pnftCheckResponse.ok) throw new Error('Failed to check pNFT status');
+      
+      const pnftCheckData = await pnftCheckResponse.json();
+      const isPNFT = pnftCheckData.report?.debug?.pnftDetection?.finalDetection || false;
       console.log(`🔍 EXECUTION: pNFT detection result: ${isPNFT}`);
       
       let retireData;
