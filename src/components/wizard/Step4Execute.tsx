@@ -159,8 +159,23 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
               staticAccountKeys: versionedMessage.staticAccountKeys.length,
               compiledInstructions: versionedMessage.compiledInstructions?.length || 0,
               header: versionedMessage.header,
-              recentBlockhash: versionedMessage.recentBlockhash
+              recentBlockhash: versionedMessage.recentBlockhash,
+              addressTableLookups: versionedMessage.addressTableLookups?.length || 0,
+              messageVersion: versionedMessage.version
             });
+            
+            // Log the raw versioned message structure
+            console.log(`🔍 EXECUTION: Raw versioned message:`, versionedMessage);
+            
+            // Check if this is actually a legacy transaction masquerading as versioned
+            if (versionedMessage.staticAccountKeys.length === 0 && versionedMessage.compiledInstructions?.length === 0) {
+              console.warn(`⚠️ EXECUTION: Versioned message appears to be empty - trying legacy transaction parsing`);
+              // Try parsing as a regular transaction instead
+              retireTx = Transaction.from(transactionBuffer);
+              console.log(`✅ EXECUTION: Parsed as legacy transaction instead`);
+              console.log(`🔍 EXECUTION: Legacy transaction has ${retireTx.instructions.length} instructions`);
+              return;
+            }
             
             // Add instructions from versioned message
             if (versionedMessage.compiledInstructions) {
