@@ -136,9 +136,18 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         
         retireData = await solIncineratorResponse.json();
         console.log(`✅ EXECUTION: Sol-Incinerator transaction created: ${retireData.transactionType}`);
+        console.log(`✅ EXECUTION: Transaction data length: ${retireData.transaction?.length || 'undefined'}`);
+        console.log(`✅ EXECUTION: Transaction data preview: ${retireData.transaction?.substring(0, 100) || 'undefined'}`);
         
         // Sol-Incinerator returns a serialized transaction string
-        retireTx = Transaction.from(Buffer.from(retireData.transaction, 'base64'));
+        try {
+          retireTx = Transaction.from(Buffer.from(retireData.transaction, 'base64'));
+          console.log(`✅ EXECUTION: Transaction parsed successfully`);
+        } catch (parseError) {
+          console.error(`❌ EXECUTION: Failed to parse transaction:`, parseError);
+          console.log(`❌ EXECUTION: Raw transaction data:`, retireData.transaction);
+          throw new Error(`Failed to parse Sol-Incinerator transaction: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+        }
       } else {
         console.log(`🔥 EXECUTION: Using regular SPL Token burn`);
         

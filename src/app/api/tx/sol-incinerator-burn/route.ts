@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ SOL-INCINERATOR API: Burn transaction created successfully`);
     console.log(`✅ SOL-INCINERATOR API: Transaction type: ${burnResult.transactionType}`);
+    console.log(`✅ SOL-INCINERATOR API: Serialized transaction length: ${burnResult.serializedTransaction?.length || 'undefined'}`);
+    console.log(`✅ SOL-INCINERATOR API: Serialized transaction preview: ${burnResult.serializedTransaction?.substring(0, 100) || 'undefined'}`);
 
     return NextResponse.json({
       success: true,
