@@ -13,7 +13,7 @@
 
 import { FC, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Connection, Transaction } from '@solana/web3.js';
+import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { MemoDisplay } from '../teleburn/MemoDisplay';
 
@@ -144,8 +144,19 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           // Import bs58 for Base58 decoding
           const bs58 = await import('bs58');
           const transactionBuffer = bs58.default.decode(retireData.transaction);
-          retireTx = Transaction.from(transactionBuffer);
-          console.log(`✅ EXECUTION: Transaction parsed successfully from Base58`);
+          
+          // Try to parse as versioned transaction first, then fallback to regular transaction
+          try {
+            const { VersionedMessage } = await import('@solana/web3.js');
+            const versionedMessage = VersionedMessage.deserialize(transactionBuffer);
+            // Create a versioned transaction for signing
+            retireTx = new VersionedTransaction(versionedMessage);
+            console.log(`✅ EXECUTION: Versioned transaction parsed successfully from Base58`);
+          } catch (versionedError) {
+            // Fallback to regular transaction parsing
+            retireTx = Transaction.from(transactionBuffer);
+            console.log(`✅ EXECUTION: Regular transaction parsed successfully from Base58`);
+          }
         } catch (parseError) {
           console.error(`❌ EXECUTION: Failed to parse transaction:`, parseError);
           console.log(`❌ EXECUTION: Raw transaction data:`, retireData.transaction);
@@ -173,11 +184,21 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         retireTx = Transaction.from(Buffer.from(retireData.transaction, 'base64'));
       }
       
+      // Sign the transaction (handles both regular and versioned transactions)
       const signedRetireTx = await signTransaction(retireTx);
       
       // Broadcast retire transaction
       updateTxStatus(1, { status: 'broadcasting' });
-      const retireSig = await connection.sendRawTransaction(signedRetireTx.serialize());
+      
+      // Handle both regular and versioned transactions for serialization
+      let serializedTx: Uint8Array;
+      if (signedRetireTx instanceof VersionedTransaction) {
+        serializedTx = signedRetireTx.serialize();
+      } else {
+        serializedTx = signedRetireTx.serialize();
+      }
+      
+      const retireSig = await connection.sendRawTransaction(serializedTx);
       
       // Confirm retire transaction
       updateTxStatus(1, { status: 'confirming' });
