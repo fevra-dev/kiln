@@ -139,10 +139,13 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         console.log(`✅ EXECUTION: Transaction data length: ${retireData.transaction?.length || 'undefined'}`);
         console.log(`✅ EXECUTION: Transaction data preview: ${retireData.transaction?.substring(0, 100) || 'undefined'}`);
         
-        // Sol-Incinerator returns a serialized transaction string
+        // Sol-Incinerator returns a Base58-encoded transaction string
         try {
-          retireTx = Transaction.from(Buffer.from(retireData.transaction, 'base64'));
-          console.log(`✅ EXECUTION: Transaction parsed successfully`);
+          // Import bs58 for Base58 decoding
+          const bs58 = await import('bs58');
+          const transactionBuffer = bs58.default.decode(retireData.transaction);
+          retireTx = Transaction.from(transactionBuffer);
+          console.log(`✅ EXECUTION: Transaction parsed successfully from Base58`);
         } catch (parseError) {
           console.error(`❌ EXECUTION: Failed to parse transaction:`, parseError);
           console.log(`❌ EXECUTION: Raw transaction data:`, retireData.transaction);
