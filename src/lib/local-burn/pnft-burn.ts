@@ -41,8 +41,6 @@ export async function buildAndSendPnftBurnWithMemo(
 
   const collection = asset.metadata.collection.__option === 'Some' ? asset.metadata.collection.value : null;
   const collectionMetadata = collection ? findMetadataPda(umi, { mint: collection.key })[0] : undefined;
-  const programmableConfig = asset.metadata.programmableConfig.__option === 'Some' ? asset.metadata.programmableConfig.value : null;
-  const ruleSet = programmableConfig?.ruleSet;
 
   let tb = transactionBuilder();
   tb = withComputeBudget(umi, tb, { microLamports: args.priorityMicrolamports });
@@ -56,7 +54,6 @@ export async function buildAndSendPnftBurnWithMemo(
       edition: masterEditionPda,
       collectionMetadata,
       tokenStandard: TokenStandard.ProgrammableNonFungible,
-      authorizationRules: ruleSet ? publicKey(ruleSet) : undefined,
     })
   );
 
