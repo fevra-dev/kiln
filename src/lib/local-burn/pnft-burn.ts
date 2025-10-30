@@ -49,7 +49,7 @@ export async function buildAndSendPnftBurnWithMemo(
 
   tb = tb.add(
     burnV1(umi, {
-      mintAccount: mintPk,
+      mint: mintPk,
       token: asset.token.publicKey,
       tokenRecord: asset.tokenRecord?.publicKey,
       metadata: metadataPda,

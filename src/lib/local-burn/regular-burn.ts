@@ -36,7 +36,7 @@ export async function buildAndSendRegularBurnWithMemo(
 
   tb = tb.add(
     burnV1(umi, {
-      mintAccount: mintPk,
+      mint: mintPk,
       token: asset.token.publicKey,
       metadata: metadataPda,
       edition: masterEditionPda,
