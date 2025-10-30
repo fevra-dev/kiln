@@ -89,6 +89,25 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       const sealData = await sealResponse.json();
       const sealTx = Transaction.from(Buffer.from(sealData.transaction, 'base64'));
       
+      // Update SEAL transaction with fresh timestamp and block height
+      const { blockhash: freshBlockhash } = await connection.getLatestBlockhash('confirmed');
+      const freshSlot = await connection.getSlot();
+      const freshTimestamp = Math.floor(Date.now() / 1000);
+      
+      // Update the memo instruction with fresh values
+      const memoInstruction = sealTx.instructions[0];
+      if (memoInstruction && memoInstruction.programId.toString() === 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr') {
+        const memoData = JSON.parse(memoInstruction.data.toString('utf-8'));
+        memoData.timestamp = freshTimestamp;
+        memoData.block_height = freshSlot;
+        memoInstruction.data = Buffer.from(JSON.stringify(memoData), 'utf-8');
+        console.log(`🔄 EXECUTION: Updated SEAL memo with fresh timestamp: ${freshTimestamp}, block height: ${freshSlot}`);
+      }
+      
+      // Update blockhash
+      sealTx.recentBlockhash = freshBlockhash;
+      console.log(`🔄 EXECUTION: Updated SEAL blockhash to: ${freshBlockhash}`);
+      
       const signedSealTx = await signTransaction(sealTx);
       
       // Broadcast seal transaction
