@@ -202,7 +202,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
               { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
               { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
             ],
-            data: Buffer.from([0x29, 0x00]) // burnV1 instruction discriminator (0x29 = 41, plus 0x00)
+            data: Buffer.from([0x29]) // burnV1 instruction discriminator (0x29 = 41)
           };
           
           // Create close account instruction to reclaim rent
@@ -270,13 +270,6 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       });
       
       const signedRetireTx = await signTransaction(retireTx);
-      
-      // Update blockhash just before sending to avoid "Blockhash not found" errors
-      if ('recentBlockhash' in signedRetireTx) {
-        const { blockhash } = await connection.getLatestBlockhash('confirmed');
-        signedRetireTx.recentBlockhash = blockhash;
-        console.log(`🔄 EXECUTION: Updated blockhash to: ${blockhash}`);
-      }
       
       // Broadcast retire transaction
       updateTxStatus(1, { status: 'broadcasting' });
@@ -359,6 +352,29 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                 </ul>
                 <p className="mt-3 font-bold">
                   Ensure you have verified the inscription and reviewed the dry run before proceeding.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phantom Wallet Note */}
+      {!executing && !completed && (
+        <div className="info-box">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">ℹ️</div>
+            <div>
+              <div className="font-bold mb-2">PHANTOM WALLET WARNINGS</div>
+              <div className="text-sm space-y-2">
+                <p>Phantom may show security warnings because <code>kiln.hot</code> is a new domain:</p>
+                <ul className="list-disc list-inside opacity-80">
+                  <li><strong>&quot;This domain is new or has not been reviewed yet&quot;</strong> - This is normal for new dApps</li>
+                  <li><strong>&quot;This dApp could be malicious&quot;</strong> - Phantom&apos;s safety feature for unreviewed domains</li>
+                  <li>You can safely click <strong>&quot;Proceed anyway (unsafe)&quot;</strong> to continue</li>
+                </ul>
+                <p className="mt-3 text-terminal-green">
+                  ✅ These warnings are expected and do not affect the security of your teleburn.
                 </p>
               </div>
             </div>
