@@ -137,7 +137,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       
       if (isPNFT) {
         console.log(`🔥 EXECUTION: Using Sol-Incinerator for pNFT burn`);
-        
+
         const solIncineratorResponse = await fetch('/api/tx/sol-incinerator-burn', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -152,91 +152,28 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           const errorData = await solIncineratorResponse.json();
           throw new Error(`Sol-Incinerator burn failed: ${errorData.error || 'Unknown error'}`);
         }
-        
+
         retireData = await solIncineratorResponse.json();
         console.log(`✅ EXECUTION: Sol-Incinerator transaction created: ${retireData.transactionType}`);
         console.log(`✅ EXECUTION: Transaction data length: ${retireData.transaction?.length || 'undefined'}`);
         console.log(`✅ EXECUTION: Transaction data preview: ${retireData.transaction?.substring(0, 100) || 'undefined'}`);
-        
-        // Sol-Incinerator transaction parsing is problematic - create our own burn transaction instead
-        console.warn(`⚠️ EXECUTION: Sol-Incinerator transaction parsing failed - creating custom burn transaction`);
-        
+
+        // Parse the serialized transaction from Sol-Incinerator
         try {
-          // For pNFTs, we need to use Metaplex Token Metadata program, not SPL Token program
-          console.log(`🔍 EXECUTION: Creating Metaplex-compatible burn transaction for pNFT`);
-          
-          const { PublicKey, SystemProgram } = await import('@solana/web3.js');
-          const { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
-          
-          const mint = new PublicKey(formData.mint);
-          const owner = publicKey;
-          
-          // Metaplex Token Metadata program ID
-          const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
-          
-          // Get the associated token account
-          const tokenAccount = await getAssociatedTokenAddress(mint, owner);
-          
-          // Get the metadata account (PDA for the mint)
-          const [metadataAccount] = PublicKey.findProgramAddressSync(
-            [Buffer.from('metadata'), TOKEN_METADATA_PROGRAM_ID.toBuffer(), mint.toBuffer()],
-            TOKEN_METADATA_PROGRAM_ID
-          );
-          
-          // Get the master edition account (PDA for the mint)
-          const [masterEditionAccount] = PublicKey.findProgramAddressSync(
-            [Buffer.from('metadata'), TOKEN_METADATA_PROGRAM_ID.toBuffer(), mint.toBuffer(), Buffer.from('edition')],
-            TOKEN_METADATA_PROGRAM_ID
-          );
-          
-          // Create the Metaplex burnV1 instruction manually
-          // This instruction atomically thaws and burns the pNFT
-          const burnV1Ix = {
-            programId: TOKEN_METADATA_PROGRAM_ID,
-            keys: [
-              { pubkey: metadataAccount, isSigner: false, isWritable: true },
-              { pubkey: masterEditionAccount, isSigner: false, isWritable: true },
-              { pubkey: tokenAccount, isSigner: false, isWritable: true },
-              { pubkey: mint, isSigner: false, isWritable: true },
-              { pubkey: owner, isSigner: true, isWritable: true },
-              { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-              { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-            ],
-            data: Buffer.from([0x29]) // burnV1 instruction discriminator (0x29 = 41)
-          };
-          
-          // Create close account instruction to reclaim rent
-          const { createCloseAccountInstruction } = await import('@solana/spl-token');
-          const closeIx = createCloseAccountInstruction(
-            tokenAccount,
-            owner, // Destination for reclaimed rent
-            owner  // Owner of the account
-          );
-          
-          // Create the transaction
-          const customTx = new Transaction();
-          customTx.add(burnV1Ix);
-          customTx.add(closeIx);
-          
-          // Set recent blockhash and fee payer
-          customTx.feePayer = owner;
-          
-          // Get fresh blockhash just before sending to avoid "Blockhash not found" errors
-          const { blockhash } = await connection.getLatestBlockhash('confirmed');
-          customTx.recentBlockhash = blockhash;
-          
-          retireTx = customTx;
-          console.log(`✅ EXECUTION: Created Metaplex burnV1 transaction with ${retireTx.instructions.length} instructions`);
-          console.log(`🔍 EXECUTION: Metaplex transaction details:`, {
-            feePayer: retireTx.feePayer?.toString(),
-            recentBlockhash: retireTx.recentBlockhash,
-            instructionCount: retireTx.instructions.length,
-            metadataAccount: metadataAccount.toString(),
-            masterEditionAccount: masterEditionAccount.toString()
-          });
-        } catch (customError) {
-          console.error(`❌ EXECUTION: Failed to create Metaplex burn transaction:`, customError);
-          throw new Error(`Failed to create Metaplex burn transaction: ${customError instanceof Error ? customError.message : String(customError)}`);
+          const raw = Buffer.from(retireData.transaction, 'base64');
+          // Try versioned first
+          try {
+            const vtx = VersionedTransaction.deserialize(raw);
+            retireTx = vtx as unknown as Transaction; // Wallet adapter can sign VersionedTransaction; we keep reference
+            console.log(`✅ EXECUTION: Parsed VersionedTransaction from Sol-Incinerator payload`);
+          } catch {
+            // Fallback to legacy
+            retireTx = Transaction.from(raw);
+            console.log(`✅ EXECUTION: Parsed legacy Transaction from Sol-Incinerator payload`);
+          }
+        } catch (parseErr) {
+          console.error(`❌ EXECUTION: Failed to parse Sol-Incinerator transaction:`, parseErr);
+          throw new Error(`Failed to parse Sol-Incinerator transaction: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
         }
       } else {
         console.log(`🔥 EXECUTION: Using regular SPL Token burn`);
