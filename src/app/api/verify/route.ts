@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Connection, PublicKey, type TransactionInstruction } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { z } from 'zod';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
 
