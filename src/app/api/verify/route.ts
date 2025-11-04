@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     // Search for KILN memos in recent transaction history
     let inscriptionId: string | undefined;
     let sha256: string | undefined;
+    let teleburnTimestamp: number | undefined;
     let sealSignature: string | undefined;
     let burnSignature: string | undefined;
     const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
@@ -140,6 +141,12 @@ export async function POST(request: NextRequest) {
                   ) {
                     inscriptionId = inscriptionId || memoJson.inscription.id;
                     sha256 = sha256 || memoJson.media?.sha256;
+                    // Extract timestamp from memo (preferred) or use transaction blockTime
+                    if (memoJson.timestamp) {
+                      teleburnTimestamp = typeof memoJson.timestamp === 'number' ? memoJson.timestamp : parseInt(memoJson.timestamp, 10);
+                    } else if (tx.blockTime) {
+                      teleburnTimestamp = tx.blockTime;
+                    }
                     burnSignature = sigInfo.signature;
                   }
                 }
@@ -189,6 +196,7 @@ export async function POST(request: NextRequest) {
       message,
       inscriptionId,
       sha256,
+      teleburnTimestamp,
       sealSignature,
       burnSignature,
     }, { headers: corsHeaders });

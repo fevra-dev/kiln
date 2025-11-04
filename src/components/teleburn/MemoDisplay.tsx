@@ -228,6 +228,9 @@ export const MemoDisplay: FC<MemoDisplayProps> = ({ memo, title = "TELEBURN MEMO
           padding-left: 1rem;
           width: 100%;
           box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
         }
 
         .field {
@@ -256,6 +259,7 @@ export const MemoDisplay: FC<MemoDisplayProps> = ({ memo, title = "TELEBURN MEMO
           word-break: break-all;
           flex: 1;
           min-width: 0;
+          text-align: left;
         }
 
         .field-value.protocol {
@@ -266,10 +270,11 @@ export const MemoDisplay: FC<MemoDisplayProps> = ({ memo, title = "TELEBURN MEMO
         .field-value.inscription-id,
         .field-value.mint-address,
         .field-value.derived-address {
-          color: rgba(0, 255, 255, 0.8);
+          color: rgba(255, 150, 0, 0.9);
           font-family: monospace;
           word-break: break-all;
           overflow-wrap: break-word;
+          text-align: left;
         }
 
         .field-value.hash {

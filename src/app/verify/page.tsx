@@ -12,8 +12,12 @@
 
 import { useState } from 'react';
 import { isValidPublicKey } from '@/lib/schemas';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
 
 export default function VerifyPage() {
+  const { publicKey, signTransaction } = useWallet();
   const [mintAddress, setMintAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
@@ -23,10 +27,13 @@ export default function VerifyPage() {
     message?: string;
     inscriptionId?: string;
     sha256?: string;
+    teleburnTimestamp?: number;
     sealSignature?: string;
     burnSignature?: string;
     supply?: string;
   } | null>(null);
+  const [updatingMetadata, setUpdatingMetadata] = useState(false);
+  const [metadataUpdateCompleted, setMetadataUpdateCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -59,6 +66,72 @@ export default function VerifyPage() {
       setError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Handle metadata update transaction
+   */
+  const handleUpdateMetadata = async () => {
+    if (!publicKey || !signTransaction || !result?.inscriptionId) {
+      return;
+    }
+
+    setUpdatingMetadata(true);
+
+    try {
+      const connection = new Connection(
+        process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+
+      const metadataUpdateResponse = await fetch('/api/tx/update-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mint: mintAddress,
+          updateAuthority: publicKey.toBase58(),
+          inscriptionId: result.inscriptionId,
+          priorityMicrolamports: 2_000,
+        }),
+      });
+
+      if (!metadataUpdateResponse.ok) {
+        const errorData = await metadataUpdateResponse.json();
+        throw new Error(`Failed to build metadata update transaction: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const metadataUpdateData = await metadataUpdateResponse.json();
+
+      // Parse the transaction
+      let metadataUpdateTx: Transaction | VersionedTransaction;
+      const txBuffer = Buffer.from(metadataUpdateData.transaction, 'base64');
+
+      if (metadataUpdateData.isVersioned) {
+        metadataUpdateTx = VersionedTransaction.deserialize(txBuffer);
+      } else {
+        metadataUpdateTx = Transaction.from(txBuffer);
+        if ('feePayer' in metadataUpdateTx && metadataUpdateTx.feePayer) {
+          if (!metadataUpdateTx.feePayer.equals(publicKey)) {
+            metadataUpdateTx.feePayer = publicKey;
+          }
+        }
+        const { blockhash } = await connection.getLatestBlockhash('confirmed');
+        metadataUpdateTx.recentBlockhash = blockhash;
+      }
+
+      // Sign and send
+      const signedMetadataUpdateTx = await signTransaction(metadataUpdateTx);
+      const serializedTx = signedMetadataUpdateTx.serialize();
+      const metadataUpdateSig = await connection.sendRawTransaction(serializedTx);
+      await connection.confirmTransaction(metadataUpdateSig, 'confirmed');
+
+      setMetadataUpdateCompleted(true);
+    } catch (error) {
+      console.error('Metadata update error:', error);
+      alert(`Metadata update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUpdatingMetadata(false);
     }
   };
 
@@ -162,29 +235,35 @@ export default function VerifyPage() {
                   </div>
                   {result.inscriptionId && (
                     <div className="flex flex-col gap-2 pt-2 border-t border-terminal-text/20">
-                      <div className="flex justify-between">
-                        <span className="opacity-70">Bitcoin Inscription:</span>
-                        <span className="font-mono text-xs break-all text-right max-w-[60%]">
+                      <div className="flex justify-between items-start">
+                        <span className="opacity-70">Inscription ID:</span>
+                        <span className="font-mono text-xs break-all text-right max-w-[60%] text-orange-400">
                           {result.inscriptionId}
                         </span>
                       </div>
-                      {result.inscriptionId && (
-                        <a
-                          href={`https://ordinals.com/inscription/${result.inscriptionId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:text-blue-300 hover:underline self-end"
-                        >
-                          View on ordinals.com →
-                        </a>
-                      )}
+                      <a
+                        href={`https://ordinals.com/inscription/${result.inscriptionId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-400 hover:text-blue-300 hover:underline self-end"
+                      >
+                        View on ordinals.com →
+                      </a>
+                    </div>
+                  )}
+                  {result.teleburnTimestamp && (
+                    <div className="flex justify-between pt-2 border-t border-terminal-text/20">
+                      <span className="opacity-70">Teleburned:</span>
+                      <span className="font-mono text-xs">
+                        {new Date(result.teleburnTimestamp * 1000).toLocaleString()}
+                      </span>
                     </div>
                   )}
                   {result.sha256 && (
                     <div className="flex justify-between pt-2 border-t border-terminal-text/20">
                       <span className="opacity-70">SHA-256:</span>
                       <span className="font-mono text-xs break-all text-right max-w-[60%]">
-                        {result.sha256.slice(0, 32)}...
+                        {result.sha256}
                       </span>
                     </div>
                   )}
@@ -223,6 +302,53 @@ export default function VerifyPage() {
                 {result.message && (
                   <div className="mt-6 p-4 bg-black/40 border border-terminal-text/20 text-xs">
                     {result.message}
+                  </div>
+                )}
+
+                {/* Optional Metadata Update (only if burned and inscription found) */}
+                {result.status === 'burned' && result.inscriptionId && (
+                  <div className="mt-6 p-4 bg-black/40 border border-terminal-text/20">
+                    {publicKey && signTransaction ? (
+                      <>
+                        <div className="flex items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={handleUpdateMetadata}
+                            disabled={updatingMetadata || metadataUpdateCompleted}
+                            className="terminal-button px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {updatingMetadata ? 'UPDATING...' : metadataUpdateCompleted ? '✓ UPDATED' : 'UPDATE METADATA'}
+                          </button>
+                          <div className="flex-1">
+                            <div className="font-bold mb-2">
+                              Update NFT Metadata to Ordinals Link
+                            </div>
+                            <div className="text-xs space-y-2 opacity-80">
+                              <p>Update this NFT&apos;s metadata image URL to point to the Ordinals inscription.</p>
+                              <p className="font-mono text-xs break-all">
+                                https://ordinals.com/inscription/{result.inscriptionId}
+                              </p>
+                              <p className="text-xs italic">
+                                ⚠️ Requires: NFT must be mutable and you must be the update authority
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        {metadataUpdateCompleted && (
+                          <div className="mt-3 p-2 bg-green-500/10 border border-green-500/30 text-xs">
+                            ✓ Metadata update transaction confirmed
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-xs opacity-70 space-y-3">
+                        <p className="font-bold mb-2">Connect Wallet to Update Metadata</p>
+                        <p>Connect your wallet to update this NFT&apos;s metadata image URL to point to the Ordinals inscription.</p>
+                        <div className="flex justify-start">
+                          <WalletMultiButton className="!bg-black/60 !border-terminal-text/30 hover:!bg-black/80" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

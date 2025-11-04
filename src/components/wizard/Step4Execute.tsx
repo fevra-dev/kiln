@@ -45,9 +45,11 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
   const { publicKey, signTransaction } = useWallet();
   const [executing, setExecuting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [updateMetadata, setUpdateMetadata] = useState(false);
+  const [updatingMetadata, setUpdatingMetadata] = useState(false);
+  const [metadataUpdateCompleted, setMetadataUpdateCompleted] = useState(false);
   const [txStates, setTxStates] = useState<TxState[]>([
-    { name: 'SEAL', status: 'pending' },
-    { name: 'RETIRE', status: 'pending' },
+    { name: 'BURN+MEMO', status: 'pending' },
   ]);
 
   const updateTxStatus = (index: number, updates: Partial<TxState>) => {
@@ -70,234 +72,96 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         'confirmed'
       );
 
-      // Step 1: Build and sign SEAL transaction
+      // Build and sign single BURN+MEMO transaction
       updateTxStatus(0, { status: 'signing' });
       
-      const sealResponse = await fetch('/api/tx/seal', {
+      console.log(`🔥 EXECUTION: Building single burn+memo transaction...`);
+      console.log(`📋 EXECUTION: Mint: ${formData.mint}`);
+      console.log(`📋 EXECUTION: Owner: ${publicKey.toBase58()}`);
+      console.log(`📋 EXECUTION: Inscription ID: ${formData.inscriptionId}`);
+      
+      const burnMemoResponse = await fetch('/api/tx/burn-memo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          payer: publicKey.toBase58(),
           mint: formData.mint,
+          owner: publicKey.toBase58(),
           inscriptionId: formData.inscriptionId,
           sha256: formData.sha256,
+          priorityMicrolamports: 2_000,
         }),
       });
 
-      if (!sealResponse.ok) throw new Error('Failed to build seal transaction');
-      
-      const sealData = await sealResponse.json();
-      const sealTx = Transaction.from(Buffer.from(sealData.transaction, 'base64'));
-      
-      // Update SEAL transaction with fresh timestamp and block height
-      const { blockhash: freshBlockhash } = await connection.getLatestBlockhash('confirmed');
-      const freshSlot = await connection.getSlot();
-      const freshTimestamp = Math.floor(Date.now() / 1000);
-      
-      // Update the memo instruction with fresh values
-      const memoInstruction = sealTx.instructions[0];
-      if (memoInstruction && memoInstruction.programId.toString() === 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr') {
-        const memoData = JSON.parse(memoInstruction.data.toString('utf-8'));
-        memoData.timestamp = freshTimestamp;
-        memoData.block_height = freshSlot;
-        memoInstruction.data = Buffer.from(JSON.stringify(memoData), 'utf-8');
-        console.log(`🔄 EXECUTION: Updated SEAL memo with fresh timestamp: ${freshTimestamp}, block height: ${freshSlot}`);
+      if (!burnMemoResponse.ok) {
+        const errorData = await burnMemoResponse.json();
+        throw new Error(`Failed to build burn+memo transaction: ${errorData.error || 'Unknown error'}`);
       }
       
-      // Update blockhash
-      sealTx.recentBlockhash = freshBlockhash;
-      console.log(`🔄 EXECUTION: Updated SEAL blockhash to: ${freshBlockhash}`);
+      const burnMemoData = await burnMemoResponse.json();
+      console.log(`✅ EXECUTION: Burn+memo transaction built: ${burnMemoData.nftType}`);
       
-      const signedSealTx = await signTransaction(sealTx);
+      // Parse the transaction (handles both versioned and legacy)
+      let burnMemoTx: Transaction | VersionedTransaction;
       
-      // Broadcast seal transaction
-      updateTxStatus(0, { status: 'broadcasting' });
-      const sealSig = await connection.sendRawTransaction(signedSealTx.serialize());
-      
-      // Confirm seal transaction
-      updateTxStatus(0, { status: 'confirming' });
-      await connection.confirmTransaction(sealSig, 'confirmed');
-      
-      updateTxStatus(0, { status: 'success', signature: sealSig });
-
-      // Step 2: Build and sign RETIRE transaction
-      updateTxStatus(1, { status: 'signing' });
-      
-      // Check if this is a pNFT that needs Sol-Incinerator
-      console.log(`🔍 EXECUTION: Checking if ${formData.mint} is a pNFT...`);
-      
-      // For now, assume it's a pNFT if we're using Sol-Incinerator in dry run
-      // This avoids the CORS issue and extra API call during execution
-      // The dry run already confirmed it's a pNFT, so we can trust that
-      const isPNFT = true; // Since dry run showed Sol-Incinerator, we know it's a pNFT
-      console.log(`🔍 EXECUTION: pNFT detection result: ${isPNFT} (from dry run)`);
-      
-      let retireData;
-      let retireTx;
-      
-      if (isPNFT) {
-        console.log(`🔥 EXECUTION: Using Sol-Incinerator for pNFT burn`);
-
-        const solIncineratorResponse = await fetch('/api/tx/sol-incinerator-burn', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            assetId: formData.mint,
-            userPublicKey: publicKey.toBase58(),
-            autoCloseTokenAccounts: true
-          }),
-        });
-
-        if (!solIncineratorResponse.ok) {
-          const errorData = await solIncineratorResponse.json();
-          throw new Error(`Sol-Incinerator burn failed: ${errorData.error || 'Unknown error'}`);
-        }
-
-        retireData = await solIncineratorResponse.json();
-        console.log(`✅ EXECUTION: Sol-Incinerator transaction created: ${retireData.transactionType}`);
-        const serializedPayload: string | undefined = retireData.transaction || retireData.serializedTransaction;
-        console.log(`✅ EXECUTION: Transaction data length: ${serializedPayload?.length || 'undefined'}`);
-        console.log(`✅ EXECUTION: Transaction data preview: ${serializedPayload?.substring(0, 100) || 'undefined'}`);
-
-        // Parse the serialized transaction from Sol-Incinerator
-        try {
-          if (!serializedPayload || typeof serializedPayload !== 'string') {
-            throw new Error('Missing serialized transaction payload');
-          }
-
-          // Helper: attempt decode+parse using a provided buffer
-          const tryParse = (raw: Buffer) => {
-            // Try versioned first
-            try {
-              const vtx = VersionedTransaction.deserialize(raw);
-              console.log(`✅ EXECUTION: Parsed VersionedTransaction from Sol-Incinerator payload`);
-              return vtx as unknown as Transaction;
-            } catch {
-              // Fallback to legacy
-              const ltx = Transaction.from(raw);
-              console.log(`✅ EXECUTION: Parsed legacy Transaction from Sol-Incinerator payload`);
-              return ltx;
+      try {
+        const txBuffer = Buffer.from(burnMemoData.transaction, 'base64');
+        
+        if (burnMemoData.isVersioned) {
+          // Try versioned transaction first
+          burnMemoTx = VersionedTransaction.deserialize(txBuffer);
+          console.log(`✅ EXECUTION: Parsed VersionedTransaction`);
+          
+          // Update fee payer if needed (VersionedTransaction uses message)
+          // The wallet will set the fee payer correctly when signing
+        } else {
+          // Fallback to legacy transaction
+          burnMemoTx = Transaction.from(txBuffer);
+          console.log(`✅ EXECUTION: Parsed legacy Transaction`);
+          
+          // Ensure fee payer is set correctly
+          if ('feePayer' in burnMemoTx && burnMemoTx.feePayer) {
+            if (!burnMemoTx.feePayer.equals(publicKey)) {
+              console.log(`🔄 EXECUTION: Updating fee payer from ${burnMemoTx.feePayer.toBase58()} to ${publicKey.toBase58()}`);
+              burnMemoTx.feePayer = publicKey;
             }
-          };
-
-          // First, assume base64
-          try {
-            const rawB64 = Buffer.from(serializedPayload, 'base64');
-            if (rawB64.length === 0) throw new Error('Empty buffer from base64 decode');
-            retireTx = tryParse(rawB64);
-          } catch (b64Err) {
-            console.warn(`⚠️ EXECUTION: Base64 parse failed, trying base58:`, b64Err);
-            // Fallback: base58
-            const { default: bs58 } = await import('bs58');
-            const rawB58 = Buffer.from(bs58.decode(serializedPayload));
-            retireTx = tryParse(rawB58);
           }
-        } catch (parseErr) {
-          console.error(`❌ EXECUTION: Failed to parse Sol-Incinerator transaction:`, parseErr);
-          throw new Error(`Failed to parse Sol-Incinerator transaction: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+          
+          // Update blockhash to ensure it's fresh
+          const { blockhash } = await connection.getLatestBlockhash('confirmed');
+          burnMemoTx.recentBlockhash = blockhash;
         }
-      } else {
-        console.log(`🔥 EXECUTION: Using regular SPL Token burn`);
-        
-        const retireResponse = await fetch('/api/tx/retire', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            payer: publicKey.toBase58(),
-            owner: publicKey.toBase58(),
-            mint: formData.mint,
-            inscriptionId: formData.inscriptionId,
-            sha256: formData.sha256,
-            method: formData.method,
-          }),
-        });
-
-        if (!retireResponse.ok) throw new Error('Failed to build retire transaction');
-        
-        retireData = await retireResponse.json();
-        retireTx = Transaction.from(Buffer.from(retireData.transaction, 'base64'));
+      } catch (parseErr) {
+        console.error(`❌ EXECUTION: Failed to parse transaction:`, parseErr);
+        throw new Error(`Failed to parse transaction: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
       }
       
-      // Sign the transaction (handles both regular and versioned transactions)
-      console.log(`🔍 EXECUTION: About to sign transaction. Type: ${retireTx instanceof VersionedTransaction ? 'VersionedTransaction' : 'Transaction'}`);
-      console.log(`🔍 EXECUTION: Transaction details:`, {
-        isVersioned: retireTx instanceof VersionedTransaction,
-        hasInstructions: 'instructions' in retireTx ? retireTx.instructions.length : 'N/A',
-        feePayer: 'feePayer' in retireTx ? retireTx.feePayer?.toString() : 'N/A',
-        recentBlockhash: 'recentBlockhash' in retireTx ? retireTx.recentBlockhash : 'N/A'
-      });
+      // Sign the transaction (wallet will set correct fee payer)
+      console.log(`🔍 EXECUTION: About to sign transaction. Type: ${burnMemoTx instanceof VersionedTransaction ? 'VersionedTransaction' : 'Transaction'}`);
       
-      const signedRetireTx = await signTransaction(retireTx);
+      const signedBurnMemoTx = await signTransaction(burnMemoTx);
       
-      // Broadcast retire transaction
-      updateTxStatus(1, { status: 'broadcasting' });
+      // Broadcast transaction
+      updateTxStatus(0, { status: 'broadcasting' });
       
       // Serialize the signed transaction
-      const serializedTx = signedRetireTx.serialize();
+      const serializedTx = signedBurnMemoTx.serialize();
       
-      const retireSig = await connection.sendRawTransaction(serializedTx);
+      const burnMemoSig = await connection.sendRawTransaction(serializedTx);
       
-      // Confirm retire transaction
-      updateTxStatus(1, { status: 'confirming' });
-      await connection.confirmTransaction(retireSig, 'confirmed');
+      // Confirm transaction
+      updateTxStatus(0, { status: 'confirming' });
+      await connection.confirmTransaction(burnMemoSig, 'confirmed');
       
-      updateTxStatus(1, { status: 'success', signature: retireSig });
-
-      // Post-burn memo: write authoritative RETIRE proof with accurate on-chain time
-      try {
-        // Fetch the confirmed burn tx to get precise blockTime and slot
-        const burnTx = await connection.getTransaction(retireSig, {
-          commitment: 'confirmed',
-          maxSupportedTransactionVersion: 0
-        });
-
-        const retireTimestamp = burnTx?.blockTime ?? Math.floor(Date.now() / 1000);
-        const retireSlot = burnTx?.slot ?? (await connection.getSlot());
-
-          // Compose RETIRE memo payload linked to the burn
-          const retireMemo = {
-            standard: 'Kiln',
-            version: '0.1.1',
-          action: 'teleburn-derived',
-          timestamp: retireTimestamp,
-          block_height: retireSlot,
-          inscription: {
-            id: formData.inscriptionId,
-          },
-          solana: {
-            mint: formData.mint,
-            burn_signature: retireSig,
-          },
-          media: {
-            sha256: formData.sha256,
-          },
-        };
-
-        // Build and send the memo transaction
-        const { PublicKey, TransactionInstruction } = await import('@solana/web3.js');
-        const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
-        const memoTx = new Transaction();
-        memoTx.add(
-          new TransactionInstruction({
-            keys: [],
-            programId: MEMO_PROGRAM_ID,
-            data: Buffer.from(JSON.stringify(retireMemo), 'utf-8'),
-          })
-        );
-        memoTx.feePayer = publicKey;
-        const { blockhash: memoBh } = await connection.getLatestBlockhash('confirmed');
-        memoTx.recentBlockhash = memoBh;
-        const signedMemoTx = await signTransaction(memoTx);
-        const memoSig = await connection.sendRawTransaction(signedMemoTx.serialize());
-        await connection.confirmTransaction(memoSig, 'confirmed');
-        console.log(`✅ EXECUTION: Post-burn RETIRE memo confirmed: ${memoSig}`);
-      } catch (memoErr) {
-        console.warn('⚠️ EXECUTION: Failed to write post-burn memo (non-fatal):', memoErr);
-      }
+      updateTxStatus(0, { status: 'success', signature: burnMemoSig });
+      console.log(`✅ EXECUTION: Burn+memo transaction confirmed: ${burnMemoSig}`);
 
       // Mark as completed
       setCompleted(true);
-      // Remove automatic redirect - let user review Solscan links first
+
+      // If user opted to update metadata, do it now
+      if (updateMetadata && publicKey) {
+        await executeMetadataUpdate(burnMemoSig);
+      }
 
     } catch (error) {
       console.error('Transaction execution error:', error);
@@ -310,6 +174,77 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       }
     } finally {
       setExecuting(false);
+    }
+  };
+
+  /**
+   * Execute optional metadata update transaction
+   */
+  const executeMetadataUpdate = async (burnSignature: string) => {
+    if (!publicKey || !signTransaction) {
+      return;
+    }
+
+    setUpdatingMetadata(true);
+
+    try {
+      const connection = new Connection(
+        process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+
+      console.log(`🔄 EXECUTION: Building metadata update transaction...`);
+
+      const metadataUpdateResponse = await fetch('/api/tx/update-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mint: formData.mint,
+          updateAuthority: publicKey.toBase58(),
+          inscriptionId: formData.inscriptionId,
+          priorityMicrolamports: 2_000,
+        }),
+      });
+
+      if (!metadataUpdateResponse.ok) {
+        const errorData = await metadataUpdateResponse.json();
+        throw new Error(`Failed to build metadata update transaction: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const metadataUpdateData = await metadataUpdateResponse.json();
+      console.log(`✅ EXECUTION: Metadata update transaction built. Ordinals URL: ${metadataUpdateData.ordinalsUrl}`);
+
+      // Parse the transaction
+      let metadataUpdateTx: Transaction | VersionedTransaction;
+      const txBuffer = Buffer.from(metadataUpdateData.transaction, 'base64');
+
+      if (metadataUpdateData.isVersioned) {
+        metadataUpdateTx = VersionedTransaction.deserialize(txBuffer);
+      } else {
+        metadataUpdateTx = Transaction.from(txBuffer);
+        if ('feePayer' in metadataUpdateTx && metadataUpdateTx.feePayer) {
+          if (!metadataUpdateTx.feePayer.equals(publicKey)) {
+            metadataUpdateTx.feePayer = publicKey;
+          }
+        }
+        const { blockhash } = await connection.getLatestBlockhash('confirmed');
+        metadataUpdateTx.recentBlockhash = blockhash;
+      }
+
+      // Sign and send
+      const signedMetadataUpdateTx = await signTransaction(metadataUpdateTx);
+      const serializedTx = signedMetadataUpdateTx.serialize();
+      const metadataUpdateSig = await connection.sendRawTransaction(serializedTx);
+      await connection.confirmTransaction(metadataUpdateSig, 'confirmed');
+
+      console.log(`✅ EXECUTION: Metadata update transaction confirmed: ${metadataUpdateSig}`);
+      setMetadataUpdateCompleted(true);
+    } catch (error) {
+      console.error('Metadata update error:', error);
+      // Don't fail the entire teleburn if metadata update fails
+      console.warn('⚠️ EXECUTION: Metadata update failed (non-fatal):', error);
+    } finally {
+      setUpdatingMetadata(false);
     }
   };
 
@@ -437,6 +372,71 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Optional Metadata Update Checkbox (shown before completion) */}
+      {!completed && !executing && (
+        <div className="info-box">
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="update-metadata"
+              checked={updateMetadata}
+              onChange={(e) => setUpdateMetadata(e.target.checked)}
+              className="mt-1"
+              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+            />
+            <div>
+              <label htmlFor="update-metadata" className="font-bold mb-2 cursor-pointer">
+                OPTIONAL: Update NFT Metadata to Ordinals
+              </label>
+              <div className="text-sm space-y-2 opacity-80">
+                <p>After teleburn completes, update this NFT&apos;s metadata image URL to point to:</p>
+                <p className="font-mono text-xs break-all">
+                  https://ordinals.com/inscription/{formData.inscriptionId}
+                </p>
+                <p className="text-xs italic">
+                  ⚠️ Requires: NFT must be mutable and you must be the update authority
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Metadata Update Status */}
+      {updatingMetadata && (
+        <div className="status-box">
+          <div className="flex items-center gap-3">
+            <div className="status-icon text-terminal-text">◐</div>
+            <div>
+              <div className="font-bold">UPDATING METADATA</div>
+              <div className="text-xs opacity-70">Pointing NFT image to Ordinals...</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {metadataUpdateCompleted && (
+        <div className="success-box" style={{ borderColor: 'rgba(0, 255, 0, 0.5)' }}>
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">✓</div>
+            <div>
+              <div className="font-bold">METADATA UPDATED</div>
+              <div className="text-sm opacity-80">
+                NFT image now points to{' '}
+                <a
+                  href={`https://ordinals.com/inscription/${formData.inscriptionId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-terminal-text"
+                >
+                  Ordinals inscription
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Success Message */}
       {completed && (
