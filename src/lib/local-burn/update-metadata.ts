@@ -10,12 +10,13 @@
  */
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { publicKey, transactionBuilder, generateSigner, keypairIdentity, serializeMessage } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, generateSigner, keypairIdentity } from '@metaplex-foundation/umi';
 import {
   findMetadataPda,
   updateV1,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
+import { VersionedTransaction } from '@solana/web3.js';
 
 /**
  * Build a metadata update transaction to point NFT image to Ordinals inscription.
@@ -77,8 +78,12 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   // Get the built transaction message
   const message = builtTx.message;
   
-  // Serialize the Umi message using Umi's serialization utility
-  const serializedMessage = serializeMessage(message);
+  // Convert Umi message to Solana VersionedTransaction for serialization
+  // Umi messages are versioned transactions - we need to construct it from the message
+  const versionedTx = new VersionedTransaction(message);
+  
+  // Serialize the versioned transaction (unsigned transaction bytes)
+  const serializedMessage = versionedTx.serialize();
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');

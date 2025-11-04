@@ -16,7 +16,7 @@
  */
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { publicKey, transactionBuilder, keypairIdentity, serializeMessage } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, keypairIdentity } from '@metaplex-foundation/umi';
 import { generateSigner } from '@metaplex-foundation/umi';
 import {
   fetchDigitalAssetWithAssociatedToken,
@@ -26,6 +26,7 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
+import { VersionedTransaction } from '@solana/web3.js';
 import { buildRetireMemo } from './memo';
 
 /**
@@ -127,8 +128,12 @@ export async function buildBurnMemoTransaction(
   const builtTx = await tb.build(umi);
   const message = builtTx.message;
   
-  // Serialize the Umi message using Umi's serialization utility
-  const serializedMessage = serializeMessage(message);
+  // Convert Umi message to Solana VersionedTransaction for serialization
+  // Umi messages are versioned transactions - we need to construct it from the message
+  const versionedTx = new VersionedTransaction(message);
+  
+  // Serialize the versioned transaction (unsigned transaction bytes)
+  const serializedMessage = versionedTx.serialize();
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');
