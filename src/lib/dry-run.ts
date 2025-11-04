@@ -254,7 +254,7 @@ export class DryRunService {
         burnMemoTx = new Transaction();
         burnMemoDecoded = {
           feePayer: params.payer.toBase58(),
-          recentBlockhash: null,
+          recentBlockhash: undefined,
           signatures: [],
           instructions: [],
           estimatedFee: 5000,
