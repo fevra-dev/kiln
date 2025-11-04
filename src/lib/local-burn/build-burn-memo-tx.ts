@@ -16,7 +16,7 @@
  */
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { publicKey, transactionBuilder, keypairIdentity } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, keypairIdentity, serializeMessage } from '@metaplex-foundation/umi';
 import { generateSigner } from '@metaplex-foundation/umi';
 import {
   fetchDigitalAssetWithAssociatedToken,
@@ -127,9 +127,8 @@ export async function buildBurnMemoTransaction(
   const builtTx = await tb.build(umi);
   const message = builtTx.message;
   
-  // Umi messages are versioned transactions - serialize directly
-  // The message has a bytes property that contains the serialized transaction
-  const serializedMessage = message.bytes;
+  // Serialize the Umi message using Umi's serialization utility
+  const serializedMessage = serializeMessage(message);
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');

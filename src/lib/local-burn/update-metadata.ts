@@ -10,7 +10,7 @@
  */
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { publicKey, transactionBuilder, generateSigner, keypairIdentity } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, generateSigner, keypairIdentity, serializeMessage } from '@metaplex-foundation/umi';
 import {
   findMetadataPda,
   updateV1,
@@ -77,9 +77,8 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   // Get the built transaction message
   const message = builtTx.message;
   
-  // Umi messages are versioned transactions - serialize directly
-  // The message has a bytes property that contains the serialized transaction
-  const serializedMessage = message.bytes;
+  // Serialize the Umi message using Umi's serialization utility
+  const serializedMessage = serializeMessage(message);
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');
