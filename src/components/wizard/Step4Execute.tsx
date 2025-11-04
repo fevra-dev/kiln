@@ -180,7 +180,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
   /**
    * Execute optional metadata update transaction
    */
-  const executeMetadataUpdate = async (burnSignature: string) => {
+  const executeMetadataUpdate = async (_burnSignature: string) => {
     if (!publicKey || !signTransaction) {
       return;
     }

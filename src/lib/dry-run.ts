@@ -203,10 +203,8 @@ export class DryRunService {
           // For simulation, we need to convert versioned to legacy temporarily
           // Or we can simulate the versioned transaction directly
           txForSimulation = new Transaction();
-          // Extract instructions from versioned transaction
-          const message = burnMemoTx.message;
           // Note: This is a simplified approach - in practice, we'd need to properly convert
-          // For now, we'll simulate the versioned transaction
+          // For now, we'll simulate the versioned transaction directly
         } else {
           txForSimulation = burnMemoTx;
         }

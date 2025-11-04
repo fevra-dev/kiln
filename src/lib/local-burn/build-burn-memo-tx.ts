@@ -16,7 +16,7 @@
  */
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { publicKey, transactionBuilder, createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, keypairIdentity } from '@metaplex-foundation/umi';
 import { generateSigner } from '@metaplex-foundation/umi';
 import {
   fetchDigitalAssetWithAssociatedToken,
@@ -26,7 +26,6 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
-import { VersionedTransaction } from '@solana/web3.js';
 import { buildRetireMemo } from './memo';
 
 /**
@@ -122,19 +121,10 @@ export async function buildBurnMemoTransaction(
 
   // Build the transaction (without sending)
   // The transaction will be built with the dummy keypair as fee payer
-  // We'll extract the instructions and rebuild with the correct fee payer
-  const builtTx = await tb.build(umi);
-  
-  // Extract instructions from the built transaction
-  // Umi's transaction builder returns instructions that we can convert
-  const instructions = builtTx.instructions;
-  
-  // We need to rebuild the transaction with the correct fee payer
-  // Since Umi uses a different transaction format, we'll need to convert
-  // For now, we'll serialize the message and let the client handle fee payer
-  // The client will need to reconstruct or the fee payer will be set correctly during signing
+  // The client will set the correct fee payer when signing
   
   // Get the serialized message (unsigned transaction)
+  const builtTx = await tb.build(umi);
   const message = builtTx.message;
   
   // Serialize the message (this is the unsigned transaction bytes)
