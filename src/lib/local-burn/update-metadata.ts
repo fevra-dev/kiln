@@ -74,9 +74,12 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   // Build the transaction (without sending)
   const builtTx = await tb.build(umi);
   
-  // Get the serialized message (unsigned transaction)
+  // Get the built transaction message
   const message = builtTx.message;
-  const serializedMessage = message.serialize();
+  
+  // Umi messages are versioned transactions - serialize directly
+  // The message has a bytes property that contains the serialized transaction
+  const serializedMessage = message.bytes;
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');

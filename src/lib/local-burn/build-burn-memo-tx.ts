@@ -26,6 +26,7 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
+import { VersionedTransaction } from '@solana/web3.js';
 import { buildRetireMemo } from './memo';
 
 /**
@@ -123,12 +124,13 @@ export async function buildBurnMemoTransaction(
   // The transaction will be built with the dummy keypair as fee payer
   // The client will set the correct fee payer when signing
   
-  // Get the serialized message (unsigned transaction)
+  // Get the built transaction message
   const builtTx = await tb.build(umi);
   const message = builtTx.message;
   
-  // Serialize the message (this is the unsigned transaction bytes)
-  const serializedMessage = message.serialize();
+  // Umi messages are versioned transactions - serialize directly
+  // The message has a bytes property that contains the serialized transaction
+  const serializedMessage = message.bytes;
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');
