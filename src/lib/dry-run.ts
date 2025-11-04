@@ -217,7 +217,6 @@ export class DryRunService {
             recentBlockhash: undefined,
             signatures: [],
             instructions: [{
-              index: 0,
               programId: 'Metaplex Token Metadata',
               programName: 'Metaplex',
               instructionName: 'Burn V1',
