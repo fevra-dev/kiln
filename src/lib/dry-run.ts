@@ -214,7 +214,7 @@ export class DryRunService {
           // For versioned transactions, create a mock decoded transaction
           burnMemoDecoded = {
             feePayer: params.payer.toBase58(),
-            recentBlockhash: null,
+            recentBlockhash: undefined,
             signatures: [],
             instructions: [{
               index: 0,
