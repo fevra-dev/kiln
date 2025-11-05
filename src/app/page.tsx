@@ -198,10 +198,10 @@ function TerminalInterface() {
   return (
     <div>
       {/* Hero Terminal - Full Viewport */}
-      <div className="min-h-screen px-4 py-8 flex flex-col justify-center w-full max-w-full overflow-x-hidden">
-        <div className="max-w-7xl mx-auto w-full">
+      <div className="min-h-screen px-4 py-4 md:py-12 flex flex-col justify-start md:justify-start w-full max-w-full overflow-x-hidden">
+        <div className="max-w-7xl mx-auto w-full py-2 md:py-8">
           {/* Top Content */}
-          <div className="terminal p-3 border-t-4 border-matrix-red mb-4">
+          <div className="terminal p-3 border-t-4 border-b-4 border-matrix-red mb-4">
             <div className="mb-2">
               <div className="text-3xl font-medium text-glow-red-lg mb-3 tracking-wide text-left">
                 [ Kiln ঌ Teleburn ]
