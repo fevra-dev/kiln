@@ -64,10 +64,11 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
 
   // Add update metadata instruction
   // Update the URI while preserving all other metadata fields
+  // Note: authority will be set by the client when signing, we use the dummy signer for building
   tb = tb.add(
     updateV1(umi, {
       metadata: metadataPda,
-      authority: authorityPk,
+      authority: dummyKeypair, // Use dummy signer for building, client will set correct authority when signing
       data: {
         name: existingMetadata.name,
         symbol: existingMetadata.symbol,
