@@ -18,6 +18,7 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { publicKey, transactionBuilder, keypairIdentity } from '@metaplex-foundation/umi';
 import { generateSigner } from '@metaplex-foundation/umi';
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import {
   fetchDigitalAssetWithAssociatedToken,
   findMetadataPda,
@@ -57,6 +58,17 @@ export async function buildBurnMemoTransaction(
   const umi = createUmi(rpcUrl);
   const dummyKeypair = generateSigner(umi);
   umi.use(keypairIdentity(dummyKeypair));
+  
+  // Register SPL Token programs with Umi
+  // This is required for burnV1 to recognize associated token accounts
+  umi.programs.add({
+    name: 'splToken',
+    publicKey: publicKey(TOKEN_PROGRAM_ID.toString()),
+  });
+  umi.programs.add({
+    name: 'splAssociatedToken',
+    publicKey: publicKey(ASSOCIATED_TOKEN_PROGRAM_ID.toString()),
+  });
   
   const mintPk = publicKey(mint);
   const ownerPk = publicKey(owner);
