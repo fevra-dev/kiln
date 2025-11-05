@@ -198,8 +198,8 @@ function TerminalInterface() {
   return (
     <div>
       {/* Hero Terminal - Full Viewport */}
-      <div className="min-h-screen px-4 py-8 flex flex-col justify-between w-full max-w-full overflow-x-hidden">
-        <div className="max-w-7xl mx-auto w-full flex flex-col justify-between min-h-full">
+      <div className="min-h-screen px-4 py-8 flex flex-col justify-center w-full max-w-full overflow-x-hidden">
+        <div className="max-w-7xl mx-auto w-full">
           {/* Top Content */}
           <div className="terminal p-3 border-t-4 border-matrix-red mb-4">
             <div className="mb-2">
@@ -253,9 +253,13 @@ function TerminalInterface() {
           </a>
         </div>
           </div>
+        </div>
+      </div>
 
-          {/* Bottom System Info */}
-          <div className="terminal p-3 border-b-4 border-matrix-red mt-4">
+      {/* Bottom System Info - Below the fold */}
+      <div className="w-full max-w-full overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="terminal p-3 border-b-4 border-matrix-red">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
               <div className="code-block">
                 <div className="text-matrix-red/60 mb-2">PROTOCOL</div>

@@ -269,12 +269,10 @@ body {
 
 /* ASCII Art Container for Homepage - Responsive */
 .ascii-art-container {
-  font-size: clamp(0.5rem, 1.2vw, 0.9rem);
+  font-size: clamp(0.5rem, 2vw, 1.25rem);
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
-  line-height: 1.1;
-  max-height: 60vh;
 }
 
 @media (max-width: 768px) {
