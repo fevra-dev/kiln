@@ -75,15 +75,12 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   // Build the transaction (without sending)
   const builtTx = await tb.build(umi);
   
-  // Get the built transaction message
-  const message = builtTx.message;
-  
-  // Convert Umi message to Solana VersionedTransaction for serialization
-  // Umi messages are versioned transactions - we need to construct it from the message
-  const versionedTx = new VersionedTransaction(message);
-  
-  // Serialize the versioned transaction (unsigned transaction bytes)
-  const serializedMessage = versionedTx.serialize();
+  // Get the built transaction
+  // Umi's built transaction can be serialized directly
+  // The transaction builder returns a transaction that can be serialized
+  // We need to get the serialized message bytes from the built transaction
+  // Umi transactions are versioned transactions, so we serialize the message
+  const serializedMessage = builtTx.serialize();
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');
