@@ -95,6 +95,13 @@ export default function TeleburnPage() {
             </div>
           </div>
 
+          {/* Subtitle */}
+          <div className="mb-4">
+            <p className="text-lg text-matrix-red/80">
+              <span className="text-terminal-prompt">$</span> configure_teleburn_parameters
+            </p>
+          </div>
+
           <div className="terminal-window">
             <div className="terminal-window-header">
               <div className="flex items-center gap-2">

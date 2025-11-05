@@ -27,7 +27,7 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
-import { VersionedTransaction, VersionedMessage } from '@solana/web3.js';
+import { VersionedTransaction, VersionedMessage, Connection } from '@solana/web3.js';
 import { buildRetireMemo } from './memo';
 
 /**
@@ -143,7 +143,12 @@ export async function buildBurnMemoTransaction(
   // Build the transaction (without sending)
   // The transaction will be built with the dummy keypair as fee payer
   // The client will set the correct fee payer when signing
-  // Umi's transaction builder should automatically fetch the blockhash when build() is called
+  
+  // CRITICAL: Explicitly fetch blockhash using Solana Connection
+  // Umi's transaction builder may not always set the blockhash correctly,
+  // so we fetch it directly and set it manually to ensure it's present
+  const connection = new Connection(rpcUrl, 'confirmed');
+  const { blockhash } = await connection.getLatestBlockhash();
   
   // Get the built transaction
   const builtTx = await tb.build(umi);
@@ -156,26 +161,24 @@ export async function buildBurnMemoTransaction(
   // Using 'unknown' as intermediate type to satisfy ESLint no-explicit-any rule
   const versionedMessage = message as unknown as VersionedMessage;
   
-  // CRITICAL: Check if blockhash is set in the message
-  // If not, we need to manually set it. For versioned transactions, the blockhash
-  // is in the message header. We'll verify it's there by checking the message structure.
-  // If the message doesn't have a blockhash, we'll need to rebuild it.
+  // CRITICAL: For VersionedTransaction, we need to set the blockhash on the message
+  // before creating the transaction. The message structure for versioned transactions
+  // stores the blockhash in a specific field that we need to set.
+  // Type assertion to access the blockhash property which exists at runtime
+  (versionedMessage as { recentBlockhash?: string }).recentBlockhash = blockhash;
   
-  // Create versioned transaction
+  // Create versioned transaction with the blockhash set
   const versionedTx = new VersionedTransaction(versionedMessage);
   
-  // Verify blockhash is set by attempting to serialize
-  // If blockhash is missing, serialization will fail with a clear error
+  // Serialize the transaction
   let serializedMessage: Uint8Array;
   try {
     serializedMessage = versionedTx.serialize();
   } catch (error) {
-    // If serialization fails due to missing blockhash, rebuild with blockhash
+    // If serialization still fails, provide a descriptive error
     if (error instanceof Error && error.message.includes('blockhash')) {
-      console.error('❌ BUILD BURN+MEMO: Blockhash missing, attempting to rebuild with blockhash');
-      // Rebuild the message with blockhash - this requires reconstructing the transaction
-      // For now, we'll throw a more descriptive error
-      throw new Error(`Transaction build failed: Blockhash is required. Please ensure Umi's RPC is properly configured and can fetch the latest blockhash. Error: ${error.message}`);
+      console.error('❌ BUILD BURN+MEMO: Blockhash still missing after explicit set');
+      throw new Error(`Transaction build failed: Blockhash could not be set. Error: ${error.message}`);
     }
     throw error;
   }
