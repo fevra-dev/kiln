@@ -80,8 +80,9 @@ export default function TeleburnPage() {
     return (
       <div className="min-h-screen bg-terminal-bg text-terminal-text font-mono p-6 w-full max-w-full overflow-x-hidden">
         <div className="max-w-6xl mx-auto w-full">
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
               <a 
                 href="/" 
                 className="home-button text-4xl hover:text-matrix-red transition-colors duration-200"
@@ -93,14 +94,14 @@ export default function TeleburnPage() {
                 [ Configure Teleburn ]
               </h1>
             </div>
+            <div className="status-badge">
+              <span>ONLINE</span>
+            </div>
           </div>
-
-          {/* Subtitle */}
-          <div className="mb-4">
-            <p className="text-lg text-matrix-red/80">
-              <span className="text-terminal-prompt">$</span> configure_teleburn_parameters
-            </p>
-          </div>
+          <p className="text-lg text-matrix-red/80 mb-2">
+            <span className="text-terminal-prompt">$</span> configure_teleburn_parameters
+          </p>
+        </div>
 
           <div className="terminal-window">
             <div className="terminal-window-header">

@@ -158,7 +158,7 @@ export default function VerifyPage() {
             </div>
           </div>
           <p className="text-lg text-matrix-red/80 mb-2">
-            <span className="text-terminal-prompt">$</span> Verify teleburn status
+            <span className="text-terminal-prompt">$</span> verify_teleburn_status
           </p>
         </div>
 

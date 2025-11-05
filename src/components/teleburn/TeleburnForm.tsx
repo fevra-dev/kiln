@@ -165,7 +165,6 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
     <form onSubmit={handleSubmit} className="teleburn-form space-y-6">
       {/* Terminal Header */}
       <div className="terminal-output mb-6">
-        <div className="text-terminal-prompt mb-2">$ configure_teleburn_parameters</div>
         <div className="text-terminal-text/70 text-sm mb-4">
           {`> Enter your Solana NFT and Bitcoin Ordinal details...`}
         </div>
