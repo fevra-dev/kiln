@@ -27,7 +27,7 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
-import { VersionedTransaction, VersionedMessage, Connection } from '@solana/web3.js';
+import { VersionedTransaction, VersionedMessage } from '@solana/web3.js';
 import { buildRetireMemo } from './memo';
 
 /**
