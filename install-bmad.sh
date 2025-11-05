@@ -8,10 +8,10 @@ cd "$(dirname "$0")"
 
 # Use expect to handle interactive prompts
 expect << 'EOF'
-set timeout 300
+set timeout 600
 spawn npx bmad-method@alpha install
 
-# Handle installation directory prompt - accept default
+# Handle all prompts with appropriate responses
 expect {
     "Installation directory:" {
         send "\r"
@@ -21,24 +21,34 @@ expect {
         send "y\r"
         exp_continue
     }
+    "Install to this directory?" {
+        send "Yes\r"
+        exp_continue
+    }
+    "What is your name?" {
+        send "Developer\r"
+        exp_continue
+    }
     "Select modules" {
-        # Select all modules (BMM, BMB, CIS)
+        # Select all modules - press space to select, then enter
+        send " \r"
+        exp_continue
+    }
+    "Select modules to install" {
+        # Select all: BMM, BMB, CIS
         send "a\r"
         exp_continue
     }
-    "Select" {
-        send "\r"
-        exp_continue
-    }
-    "Enter" {
-        send "\r"
-        exp_continue
-    }
-    "Your name" {
-        send "\r"
+    "Choose modules" {
+        # Arrow down to select all, then enter
+        send "\033[B\r"
         exp_continue
     }
     "Language" {
+        send "\r"
+        exp_continue
+    }
+    "Output language" {
         send "\r"
         exp_continue
     }
@@ -46,7 +56,15 @@ expect {
         send "\r"
         exp_continue
     }
+    "Select IDE" {
+        send "\r"
+        exp_continue
+    }
     "Continue" {
+        send "\r"
+        exp_continue
+    }
+    "Press" {
         send "\r"
         exp_continue
     }
@@ -54,18 +72,42 @@ expect {
         send "\r"
         exp_continue
     }
+    "Done" {
+        send "\r"
+        exp_continue
+    }
+    "installed" {
+        exp_continue
+    }
+    "Installing" {
+        exp_continue
+    }
+    "Downloading" {
+        exp_continue
+    }
+    "Creating" {
+        exp_continue
+    }
     timeout {
-        puts "Installation timed out or completed"
+        puts "\nInstallation process timed out - checking if installation completed..."
         exit 0
     }
     eof {
-        puts "Installation completed"
+        puts "\nInstallation process completed!"
         exit 0
     }
 }
 EOF
 
 echo ""
-echo "✅ BMAD-METHOD installation complete!"
-echo "📁 Check the 'bmad/' directory for installed modules"
+if [ -d "bmad" ]; then
+    echo "✅ BMAD-METHOD installation complete!"
+    echo "📁 BMAD directory found at: $(pwd)/bmad"
+    echo ""
+    echo "📦 Installed modules:"
+    ls -la bmad/ 2>/dev/null | head -10
+else
+    echo "⚠️  BMAD directory not found. Installation may have failed or needs manual completion."
+    echo "💡 Try running: npx bmad-method@alpha install"
+fi
 
