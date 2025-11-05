@@ -59,20 +59,10 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
                 <h1 className="text-3xl font-bold text-terminal-text glow-text">
                   [ Kiln ঌ Teleburn ]
                 </h1>
-                <div className="text-lg text-matrix-red/80 mt-2">
-                  {'>'} SOLANA → BITCOIN
-                </div>
-                <div className="text-lg text-matrix-red/80">
-                  {'>'} TRUSTLESS ◎ PERMANENT ◉ PERMISSIONLESS
-                </div>
               </div>
               <p className="text-sm opacity-70">
                 <span className="text-terminal-prompt">$</span> Irreversible NFT migration: Solana → Bitcoin Ordinals
               </p>
-            </div>
-            <div className="terminal-badge">
-              <span className="text-terminal-prompt">STATUS:</span>{' '}
-              <span className="text-terminal-text animate-terminal-blink">ACTIVE</span>
             </div>
           </div>
 

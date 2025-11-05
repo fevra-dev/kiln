@@ -195,6 +195,11 @@ export class DryRunService {
           burnMemoTx = VersionedTransaction.deserialize(txBuffer);
         } else {
           burnMemoTx = Transaction.from(txBuffer);
+          // Ensure legacy transaction has blockhash
+          if (!burnMemoTx.recentBlockhash) {
+            const { blockhash } = await this.connection.getLatestBlockhash();
+            burnMemoTx.recentBlockhash = blockhash;
+          }
         }
         
         // Convert to Transaction for decoding/simulation (if needed)
@@ -228,13 +233,32 @@ export class DryRunService {
           };
           
           // Simulate versioned transaction
-          const simulation = await this.connection.simulateTransaction(burnMemoTx);
-          burnMemoSimulation = {
-            success: !simulation.value.err,
-            logs: simulation.value.logs || [],
-            unitsConsumed: simulation.value.unitsConsumed || 0,
-            error: simulation.value.err ? JSON.stringify(simulation.value.err) : undefined,
-          };
+          // CRITICAL: Versioned transactions require a blockhash for simulation
+          // Umi's build() should set it automatically, but if it's missing, we need to handle it
+          // The Solana SDK will throw an error if blockhash is missing
+          try {
+            const simulation = await this.connection.simulateTransaction(burnMemoTx, {
+              sigVerify: false, // Don't verify signatures for simulation
+            });
+            burnMemoSimulation = {
+              success: !simulation.value.err,
+              logs: simulation.value.logs || [],
+              unitsConsumed: simulation.value.unitsConsumed || 0,
+              error: simulation.value.err ? JSON.stringify(simulation.value.err) : undefined,
+            };
+          } catch (simError) {
+            // If simulation fails due to missing blockhash, provide helpful error
+            const errorMessage = simError instanceof Error ? simError.message : String(simError);
+            if (errorMessage.includes('blockhash')) {
+              console.error('❌ DRY RUN: Transaction missing blockhash. Umi build() should set this automatically.');
+              burnMemoSimulation = {
+                success: false,
+                error: `Transaction build failed: Missing blockhash. This indicates Umi's transaction builder did not properly fetch the blockhash. Please check RPC connection.`,
+              };
+            } else {
+              throw simError; // Re-throw if it's a different error
+            }
+          }
         } else {
           burnMemoDecoded = await this.decoder.decodeTransaction(txForSimulation, true);
           burnMemoSimulation = await this.simulateTransaction(txForSimulation);

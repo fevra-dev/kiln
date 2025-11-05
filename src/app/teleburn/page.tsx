@@ -93,9 +93,6 @@ export default function TeleburnPage() {
                 [ Configure Teleburn ]
               </h1>
             </div>
-            <p className="text-lg text-matrix-red/80 mb-2">
-              <span className="text-terminal-prompt">$</span> configure_teleburn_parameters
-            </p>
           </div>
 
           <div className="terminal-window">

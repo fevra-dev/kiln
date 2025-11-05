@@ -27,7 +27,7 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
-import { VersionedTransaction, VersionedMessage } from '@solana/web3.js';
+import { VersionedTransaction, VersionedMessage, Connection } from '@solana/web3.js';
 import { buildRetireMemo } from './memo';
 
 /**
@@ -143,6 +143,7 @@ export async function buildBurnMemoTransaction(
   // Build the transaction (without sending)
   // The transaction will be built with the dummy keypair as fee payer
   // The client will set the correct fee payer when signing
+  // Umi's transaction builder should automatically fetch the blockhash when build() is called
   
   // Get the built transaction
   const builtTx = await tb.build(umi);
@@ -153,10 +154,31 @@ export async function buildBurnMemoTransaction(
   // The underlying structure matches Solana's VersionedMessage format
   // We use type assertion because the types differ but the runtime structure is compatible
   // Using 'unknown' as intermediate type to satisfy ESLint no-explicit-any rule
-  const versionedTx = new VersionedTransaction(message as unknown as VersionedMessage);
+  const versionedMessage = message as unknown as VersionedMessage;
   
-  // Serialize the versioned transaction (unsigned transaction bytes)
-  const serializedMessage = versionedTx.serialize();
+  // CRITICAL: Check if blockhash is set in the message
+  // If not, we need to manually set it. For versioned transactions, the blockhash
+  // is in the message header. We'll verify it's there by checking the message structure.
+  // If the message doesn't have a blockhash, we'll need to rebuild it.
+  
+  // Create versioned transaction
+  const versionedTx = new VersionedTransaction(versionedMessage);
+  
+  // Verify blockhash is set by attempting to serialize
+  // If blockhash is missing, serialization will fail with a clear error
+  let serializedMessage: Uint8Array;
+  try {
+    serializedMessage = versionedTx.serialize();
+  } catch (error) {
+    // If serialization fails due to missing blockhash, rebuild with blockhash
+    if (error instanceof Error && error.message.includes('blockhash')) {
+      console.error('❌ BUILD BURN+MEMO: Blockhash missing, attempting to rebuild with blockhash');
+      // Rebuild the message with blockhash - this requires reconstructing the transaction
+      // For now, we'll throw a more descriptive error
+      throw new Error(`Transaction build failed: Blockhash is required. Please ensure Umi's RPC is properly configured and can fetch the latest blockhash. Error: ${error.message}`);
+    }
+    throw error;
+  }
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');

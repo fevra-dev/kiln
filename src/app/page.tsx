@@ -16,6 +16,13 @@ export default function HomePage() {
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
+  // Scroll to top on mobile when page loads
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
+  }, []);
+
   const handlePasswordSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     if (password === 'iceland') {
