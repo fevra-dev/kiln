@@ -140,23 +140,25 @@ export default function VerifyPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <a 
-              href="/" 
-              className="home-button text-4xl hover:text-matrix-red transition-colors duration-200"
-              title="Return to KILN Home"
-            >
-              ঌ
-            </a>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
-              [ Kiln Teleburn Verification ]
-            </h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <a 
+                href="/" 
+                className="home-button text-4xl hover:text-matrix-red transition-colors duration-200"
+                title="Return to KILN Home"
+              >
+                ঌ
+              </a>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text">
+                [ Teleburn Verification ]
+              </h1>
+            </div>
+            <div className="status-badge">
+              <span>ONLINE</span>
+            </div>
           </div>
           <p className="text-lg text-matrix-red/80 mb-2">
-            <span className="text-terminal-prompt">$</span> Verify KILN teleburn status for any Solana mint
-          </p>
-          <p className="text-sm text-matrix-red/60">
-            Check the teleburn status of any Solana NFT using cryptographic verification
+            <span className="text-terminal-prompt">$</span> Verify teleburn status
           </p>
         </div>
 

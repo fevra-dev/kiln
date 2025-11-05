@@ -173,9 +173,9 @@ function Header() {
           {/* Logo */}
           <div className="flex items-center gap-4">
             <div className="ascii-art text-xs kiln-version-box">
-{`╔═══════════════════════════╗
-║  KILN  v0.1.1              ║
-╚═══════════════════════════╝`}
+{`╔══════════════╗
+║  KILN  v0.1.1  ║
+╚══════════════╝`}
             </div>
           </div>
           
