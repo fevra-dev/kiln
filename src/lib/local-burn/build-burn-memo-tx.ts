@@ -166,12 +166,13 @@ export async function buildBurnMemoTransaction(
   // We'll set it by directly modifying the message object's internal structure.
   // This is necessary because Umi's build() may not always set the blockhash correctly.
   // Type assertion to allow setting blockhash property which exists at runtime
-  interface MessageWithBlockhash extends VersionedMessage {
+  // Use type intersection instead of interface extension since VersionedMessage is not extensible
+  type MessageWithBlockhash = VersionedMessage & {
     recentBlockhash?: string;
     header?: {
       recentBlockhash?: string;
     };
-  }
+  };
   const messageAny = versionedMessage as unknown as MessageWithBlockhash;
   
   // Set blockhash on the message's internal structure
