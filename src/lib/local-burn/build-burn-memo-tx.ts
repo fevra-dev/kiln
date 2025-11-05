@@ -61,14 +61,22 @@ export async function buildBurnMemoTransaction(
   
   // Register SPL Token programs with Umi
   // This is required for burnV1 to recognize associated token accounts
+  // Create minimal program objects with stub implementations
+  // Using type assertion to satisfy Program interface requirements
   umi.programs.add({
     name: 'splToken',
     publicKey: publicKey(TOKEN_PROGRAM_ID.toString()),
-  });
+    getErrorFromCode: () => null,
+    getErrorFromName: () => null,
+    isOnCluster: () => true,
+  } as unknown as Parameters<typeof umi.programs.add>[0]);
   umi.programs.add({
     name: 'splAssociatedToken',
     publicKey: publicKey(ASSOCIATED_TOKEN_PROGRAM_ID.toString()),
-  });
+    getErrorFromCode: () => null,
+    getErrorFromName: () => null,
+    isOnCluster: () => true,
+  } as unknown as Parameters<typeof umi.programs.add>[0]);
   
   const mintPk = publicKey(mint);
   const ownerPk = publicKey(owner);
