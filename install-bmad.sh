@@ -37,6 +37,10 @@ expect {
         send "\r"
         exp_continue
     }
+    "What is the title of your project" {
+        send "\r"
+        exp_continue
+    }
     "Select modules" {
         # Select all modules - press space to select, then enter
         send " \r"
