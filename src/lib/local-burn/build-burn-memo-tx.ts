@@ -144,61 +144,49 @@ export async function buildBurnMemoTransaction(
   // The transaction will be built with the dummy keypair as fee payer
   // The client will set the correct fee payer when signing
   
-  // CRITICAL: Fetch blockhash BEFORE building the transaction
-  // Umi's transaction builder should automatically fetch and set the blockhash,
-  // but we explicitly fetch it first to ensure it's available
+  // CRITICAL: Fetch blockhash BEFORE building to ensure it's available
+  // Umi's transaction builder should automatically fetch blockhash during build(),
+  // but we need to ensure it's actually set correctly
   const connection = new Connection(rpcUrl, 'confirmed');
   const { blockhash } = await connection.getLatestBlockhash();
   
-  // Get the built transaction - Umi should automatically fetch blockhash during build()
+  // Get the built transaction from Umi
   const builtTx = await tb.build(umi);
   const message = builtTx.message;
   
   // Convert Umi TransactionMessage to Solana VersionedMessage format
-  // Umi's message structure is compatible with Solana's wire format at runtime
-  // The underlying structure matches Solana's VersionedMessage format
-  // We use type assertion because the types differ but the runtime structure is compatible
-  // Using 'unknown' as intermediate type to satisfy ESLint no-explicit-any rule
   const versionedMessage = message as unknown as VersionedMessage;
   
-  // CRITICAL: For VersionedTransaction, we need to set the blockhash on the message
-  // The message structure for versioned transactions stores the blockhash internally.
-  // We'll set it by directly modifying the message object's internal structure.
-  // This is necessary because Umi's build() may not always set the blockhash correctly.
-  // Type assertion to allow setting blockhash property which exists at runtime
-  // Use type intersection instead of interface extension since VersionedMessage is not extensible
-  type MessageWithBlockhash = VersionedMessage & {
-    recentBlockhash?: string;
-    header?: {
-      recentBlockhash?: string;
-    };
-  };
-  const messageAny = versionedMessage as unknown as MessageWithBlockhash;
+  // CRITICAL: VersionedTransaction requires blockhash to be in the message structure
+  // We need to ensure the blockhash is properly set. Since VersionedMessage doesn't
+  // expose a direct setter, we'll use Object.defineProperty to force-set it
+  // on the message's internal structure
+  const messageWithBlockhash = Object.assign({}, versionedMessage, {
+    recentBlockhash: blockhash,
+  }) as VersionedMessage;
   
-  // Set blockhash on the message's internal structure
-  // For versioned messages, the blockhash is stored in the message header
-  if (messageAny.header) {
-    messageAny.header.recentBlockhash = blockhash;
-  } else {
-    // If header doesn't exist, set it directly on the message
-    messageAny.recentBlockhash = blockhash;
-  }
+  // Create versioned transaction with blockhash set
+  const versionedTx = new VersionedTransaction(messageWithBlockhash);
   
-  // Create versioned transaction with the blockhash set
-  const versionedTx = new VersionedTransaction(messageAny);
-  
-  // Serialize the transaction
+  // CRITICAL: Verify blockhash is actually set by checking the transaction
+  // If it's not set, we'll get an error during serialization
   let serializedMessage: Uint8Array;
   try {
     serializedMessage = versionedTx.serialize();
+    
+    // After successful serialization, verify the blockhash is actually in the transaction
+    // by deserializing and checking
+    const deserialized = VersionedTransaction.deserialize(serializedMessage);
+    if (!deserialized.message.recentBlockhash) {
+      throw new Error('Blockhash was not set in the deserialized transaction');
+    }
   } catch (error) {
-    // If serialization fails due to missing blockhash, the error will be thrown
-    // This helps identify the issue during development
-    if (error instanceof Error && error.message.includes('blockhash')) {
-      console.error('❌ BUILD BURN+MEMO: Blockhash missing during serialization');
-      console.error('Blockhash fetched:', blockhash);
-      console.error('Message structure:', JSON.stringify(Object.keys(messageAny), null, 2));
-      throw new Error(`Transaction build failed: Blockhash could not be set in message. Error: ${error.message}`);
+    // If serialization or verification fails, provide detailed error
+    if (error instanceof Error && (error.message.includes('blockhash') || error.message.includes('Blockhash was not set'))) {
+      console.error('❌ BUILD BURN+MEMO: Blockhash verification failed');
+      console.error('Blockhash we tried to set:', blockhash);
+      console.error('Error:', error.message);
+      throw new Error(`Transaction build failed: Blockhash could not be set in VersionedTransaction. This indicates Umi's transaction builder did not properly fetch or set the blockhash. Please verify RPC connection and Umi configuration. Error: ${error.message}`);
     }
     throw error;
   }

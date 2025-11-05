@@ -41,6 +41,23 @@ expect {
         send "\r"
         exp_continue
     }
+    "Include Game Planning Agents" {
+        send "No\r"
+        exp_continue
+    }
+    "What is your technical experience level?" {
+        # Select Intermediate (default option)
+        send "\r"
+        exp_continue
+    }
+    "Where is Technical Documentation located" {
+        send "\r"
+        exp_continue
+    }
+    "Where should development stories be stored" {
+        send "\r"
+        exp_continue
+    }
     "Select modules" {
         # Select all modules - press space to select, then enter
         send " \r"
