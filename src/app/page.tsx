@@ -174,7 +174,7 @@ function Header() {
           <div className="flex items-center gap-4">
             <div className="ascii-art text-xs kiln-version-box">
 {`╔══════════════╗
-║  KILN  v0.1.1  ║
+║  KILN  v0.1.1 ║
 ╚══════════════╝`}
             </div>
           </div>
@@ -201,7 +201,7 @@ function TerminalInterface() {
       <div className="min-h-screen px-4 py-8 flex flex-col justify-between w-full max-w-full overflow-x-hidden">
         <div className="max-w-7xl mx-auto w-full flex flex-col justify-between min-h-full">
           {/* Top Content */}
-          <div className="terminal p-3 border-t-4 border-matrix-red">
+          <div className="terminal p-3 border-t-4 border-matrix-red mb-4">
             <div className="mb-2">
               <div className="text-3xl font-medium text-glow-red-lg mb-3 tracking-wide text-left">
                 [ Kiln ঌ Teleburn ]
@@ -210,7 +210,7 @@ function TerminalInterface() {
                 {'>'} SOLANA → BITCOIN
               </div>
               <div className="text-xl text-matrix-red/80 mb-4 text-left">
-                {'>'} TRUSTLESS ◎ PERMANENT ◉ PERMISSIONLESS
+                {'>'} PERMISSIONLESS ◎ TRUSTLESS ◉ PERMANENT
               </div>
           
               {/* Combined ASCII Art - KILN with Integrated Flame Effects */}
