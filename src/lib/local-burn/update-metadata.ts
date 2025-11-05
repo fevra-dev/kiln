@@ -68,6 +68,7 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   tb = tb.add(
     updateV1(umi, {
       metadata: metadataPda,
+      mint: mintPk,
       authority: dummyKeypair, // Use dummy signer for building, client will set correct authority when signing
       data: {
         name: existingMetadata.name,
