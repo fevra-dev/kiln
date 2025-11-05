@@ -174,7 +174,7 @@ function Header() {
           <div className="flex items-center gap-4">
             <div className="ascii-art text-xs kiln-version-box">
 {`╔══════════════╗
-║  KILN  v0.1.1 ║
+║  KILN  v0.1.1║
 ╚══════════════╝`}
             </div>
           </div>
@@ -198,7 +198,7 @@ function TerminalInterface() {
   return (
     <div>
       {/* Hero Terminal - Full Viewport */}
-      <div className="min-h-screen px-4 py-2 md:py-8 flex flex-col justify-center md:justify-center w-full max-w-full overflow-x-hidden landing-view">
+      <div className="min-h-screen px-4 py-1 md:py-8 flex flex-col justify-start md:justify-center w-full max-w-full overflow-x-hidden landing-view">
         <div className="max-w-7xl mx-auto w-full">
           {/* Top Content */}
           <div className="terminal p-3 border-t-4 border-b-4 border-matrix-red mb-4">

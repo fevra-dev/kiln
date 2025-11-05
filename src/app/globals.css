@@ -262,9 +262,10 @@ body {
 /* KILN Version Box - Match width of ONLINE badge */
 .kiln-version-box {
   display: inline-block;
-  width: auto;
-  min-width: 120px;
-  max-width: 120px;
+  width: fit-content;
+  min-width: 110px;
+  max-width: 110px;
+  text-align: center;
 }
 
 /* ASCII Art Container for Homepage - Responsive */
@@ -277,21 +278,28 @@ body {
 
 @media (max-width: 768px) {
   .ascii-art-container {
-    font-size: clamp(0.4rem, 1.5vw, 0.6rem);
+    font-size: clamp(0.6rem, 2.5vw, 0.9rem);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     line-height: 1.1;
   }
   
   .kiln-version-box {
-    font-size: 0.6rem;
-    min-width: 100px;
+    font-size: 0.65rem;
+    min-width: 95px;
+    max-width: 95px;
   }
   
-  /* Reduce top spacing on mobile */
+  /* Reduce top spacing on mobile - pull content closer to top */
   .landing-view {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+    justify-content: flex-start !important;
+  }
+  
+  /* Reduce spacing in terminal box on mobile */
+  .terminal {
+    margin-top: 0.5rem;
   }
 }
 
