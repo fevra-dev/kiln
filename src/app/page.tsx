@@ -30,7 +30,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-matrix-red font-mono relative overflow-hidden">
+    <main className="min-h-screen bg-black text-matrix-red font-mono relative overflow-hidden w-full max-w-full">
       {/* Password Entry */}
       {!passwordEntered && (
         <PasswordEntry 
@@ -172,7 +172,7 @@ function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-4">
-            <div className="ascii-art text-xs">
+            <div className="ascii-art text-xs kiln-version-box">
 {`╔═══════════════════════════╗
 ║  KILN  v0.1.1              ║
 ╚═══════════════════════════╝`}
@@ -198,23 +198,23 @@ function TerminalInterface() {
   return (
     <div>
       {/* Hero Terminal - Full Viewport */}
-      <div className="min-h-screen px-4 py-8 flex flex-col justify-between">
+      <div className="min-h-screen px-4 py-8 flex flex-col justify-between w-full max-w-full overflow-x-hidden">
         <div className="max-w-7xl mx-auto w-full flex flex-col justify-between min-h-full">
           {/* Top Content */}
           <div className="terminal p-3 border-t-4 border-matrix-red">
             <div className="mb-2">
               <div className="text-3xl font-medium text-glow-red-lg mb-3 tracking-wide text-left">
-                [ Kiln ঌ Teleburn Protocol ]
+                [ Kiln ঌ Teleburn ]
               </div>
               <div className="text-xl text-matrix-red/80 mb-1 text-left">
                 {'>'} SOLANA → BITCOIN
-          </div>
+              </div>
               <div className="text-xl text-matrix-red/80 mb-4 text-left">
-                {'>'} CRYPTOGRAPHIC PROOF ◎ IRREVERSIBLE ◉ NO CUSTODY
+                {'>'} TRUSTLESS ◎ PERMANENT ◉ PERMISSIONLESS
               </div>
           
               {/* Combined ASCII Art - KILN with Integrated Flame Effects */}
-              <div className="ascii-art mb-3 text-center text-xl leading-tight font-bold flex justify-center">
+              <div className="ascii-art mb-3 text-center leading-tight font-bold flex justify-center ascii-art-container">
 {`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
@@ -227,7 +227,7 @@ function TerminalInterface() {
 ║                                                           ║
 ║                  ▓▒░ TELEBURN PROTOCOL ░▒▓                ║
 ║                                                           ║
-║               [ FORGING CRYPTOGRAPHIC PROOFS ]            ║
+║               [ FORGING CRYPTOGRAPHIC BURNS ]              ║
 ║                                                           ║
 ║               (  .      )                                 ║
 ║           )           (              )                    ║

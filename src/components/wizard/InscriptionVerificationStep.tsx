@@ -152,7 +152,7 @@ export function InscriptionVerificationStep({
     <div className="space-y-6 p-6 border-2 border-gray-200 rounded-lg bg-white shadow-sm">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <div className="text-3xl">⚠️</div>
+        <div className="text-3xl">🚨</div>
         <div className="flex-1">
           <h3 className="text-xl font-semibold text-gray-900">
             Inscription Verification Required
@@ -343,7 +343,7 @@ export function InscriptionVerificationStep({
               {/* Warning Box */}
               <div className="bg-yellow-50 border border-yellow-300 rounded p-3">
                 <div className="flex gap-2">
-                  <span className="text-xl">⚠️</span>
+                  <span className="text-xl">🚨</span>
                   <div className="flex-1 text-sm text-yellow-900">
                     <strong className="font-semibold">Do not proceed with sealing.</strong>
                     <br />

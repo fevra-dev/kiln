@@ -78,8 +78,8 @@ export default function TeleburnPage() {
   // Show form first if no data
   if (!formData || showForm) {
     return (
-      <div className="min-h-screen bg-terminal-bg text-terminal-text font-mono p-6">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-terminal-bg text-terminal-text font-mono p-6 w-full max-w-full overflow-x-hidden">
+        <div className="max-w-6xl mx-auto w-full">
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-4">
               <a 
@@ -89,15 +89,12 @@ export default function TeleburnPage() {
               >
                 ঌ
               </a>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
-                [ Kiln Teleburn Protocol ]
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text">
+                [ Configure Teleburn ]
               </h1>
             </div>
             <p className="text-lg text-matrix-red/80 mb-2">
               <span className="text-terminal-prompt">$</span> configure_teleburn_parameters
-            </p>
-            <p className="text-sm text-matrix-red/60">
-              Configure your teleburn parameters to migrate Solana NFTs to Bitcoin Ordinals
             </p>
           </div>
 

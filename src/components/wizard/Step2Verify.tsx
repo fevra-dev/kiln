@@ -82,7 +82,7 @@ export const Step2Verify: FC<Step2VerifyProps> = ({
       {/* Verification Gate Notice */}
       <div className="alert alert-warning mb-6">
         <div className="flex items-start gap-3">
-          <div className="text-2xl">⚠️</div>
+          <div className="text-2xl">🚨</div>
           <div>
             <div className="font-bold mb-1 text-matrix-red">CRITICAL VERIFICATION GATE</div>
             <div className="text-sm opacity-80">
@@ -154,7 +154,7 @@ export const Step2Verify: FC<Step2VerifyProps> = ({
                 <span className="animate-pulse">◆</span> VERIFYING INSCRIPTION...
               </>
             ) : (
-              <>⚡ VERIFY INSCRIPTION CONTENT</>
+              <>VERIFY INSCRIPTION CONTENT</>
             )}
           </button>
         </div>
@@ -192,7 +192,7 @@ export const Step2Verify: FC<Step2VerifyProps> = ({
                     </div>
                   )}
                   <div className="mt-3">
-                    <strong>⚠️ DO NOT PROCEED.</strong> The inscription content does not match
+                    <strong>🚨 DO NOT PROCEED.</strong> The inscription content does not match
                     your expected hash. This could mean:
                   </div>
                   <ul className="list-disc list-inside text-xs opacity-80 space-y-1">

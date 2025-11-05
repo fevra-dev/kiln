@@ -82,7 +82,7 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
         <div className="connection-prompt space-y-6">
           <div className="alert alert-info">
             <div className="flex items-start gap-3">
-              <div className="text-2xl">⚠️</div>
+              <div className="text-2xl">🚨</div>
               <div>
                 <div className="font-bold mb-1">WALLET CONNECTION REQUIRED</div>
                 <div className="text-sm opacity-80">
@@ -134,7 +134,7 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
                   </div>
                   {balanceError && (
                     <div className="text-xs text-yellow-500/80 mt-2">
-                      ⚠️ {balanceError}
+                      🚨 {balanceError}
                     </div>
                   )}
                   <div>

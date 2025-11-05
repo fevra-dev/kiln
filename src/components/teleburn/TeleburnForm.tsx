@@ -81,12 +81,12 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
             // Clear status after 3 seconds
             setTimeout(() => setHashFetchStatus(''), 3000);
           } else {
-            setHashFetchStatus(`⚠️ ${result.error || 'Could not fetch inscription'}`);
+            setHashFetchStatus(`🚨 ${result.error || 'Could not fetch inscription'}`);
             setTimeout(() => setHashFetchStatus(''), 3000);
           }
         } catch (error) {
           console.error('Error fetching inscription:', error);
-          setHashFetchStatus('⚠️ Error fetching inscription');
+          setHashFetchStatus('🚨 Error fetching inscription');
           setTimeout(() => setHashFetchStatus(''), 3000);
         } finally {
           setFetchingHash(false);
@@ -188,7 +188,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
             placeholder="e.g., 7xKXy9H8P3ZYQEXxf5..."
           />
           {touched.mint && errors.mint && (
-            <div className="form-error">⚠️ {errors.mint}</div>
+            <div className="form-error">🚨 {errors.mint}</div>
           )}
           <div className="form-hint">
             The Solana NFT you want to teleburn to Bitcoin
@@ -210,7 +210,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
             placeholder="e.g., abc123...def789i0"
           />
           {touched.inscriptionId && errors.inscriptionId && (
-            <div className="form-error">⚠️ {errors.inscriptionId}</div>
+            <div className="form-error">🚨 {errors.inscriptionId}</div>
           )}
           <div className="form-hint">
             Format: {'<64-hex-txid>i<index>'} (from ordinals.com)
@@ -236,7 +236,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
             disabled={fetchingHash}
           />
           {touched.sha256 && errors.sha256 && (
-            <div className="form-error">⚠️ {errors.sha256}</div>
+            <div className="form-error">🚨 {errors.sha256}</div>
           )}
           {hashFetchStatus && (
             <div className="form-hint text-terminal-green">
@@ -253,7 +253,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
         {/* Retire Method - Fixed to teleburn-derived */}
         <div className="method-info">
           <div className="text-xs font-bold mb-3 text-terminal-prompt">
-            [ RETIRE METHOD: TELEBURN-DERIVED ]
+            [ TELEBURN-DERIVED ]
           </div>
           <div className="space-y-2 text-xs">
             <div className="flex gap-2">
@@ -296,7 +296,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
           type="submit"
           className="terminal-button px-8 py-3 ml-auto"
         >
-          ⚡ CONTINUE TO VERIFICATION
+          CONTINUE TO VERIFICATION
         </button>
       </div>
 

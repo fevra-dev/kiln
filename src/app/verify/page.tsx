@@ -189,7 +189,7 @@ export default function VerifyPage() {
                 />
                 {error && (
                   <div className="mt-2 text-sm text-matrix-red">
-                    ⚠️ {error}
+                    🚨 {error}
                   </div>
                 )}
               </div>
@@ -329,7 +329,7 @@ export default function VerifyPage() {
                                 https://ordinals.com/inscription/{result.inscriptionId}
                               </p>
                               <p className="text-xs italic">
-                                ⚠️ Requires: NFT must be mutable and you must be the update authority
+                                🚨 Requires: NFT must be mutable and you must be the update authority
                               </p>
                             </div>
                           </div>

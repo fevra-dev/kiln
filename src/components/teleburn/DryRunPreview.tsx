@@ -67,7 +67,7 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
       {report.warnings.length > 0 && (
         <div className="warnings-box">
           <div className="flex items-start gap-2 mb-3">
-            <div className="text-xl">⚠️</div>
+            <div className="text-xl">🚨</div>
             <div className="font-bold text-sm">WARNINGS ({report.warnings.length})</div>
           </div>
           <div className="space-y-1">

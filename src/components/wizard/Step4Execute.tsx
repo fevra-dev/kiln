@@ -242,7 +242,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
     } catch (error) {
       console.error('Metadata update error:', error);
       // Don't fail the entire teleburn if metadata update fails
-      console.warn('⚠️ EXECUTION: Metadata update failed (non-fatal):', error);
+      console.warn('🚨 EXECUTION: Metadata update failed (non-fatal):', error);
     } finally {
       setUpdatingMetadata(false);
     }
@@ -285,7 +285,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       {!executing && !completed && (
         <div className="warning-box">
           <div className="flex items-start gap-3">
-            <div className="text-2xl">⚠️</div>
+            <div className="text-2xl">🚨</div>
             <div>
               <div className="font-bold mb-2">FINAL WARNING: IRREVERSIBLE ACTION</div>
               <div className="text-sm space-y-2">
@@ -395,7 +395,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                   https://ordinals.com/inscription/{formData.inscriptionId}
                 </p>
                 <p className="text-xs italic">
-                  ⚠️ Requires: NFT must be mutable and you must be the update authority
+                  🚨 Requires: NFT must be mutable and you must be the update authority
                 </p>
               </div>
             </div>
