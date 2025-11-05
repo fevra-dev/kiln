@@ -13,6 +13,7 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { publicKey, transactionBuilder, generateSigner, keypairIdentity } from '@metaplex-foundation/umi';
 import {
   findMetadataPda,
+  fetchMetadata,
   updateV1,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
@@ -50,6 +51,9 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   // Find metadata PDA
   const metadataPda = findMetadataPda(umi, { mint: mintPk })[0];
 
+  // Fetch existing metadata to preserve other fields
+  const existingMetadata = await fetchMetadata(umi, metadataPda);
+
   // Build Ordinals URL
   const ordinalsUrl = `https://ordinals.com/inscription/${inscriptionId}`;
 
@@ -59,15 +63,17 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   tb = tb.add(setComputeUnitPrice(umi, { microLamports: priorityMicrolamports }));
 
   // Add update metadata instruction
-  // Note: updateV1 allows updating specific fields without replacing entire metadata
-  // We'll update the URI to point to Ordinals
+  // Update the URI while preserving all other metadata fields
   tb = tb.add(
     updateV1(umi, {
       metadata: metadataPda,
-      updateAuthority: authorityPk,
+      authority: authorityPk,
       data: {
+        name: existingMetadata.name,
+        symbol: existingMetadata.symbol,
         uri: ordinalsUrl, // Update the URI to point to Ordinals
-        // Keep other fields unchanged by not specifying them
+        sellerFeeBasisPoints: existingMetadata.sellerFeeBasisPoints,
+        creators: existingMetadata.creators,
       },
     })
   );
