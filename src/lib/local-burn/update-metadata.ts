@@ -46,7 +46,7 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   umi.use(keypairIdentity(dummyKeypair));
   
   const mintPk = publicKey(mint);
-  const authorityPk = publicKey(updateAuthority);
+  // Note: authority will be set by the client when signing the transaction
 
   // Find metadata PDA
   const metadataPda = findMetadataPda(umi, { mint: mintPk })[0];
