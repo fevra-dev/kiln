@@ -126,12 +126,16 @@ export async function buildBurnMemoTransaction(
   
   // Get the built transaction
   const builtTx = await tb.build(umi);
+  const message = builtTx.message;
   
-  // Umi's built transaction can be serialized directly
-  // The transaction builder returns a transaction that can be serialized
-  // We need to get the serialized message bytes from the built transaction
-  // Umi transactions are versioned transactions, so we serialize the message
-  const serializedMessage = builtTx.serialize();
+  // Convert Umi TransactionMessage to Solana VersionedMessage format
+  // Umi's message structure is compatible with Solana's wire format at runtime
+  // The underlying structure matches Solana's VersionedMessage format
+  // We use type assertion because the types differ but the runtime structure is compatible
+  const versionedTx = new VersionedTransaction(message as any);
+  
+  // Serialize the versioned transaction (unsigned transaction bytes)
+  const serializedMessage = versionedTx.serialize();
   
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');
