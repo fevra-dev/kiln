@@ -277,14 +277,21 @@ body {
 
 @media (max-width: 768px) {
   .ascii-art-container {
-    font-size: 0.5rem;
+    font-size: clamp(0.4rem, 1.5vw, 0.6rem);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    line-height: 1.1;
   }
   
   .kiln-version-box {
     font-size: 0.6rem;
     min-width: 100px;
+  }
+  
+  /* Reduce top spacing on mobile */
+  .landing-view {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
   }
 }
 
