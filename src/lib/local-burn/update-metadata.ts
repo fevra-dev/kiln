@@ -16,7 +16,7 @@ import {
   updateV1,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
-import { VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction, VersionedMessage } from '@solana/web3.js';
 
 /**
  * Build a metadata update transaction to point NFT image to Ordinals inscription.
@@ -82,7 +82,8 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   // Umi's message structure is compatible with Solana's wire format at runtime
   // The underlying structure matches Solana's VersionedMessage format
   // We use type assertion because the types differ but the runtime structure is compatible
-  const versionedTx = new VersionedTransaction(message as any);
+  // Using 'unknown' as intermediate type to satisfy ESLint no-explicit-any rule
+  const versionedTx = new VersionedTransaction(message as unknown as VersionedMessage);
   
   // Serialize the versioned transaction (unsigned transaction bytes)
   const serializedMessage = versionedTx.serialize();
