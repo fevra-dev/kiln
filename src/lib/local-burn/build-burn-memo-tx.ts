@@ -165,7 +165,14 @@ export async function buildBurnMemoTransaction(
   // The message structure for versioned transactions stores the blockhash internally.
   // We'll set it by directly modifying the message object's internal structure.
   // This is necessary because Umi's build() may not always set the blockhash correctly.
-  const messageAny = versionedMessage as any;
+  // Type assertion to allow setting blockhash property which exists at runtime
+  interface MessageWithBlockhash extends VersionedMessage {
+    recentBlockhash?: string;
+    header?: {
+      recentBlockhash?: string;
+    };
+  }
+  const messageAny = versionedMessage as unknown as MessageWithBlockhash;
   
   // Set blockhash on the message's internal structure
   // For versioned messages, the blockhash is stored in the message header
