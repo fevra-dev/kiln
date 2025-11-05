@@ -32,7 +32,7 @@ import { VersionedTransaction, VersionedMessage } from '@solana/web3.js';
 export async function buildUpdateMetadataToOrdinalsTransaction(
   rpcUrl: string,
   mint: string,
-  updateAuthority: string,
+  _updateAuthority: string, // Unused - client will set authority when signing
   inscriptionId: string,
   priorityMicrolamports: number = 2_000
 ): Promise<{
