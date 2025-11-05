@@ -29,6 +29,14 @@ expect {
         send "Developer\r"
         exp_continue
     }
+    "Where do custom agents get created?" {
+        send "\r"
+        exp_continue
+    }
+    "Where do custom workflows get stored?" {
+        send "\r"
+        exp_continue
+    }
     "Select modules" {
         # Select all modules - press space to select, then enter
         send " \r"

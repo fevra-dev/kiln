@@ -144,13 +144,13 @@ export async function buildBurnMemoTransaction(
   // The transaction will be built with the dummy keypair as fee payer
   // The client will set the correct fee payer when signing
   
-  // CRITICAL: Explicitly fetch blockhash using Solana Connection
-  // Umi's transaction builder may not always set the blockhash correctly,
-  // so we fetch it directly and set it manually to ensure it's present
+  // CRITICAL: Fetch blockhash BEFORE building the transaction
+  // Umi's transaction builder should automatically fetch and set the blockhash,
+  // but we explicitly fetch it first to ensure it's available
   const connection = new Connection(rpcUrl, 'confirmed');
   const { blockhash } = await connection.getLatestBlockhash();
   
-  // Get the built transaction
+  // Get the built transaction - Umi should automatically fetch blockhash during build()
   const builtTx = await tb.build(umi);
   const message = builtTx.message;
   
@@ -162,23 +162,35 @@ export async function buildBurnMemoTransaction(
   const versionedMessage = message as unknown as VersionedMessage;
   
   // CRITICAL: For VersionedTransaction, we need to set the blockhash on the message
-  // before creating the transaction. The message structure for versioned transactions
-  // stores the blockhash in a specific field that we need to set.
-  // Type assertion to access the blockhash property which exists at runtime
-  (versionedMessage as { recentBlockhash?: string }).recentBlockhash = blockhash;
+  // The message structure for versioned transactions stores the blockhash internally.
+  // We'll set it by directly modifying the message object's internal structure.
+  // This is necessary because Umi's build() may not always set the blockhash correctly.
+  const messageAny = versionedMessage as any;
+  
+  // Set blockhash on the message's internal structure
+  // For versioned messages, the blockhash is stored in the message header
+  if (messageAny.header) {
+    messageAny.header.recentBlockhash = blockhash;
+  } else {
+    // If header doesn't exist, set it directly on the message
+    messageAny.recentBlockhash = blockhash;
+  }
   
   // Create versioned transaction with the blockhash set
-  const versionedTx = new VersionedTransaction(versionedMessage);
+  const versionedTx = new VersionedTransaction(messageAny);
   
   // Serialize the transaction
   let serializedMessage: Uint8Array;
   try {
     serializedMessage = versionedTx.serialize();
   } catch (error) {
-    // If serialization still fails, provide a descriptive error
+    // If serialization fails due to missing blockhash, the error will be thrown
+    // This helps identify the issue during development
     if (error instanceof Error && error.message.includes('blockhash')) {
-      console.error('❌ BUILD BURN+MEMO: Blockhash still missing after explicit set');
-      throw new Error(`Transaction build failed: Blockhash could not be set. Error: ${error.message}`);
+      console.error('❌ BUILD BURN+MEMO: Blockhash missing during serialization');
+      console.error('Blockhash fetched:', blockhash);
+      console.error('Message structure:', JSON.stringify(Object.keys(messageAny), null, 2));
+      throw new Error(`Transaction build failed: Blockhash could not be set in message. Error: ${error.message}`);
     }
     throw error;
   }
