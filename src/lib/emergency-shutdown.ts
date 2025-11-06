@@ -19,7 +19,7 @@ import { getCorsHeaders } from './cors';
  * Reads from environment variable
  */
 export function isEmergencyShutdownEnabled(): boolean {
-  return process.env.EMERGENCY_SHUTDOWN === 'true';
+  return process.env['EMERGENCY_SHUTDOWN'] === 'true';
 }
 
 /**
@@ -28,7 +28,7 @@ export function isEmergencyShutdownEnabled(): boolean {
  */
 export function getEmergencyShutdownMessage(): string {
   return (
-    process.env.EMERGENCY_SHUTDOWN_MESSAGE ||
+    process.env['EMERGENCY_SHUTDOWN_MESSAGE'] ||
     '🚨 Teleburn is temporarily offline for maintenance. Please try again later. No assets are at risk.'
   );
 }
@@ -64,7 +64,7 @@ export function checkEmergencyShutdown(
 
   // Get CORS headers for the response
   const corsHeaders = getCorsHeaders(request);
-  const retryAfter = process.env.EMERGENCY_SHUTDOWN_RETRY_AFTER || '300'; // Default 5 minutes
+  const retryAfter = process.env['EMERGENCY_SHUTDOWN_RETRY_AFTER'] || '300'; // Default 5 minutes
 
   // Return 503 Service Unavailable
   return NextResponse.json(

@@ -163,11 +163,14 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       // Sign the transaction (wallet will set correct fee payer)
       console.log(`🔍 EXECUTION: About to sign transaction. Type: ${burnMemoTx instanceof VersionedTransaction ? 'VersionedTransaction' : 'Transaction'}`);
       
+      // Declare signature variable outside if/else blocks for scope
+      let burnMemoSig: string;
+      
       // For legacy transactions, use enhanced send with retry
       if (burnMemoTx instanceof Transaction) {
         updateTxStatus(0, { status: 'broadcasting' });
         
-        const burnMemoSig = await sendTransactionWithRetry(
+        burnMemoSig = await sendTransactionWithRetry(
           connection,
           burnMemoTx,
           async (tx) => {
@@ -204,7 +207,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         
         updateTxStatus(0, { status: 'broadcasting' });
         const serializedTx = signedBurnMemoTx.serialize();
-        const burnMemoSig = await connection.sendRawTransaction(serializedTx);
+        burnMemoSig = await connection.sendRawTransaction(serializedTx);
         
         updateTxStatus(0, { status: 'confirming' });
         const confirmation = await confirmTransactionWithTimeout(

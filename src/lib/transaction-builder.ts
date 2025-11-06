@@ -28,8 +28,10 @@ import {
 } from '@solana/spl-token';
 import { isPNFT } from './metaplex-burn';
 import { deriveTeleburnAddress } from './teleburn';
+import { addPriorityFee, addDynamicPriorityFee, PriorityFeeConfig } from './transaction-utils';
+import { validateTransactionSize } from './transaction-size-validator';
+import { checkNFTFrozenStatus } from './frozen-account-detector';
 import type { Sbt01Seal, Sbt01Retire, TeleburnMethod } from './types';
-import { addPriorityFee, PriorityFeeConfig } from './transaction-utils';
 import { createConnectionWithFailover, withRpcFailover } from './rpc-failover';
 
 // Memo Program ID
@@ -100,10 +102,10 @@ export interface BuiltTransaction {
  */
 export class TransactionBuilder {
   private connection: Connection;
-  private rpcUrl: string;
 
   constructor(rpcUrl: string) {
-    this.rpcUrl = rpcUrl;
+    // rpcUrl parameter kept for API compatibility but not stored
+    // Connection is created via failover system
     // Use failover connection if available, otherwise create standard connection
     try {
       this.connection = createConnectionWithFailover();

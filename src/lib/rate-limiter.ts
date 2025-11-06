@@ -166,6 +166,15 @@ export async function checkRateLimit(
   if (validTimestamps.length >= maxRequests) {
     // Calculate reset time (oldest timestamp + window)
     const oldestTimestamp = validTimestamps[0];
+    if (oldestTimestamp === undefined) {
+      // Should not happen, but handle safely
+      return {
+        allowed: false,
+        remaining: 0,
+        resetIn: windowMs,
+        error: `Rate limit exceeded. Maximum ${maxRequests} requests per ${windowMs / 1000} seconds.`,
+      };
+    }
     const resetIn = oldestTimestamp + windowMs - now;
 
     return {
@@ -185,7 +194,7 @@ export async function checkRateLimit(
 
   // Calculate reset time
   const oldestTimestamp = validTimestamps[0];
-  const resetIn = oldestTimestamp + windowMs - now;
+  const resetIn = oldestTimestamp !== undefined ? oldestTimestamp + windowMs - now : windowMs;
 
   return {
     allowed: true,

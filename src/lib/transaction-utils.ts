@@ -338,10 +338,14 @@ export async function validateComputeUnits(
   recommendation?: string;
 }> {
   try {
-    const simulation = await connection.simulateTransaction(transaction, {
-      sigVerify: false,
-      replaceRecentBlockhash: true,
-    });
+    // Ensure transaction has recent blockhash before simulation
+    if (!transaction.recentBlockhash) {
+      const recentBlockhash = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = recentBlockhash.blockhash;
+    }
+    
+    // simulateTransaction signature: (transaction, commitment?, includeAccounts?)
+    const simulation = await connection.simulateTransaction(transaction, undefined, true);
 
     const unitsUsed = simulation.value.unitsConsumed || 0;
     const limit = MAX_COMPUTE_UNIT_LIMIT;

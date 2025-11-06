@@ -122,14 +122,22 @@ export class RpcFailoverManager {
    * Get current active RPC endpoint
    */
   getCurrentEndpoint(): RpcEndpoint {
-    return this.endpoints[this.currentIndex];
+    const endpoint = this.endpoints[this.currentIndex];
+    if (!endpoint) {
+      throw new Error('No RPC endpoints available');
+    }
+    return endpoint;
   }
 
   /**
    * Get current RPC URL
    */
   getCurrentUrl(): string {
-    return this.endpoints[this.currentIndex].url;
+    const endpoint = this.endpoints[this.currentIndex];
+    if (!endpoint) {
+      throw new Error('No RPC endpoints available');
+    }
+    return endpoint.url;
   }
 
   /**
@@ -157,7 +165,8 @@ export class RpcFailoverManager {
       let endpointIndex = this.currentIndex;
       for (let i = 0; i < this.endpoints.length; i++) {
         const idx = (this.currentIndex + i) % this.endpoints.length;
-        if (!triedEndpoints.has(idx) && this.endpoints[idx].healthy) {
+        const endpoint = this.endpoints[idx];
+        if (endpoint && !triedEndpoints.has(idx) && endpoint.healthy) {
           endpointIndex = idx;
           break;
         }
@@ -171,6 +180,10 @@ export class RpcFailoverManager {
       triedEndpoints.add(endpointIndex);
       this.currentIndex = endpointIndex;
       const endpoint = this.endpoints[endpointIndex];
+
+      if (!endpoint) {
+        throw new Error('No RPC endpoints available');
+      }
 
       try {
         console.log(`🔄 RPC Failover: Using ${endpoint.provider} (${endpoint.url})`);
@@ -297,7 +310,7 @@ export class RpcFailoverManager {
       const endpoint = this.endpoints[index];
       if (result.status === 'fulfilled') {
         const healthResult = result.value;
-        if (!healthResult.healthy && endpoint.healthy) {
+        if (endpoint && !healthResult.healthy && endpoint.healthy) {
           console.warn(`⚠️ RPC Failover: ${endpoint.provider} health check failed`);
         }
       }
@@ -306,10 +319,13 @@ export class RpcFailoverManager {
     // Update current index to first healthy endpoint
     const healthyIndex = this.endpoints.findIndex((e) => e.healthy);
     if (healthyIndex !== -1 && healthyIndex !== this.currentIndex) {
-      console.log(
-        `🔄 RPC Failover: Switching to ${this.endpoints[healthyIndex].provider} (primary healthy)`
-      );
-      this.currentIndex = healthyIndex;
+      const healthyEndpoint = this.endpoints[healthyIndex];
+      if (healthyEndpoint) {
+        console.log(
+          `🔄 RPC Failover: Switching to ${healthyEndpoint.provider} (primary healthy)`
+        );
+        this.currentIndex = healthyIndex;
+      }
     }
   }
 
@@ -326,8 +342,12 @@ export class RpcFailoverManager {
       lastHealthCheck?: number;
     }>;
   } {
+    const currentEndpoint = this.endpoints[this.currentIndex];
+    if (!currentEndpoint) {
+      throw new Error('No RPC endpoints available');
+    }
     return {
-      current: this.endpoints[this.currentIndex],
+      current: currentEndpoint,
       endpoints: this.endpoints.map((e) => ({
         url: e.url,
         provider: e.provider,
