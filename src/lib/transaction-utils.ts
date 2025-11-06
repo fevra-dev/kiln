@@ -553,7 +553,7 @@ export async function confirmTransactionWithTimeout(
           return {
             confirmed: true,
             slot: status.value.slot || undefined,
-            blockTime: status.value.blockTime || undefined,
+            blockTime: undefined, // blockTime not available in SignatureStatus
           };
         }
       }
