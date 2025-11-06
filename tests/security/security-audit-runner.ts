@@ -672,5 +672,6 @@ if (require.main === module) {
   main().catch(console.error);
 }
 
-export { SecurityAuditor, SecurityFinding, AuditReport };
+export { SecurityAuditor };
+export type { SecurityFinding, AuditReport };
 
