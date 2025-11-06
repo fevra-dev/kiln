@@ -58,6 +58,14 @@ expect {
         send "\r"
         exp_continue
     }
+    "Install user documentation to project directory?" {
+        send "Yes\r"
+        exp_continue
+    }
+    "Enable Playwright MCP capabilities" {
+        send "N\r"
+        exp_continue
+    }
     "Select modules" {
         # Select all modules - press space to select, then enter
         send " \r"

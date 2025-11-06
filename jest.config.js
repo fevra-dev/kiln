@@ -6,6 +6,7 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^next/server$': '<rootDir>/tests/__mocks__/next-server.js',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(uuid|@noble|@solana|jayson)/)',
@@ -24,5 +25,14 @@ module.exports = {
     },
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  // Globals for Node.js environment
+  globals: {
+    'ts-jest': {
+      tsconfig: {
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+      },
+    },
+  },
 };
 

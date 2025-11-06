@@ -17,6 +17,9 @@ import { Connection, PublicKey, Transaction, VersionedTransaction } from '@solan
 import { TransactionBuilder, TeleburnMethod, type UpdateUriParams } from './transaction-builder';
 import { TransactionDecoder, type DecodedTransaction } from './transaction-decoder';
 import { buildBurnMemoTransaction } from './local-burn/build-burn-memo-tx';
+import { validateComputeUnits } from './transaction-utils';
+import { validateTransactionSize } from './transaction-size-validator';
+import { checkNFTFrozenStatus } from './frozen-account-detector';
 
 /**
  * Simulation result for a single transaction
@@ -268,6 +271,35 @@ export class DryRunService {
         if (burnMemoSimulation.unitsConsumed) {
           // Rough estimate: base fee + compute units
           burnMemoEstimatedFee = 5000 + Math.ceil(burnMemoSimulation.unitsConsumed / 1000000) * 1000;
+          
+          // Validate compute units for legacy transactions
+          if (burnMemoTx instanceof Transaction) {
+            try {
+              const cuValidation = await validateComputeUnits(burnMemoTx, this.connection);
+              if (!cuValidation.valid) {
+                errors.push(`Compute unit limit exceeded: ${cuValidation.recommendation || 'Transaction uses too many compute units'}`);
+              } else if (cuValidation.recommendation) {
+                warnings.push(`Compute unit warning: ${cuValidation.recommendation}`);
+              }
+            } catch (cuError) {
+              // CU validation failed, but don't block the dry-run
+              warnings.push(`Could not validate compute units: ${cuError instanceof Error ? cuError.message : String(cuError)}`);
+            }
+          }
+
+          // Validate transaction size
+          if (burnMemoTx instanceof Transaction || burnMemoTx instanceof VersionedTransaction) {
+            try {
+              const sizeValidation = validateTransactionSize(burnMemoTx);
+              if (!sizeValidation.valid) {
+                errors.push(`Transaction size validation failed: ${sizeValidation.recommendation || 'Transaction too large'}`);
+              } else if (sizeValidation.warning) {
+                warnings.push(`Transaction size warning: ${sizeValidation.warning}`);
+              }
+            } catch (sizeError) {
+              warnings.push(`Could not validate transaction size: ${sizeError instanceof Error ? sizeError.message : String(sizeError)}`);
+            }
+          }
         }
         
       } catch (error) {
@@ -339,6 +371,30 @@ export class DryRunService {
         }
 
         warnings.push(...uriDecoded.warnings);
+      }
+
+      // Check frozen account status (if not pNFT)
+      if (nftType === 'REGULAR') {
+        try {
+          const frozenCheck = await checkNFTFrozenStatus(
+            this.connection,
+            params.mint,
+            params.payer,
+            undefined // Will auto-detect token program
+          );
+          
+          if (frozenCheck.frozen) {
+            errors.push(
+              `Token account is frozen. Cannot burn frozen tokens. ` +
+              `Freeze authority: ${frozenCheck.freezeAuthority?.toBase58() || 'Unknown'}. ` +
+              `Contact the freeze authority to unfreeze the account before burning.`
+            );
+          } else if (frozenCheck.error) {
+            warnings.push(`Frozen status check warning: ${frozenCheck.error}`);
+          }
+        } catch (frozenError) {
+          warnings.push(`Could not check frozen status: ${frozenError instanceof Error ? frozenError.message : String(frozenError)}`);
+        }
       }
 
       // Additional validation checks

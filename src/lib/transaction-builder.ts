@@ -29,6 +29,8 @@ import {
 import { isPNFT } from './metaplex-burn';
 import { deriveTeleburnAddress } from './teleburn';
 import type { Sbt01Seal, Sbt01Retire, TeleburnMethod } from './types';
+import { addPriorityFee, PriorityFeeConfig } from './transaction-utils';
+import { createConnectionWithFailover, withRpcFailover } from './rpc-failover';
 
 // Memo Program ID
 export const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
@@ -52,6 +54,7 @@ export interface SealTransactionParams {
   sha256: string;
   authority?: PublicKey[]; // Optional multi-sig authorities
   rpcUrl?: string;
+  priorityFee?: PriorityFeeConfig; // Optional priority fee configuration
 }
 
 /**
@@ -67,6 +70,7 @@ export interface RetireTransactionParams {
   amount?: bigint; // Amount to retire (default: 1 for NFTs)
   rpcUrl?: string;
   forceTokenProgram?: 'TOKEN_PROGRAM_ID' | 'TOKEN_2022_PROGRAM_ID'; // Force specific token program
+  priorityFee?: PriorityFeeConfig; // Optional priority fee configuration
 }
 
 /**
@@ -96,9 +100,16 @@ export interface BuiltTransaction {
  */
 export class TransactionBuilder {
   private connection: Connection;
+  private rpcUrl: string;
 
   constructor(rpcUrl: string) {
-    this.connection = new Connection(rpcUrl, 'confirmed');
+    this.rpcUrl = rpcUrl;
+    // Use failover connection if available, otherwise create standard connection
+    try {
+      this.connection = createConnectionWithFailover();
+    } catch {
+      this.connection = new Connection(rpcUrl, 'confirmed');
+    }
   }
 
   /**
@@ -114,9 +125,14 @@ export class TransactionBuilder {
   async buildSealTransaction(params: SealTransactionParams): Promise<BuiltTransaction> {
     const { payer, mint, inscriptionId, sha256, authority } = params;
 
-    // Get current blockchain state for accurate timestamps
-    const { blockhash } = await this.connection.getLatestBlockhash();
-    const slot = await this.connection.getSlot();
+    // Get current blockchain state for accurate timestamps (with failover)
+    const { blockhash, slot } = await withRpcFailover(async (conn) => {
+      const [blockhashResult, slotResult] = await Promise.all([
+        conn.getLatestBlockhash(),
+        conn.getSlot(),
+      ]);
+      return { blockhash: blockhashResult.blockhash, slot: slotResult };
+    });
     const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
     // Construct Kiln v0.1.1 seal memo payload
@@ -166,6 +182,25 @@ export class TransactionBuilder {
     transaction.feePayer = payer;
     transaction.recentBlockhash = blockhash;
 
+    // Add priority fees if configured, otherwise use dynamic fees
+    if (params.priorityFee) {
+      addPriorityFee(transaction, params.priorityFee);
+    } else {
+      // Use dynamic priority fee based on network conditions
+      await addDynamicPriorityFee(transaction, this.connection, 'medium');
+    }
+
+    // Validate transaction size
+    const sizeValidation = validateTransactionSize(transaction);
+    if (!sizeValidation.valid) {
+      throw new Error(
+        `Transaction size validation failed: ${sizeValidation.recommendation || 'Transaction too large'}`
+      );
+    }
+    if (sizeValidation.warning) {
+      console.warn(`⚠️ TRANSACTION BUILDER: ${sizeValidation.warning}`);
+    }
+
     // Estimate fee
     const estimatedFee = await this.estimateTransactionFee(transaction);
 
@@ -192,9 +227,11 @@ export class TransactionBuilder {
   async buildRetireTransaction(params: RetireTransactionParams): Promise<BuiltTransaction> {
     const { payer, owner, mint, inscriptionId, sha256, method, amount = 1n } = params;
 
-    // Check if this is a pNFT first
+    // Check if this is a pNFT first (with failover)
     console.log(`🔍 TRANSACTION BUILDER: Checking if mint is a pNFT...`);
-    const isPNFTMint = await isPNFT(mint, this.connection);
+    const isPNFTMint = await withRpcFailover(async (conn) => {
+      return await isPNFT(mint, conn);
+    });
     console.log(`🔍 TRANSACTION BUILDER: Is pNFT: ${isPNFTMint}`);
     
     if (isPNFTMint) {
@@ -207,9 +244,41 @@ export class TransactionBuilder {
       throw new Error('pNFT detected - use Metaplex burn instead of SPL Token burn');
     }
 
-    // Get current blockchain state for accurate timestamps
-    const { blockhash } = await this.connection.getLatestBlockhash();
-    const slot = await this.connection.getSlot();
+    // Check if token account is frozen (for regular NFTs)
+    console.log(`🔍 TRANSACTION BUILDER: Checking if token account is frozen...`);
+    const frozenCheck = await withRpcFailover(async (conn) => {
+      // Get token program first
+      let tokenProgram = TOKEN_PROGRAM_ID;
+      if (params.forceTokenProgram) {
+        tokenProgram = params.forceTokenProgram === 'TOKEN_PROGRAM_ID' ? TOKEN_PROGRAM_ID : TOKEN_2022_PROGRAM_ID;
+      } else {
+        tokenProgram = await this.detectTokenProgram(mint);
+      }
+      return await checkNFTFrozenStatus(conn, mint, owner, tokenProgram);
+    });
+    
+    if (frozenCheck.frozen) {
+      throw new Error(
+        `Token account is frozen. Cannot burn frozen tokens. ` +
+        `Freeze authority: ${frozenCheck.freezeAuthority?.toBase58() || 'Unknown'}. ` +
+        `Contact the freeze authority to unfreeze the account before burning.`
+      );
+    }
+    
+    if (frozenCheck.error) {
+      console.warn(`⚠️ TRANSACTION BUILDER: Frozen status check warning: ${frozenCheck.error}`);
+    } else {
+      console.log(`✅ TRANSACTION BUILDER: Token account is not frozen`);
+    }
+
+    // Get current blockchain state for accurate timestamps (with failover)
+    const { blockhash, slot } = await withRpcFailover(async (conn) => {
+      const [blockhashResult, slotResult] = await Promise.all([
+        conn.getLatestBlockhash(),
+        conn.getSlot(),
+      ]);
+      return { blockhash: blockhashResult.blockhash, slot: slotResult };
+    });
     const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
     // Get token program (support both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID)
@@ -393,6 +462,14 @@ export class TransactionBuilder {
     transaction.feePayer = payer;
     transaction.recentBlockhash = blockhash;
 
+    // Add priority fees if configured, otherwise use dynamic fees
+    if (params.priorityFee) {
+      addPriorityFee(transaction, params.priorityFee);
+    } else {
+      // Use dynamic priority fee based on network conditions
+      await addDynamicPriorityFee(transaction, this.connection, 'medium');
+    }
+
     // Estimate fee
     const estimatedFee = await this.estimateTransactionFee(transaction);
 
@@ -422,7 +499,10 @@ export class TransactionBuilder {
     const transaction = new Transaction();
     transaction.feePayer = payer;
 
-    const { blockhash } = await this.connection.getLatestBlockhash();
+    // Get blockhash with failover
+    const { blockhash } = await withRpcFailover(async (conn) => {
+      return await conn.getLatestBlockhash();
+    });
     transaction.recentBlockhash = blockhash;
 
     const estimatedFee = await this.estimateTransactionFee(transaction);
@@ -443,7 +523,9 @@ export class TransactionBuilder {
   private async detectTokenProgram(mint: PublicKey): Promise<PublicKey> {
     try {
       console.log(`🔍 Detecting token program for mint: ${mint.toBase58()}`);
-      const accountInfo = await this.connection.getAccountInfo(mint);
+      const accountInfo = await withRpcFailover(async (conn) => {
+        return await conn.getAccountInfo(mint);
+      });
       if (!accountInfo) {
         throw new Error(`Mint account ${mint.toBase58()} not found`);
       }
@@ -481,7 +563,9 @@ export class TransactionBuilder {
   private async estimateTransactionFee(transaction: Transaction): Promise<number> {
     try {
       const message = transaction.compileMessage();
-      const fee = await this.connection.getFeeForMessage(message);
+      const fee = await withRpcFailover(async (conn) => {
+        return await conn.getFeeForMessage(message);
+      });
       return fee.value ?? 5000; // Default to 5000 lamports if estimation fails
     } catch (error) {
       console.warn('Failed to estimate transaction fee:', error);
@@ -500,9 +584,11 @@ export class TransactionBuilder {
    */
   async getTransactionTimestamp(signature: string): Promise<{ timestamp: number; block_height: number }> {
     try {
-      const tx = await this.connection.getTransaction(signature, {
-        commitment: 'confirmed',
-        maxSupportedTransactionVersion: 0
+      const tx = await withRpcFailover(async (conn) => {
+        return await conn.getTransaction(signature, {
+          commitment: 'confirmed',
+          maxSupportedTransactionVersion: 0,
+        });
       });
 
       if (!tx) {

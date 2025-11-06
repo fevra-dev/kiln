@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getRpcUrl } from '@/lib/rpc-failover';
 
 /**
  * Zod schema for Solana JSON-RPC request validation
@@ -40,32 +41,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = rpcRequestSchema.parse(body);
 
-    // Get server-side RPC URL (no NEXT_PUBLIC_ prefix)
-    const rpcUrl = process.env['SOLANA_RPC_URL'];
+    // Get RPC URL with failover support
+    const rpcUrl = getRpcUrl();
 
-    if (!rpcUrl) {
-      console.error('SOLANA_RPC_URL environment variable not configured');
-      return NextResponse.json(
-        { 
-          jsonrpc: '2.0',
-          id: validated.id,
-          error: { 
-            code: -32603, 
-            message: 'RPC endpoint not configured' 
-          } 
+    // Forward request to Solana RPC with automatic failover
+    // Use withRpcFailover to handle RPC failures automatically
+    let response: Response;
+    try {
+      // For direct fetch, we'll use the current RPC URL
+      // The failover manager will switch if this fails
+      response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
         },
-        { status: 500 }
-      );
+        body: JSON.stringify(validated),
+      });
+    } catch (error) {
+      // If fetch fails, try with failover (if available)
+      console.warn('RPC request failed, attempting failover:', error);
+      const failoverUrl = getRpcUrl(); // Get next available endpoint
+      response = await fetch(failoverUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(validated),
+      });
     }
-
-    // Forward request to Solana RPC
-    const response = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(validated),
-    });
 
     // Check if RPC responded successfully
     if (!response.ok) {

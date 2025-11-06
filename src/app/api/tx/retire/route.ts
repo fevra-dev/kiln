@@ -20,12 +20,43 @@ import { z } from 'zod';
 import { createTransactionBuilder, TeleburnMethod } from '@/lib/transaction-builder';
 import { retireRequestSchema } from '@/lib/schemas';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
+import type { PriorityFeeConfig } from '@/lib/transaction-utils';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
+import { checkEmergencyShutdown } from '@/lib/emergency-shutdown';
 
 /**
  * POST handler: Build retire transaction
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check emergency shutdown first
+    const shutdownResponse = checkEmergencyShutdown(request);
+    if (shutdownResponse) return shutdownResponse;
+
+    // Check rate limit (5 requests per minute)
+    const rateLimitResult = await checkRateLimit(request, {
+      maxRequests: 5,
+      windowMs: 60000, // 1 minute
+    });
+
+    if (!rateLimitResult.allowed) {
+      const corsHeaders = getCorsHeaders(request);
+      return NextResponse.json(
+        {
+          success: false,
+          error: rateLimitResult.error || 'Rate limit exceeded',
+          code: 'RATE_LIMIT_EXCEEDED',
+        },
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateLimitResult),
+          },
+        }
+      );
+    }
+
     // Check CORS origin
     if (!isOriginAllowed(request)) {
       return NextResponse.json(
@@ -58,6 +89,14 @@ export async function POST(request: NextRequest) {
     // Create transaction builder
     const builder = createTransactionBuilder(rpcUrl);
 
+    // Build priority fee config if provided
+    const priorityFee: PriorityFeeConfig | undefined = validated.priorityMicrolamports !== undefined || validated.computeUnits !== undefined
+      ? {
+          microlamports: validated.priorityMicrolamports,
+          computeUnits: validated.computeUnits,
+        }
+      : undefined;
+
     // Build retire transaction
     const result = await builder.buildRetireTransaction({
       payer,
@@ -68,6 +107,7 @@ export async function POST(request: NextRequest) {
       method,
       amount,
       rpcUrl,
+      priorityFee,
     });
 
     // Serialize transaction for client
@@ -76,23 +116,31 @@ export async function POST(request: NextRequest) {
       verifySignatures: false,
     });
 
-    // Return transaction + metadata with CORS headers
+    // Return transaction + metadata with CORS and rate limit headers
     const corsHeaders = getCorsHeaders(request);
-    return NextResponse.json({
-      success: true,
-      transaction: Buffer.from(serialized).toString('base64'),
-      description: result.description,
-      estimatedFee: result.estimatedFee,
-      estimatedFeeSol: result.estimatedFee / 1e9,
-      metadata: {
-        action: 'retire',
-        method,
-        mint: validated.mint,
-        inscriptionId: validated.inscriptionId,
-        amount: amount.toString(),
-        timestamp: new Date().toISOString(),
+    return NextResponse.json(
+      {
+        success: true,
+        transaction: Buffer.from(serialized).toString('base64'),
+        description: result.description,
+        estimatedFee: result.estimatedFee,
+        estimatedFeeSol: result.estimatedFee / 1e9,
+        metadata: {
+          action: 'retire',
+          method,
+          mint: validated.mint,
+          inscriptionId: validated.inscriptionId,
+          amount: amount.toString(),
+          timestamp: new Date().toISOString(),
+        },
       },
-    }, { headers: corsHeaders });
+      {
+        headers: {
+          ...corsHeaders,
+          ...getRateLimitHeaders(rateLimitResult),
+        },
+      }
+    );
 
   } catch (error) {
     // Handle validation errors

@@ -10,6 +10,7 @@
 
 import { InscriptionVerificationResult } from './types';
 import { isValidInscriptionId, isValidSha256 } from './schemas';
+import { fetchInscriptionWithFailover, getCachedSha256 } from './inscription-resilience';
 
 // ============================================================================
 // CONFIGURATION
@@ -66,12 +67,27 @@ export class InscriptionVerifier {
         };
       }
 
-      // Fetch inscription content
-      const fetchResult = await this.fetchInscriptionContent(inscriptionId);
+      // Check cache first
+      const cachedHash = getCachedSha256(inscriptionId);
+      if (cachedHash) {
+        // Fetch content to get metadata (type, size)
+        const fetchResult = await this.fetchInscriptionContent(inscriptionId);
+        if (fetchResult.success) {
+          return {
+            success: true,
+            actualSha256: cachedHash,
+            contentType: fetchResult.contentType,
+            byteLength: fetchResult.content.byteLength,
+          };
+        }
+      }
+
+      // Fetch inscription content with failover
+      const fetchResult = await fetchInscriptionWithFailover(inscriptionId);
       if (!fetchResult.success) {
         return {
           success: false,
-          error: fetchResult.error
+          error: fetchResult.error,
         };
       }
 
@@ -115,15 +131,15 @@ export class InscriptionVerifier {
         return formatValidation;
       }
 
-      // Step 2: Fetch inscription content from ordinals.com
-      const fetchResult = await this.fetchInscriptionContent(inscriptionId);
+      // Step 2: Fetch inscription content with failover and caching
+      const fetchResult = await fetchInscriptionWithFailover(inscriptionId);
       if (!fetchResult.success) {
         return {
           valid: false,
           inscriptionId,
           fetchedHash: '',
           expectedHash: expectedSha256,
-          error: fetchResult.error
+          error: fetchResult.error,
         };
       }
 
@@ -194,6 +210,9 @@ export class InscriptionVerifier {
   /**
    * Fetch inscription content from ordinals.com
    * 
+   * @deprecated Use fetchInscriptionWithFailover from inscription-resilience instead
+   * Kept for backward compatibility
+   * 
    * @param inscriptionId - Inscription ID to fetch
    * @returns Fetch result with content or error
    */
@@ -203,74 +222,17 @@ export class InscriptionVerifier {
     | { success: true; content: ArrayBuffer; contentType: string }
     | { success: false; error: string }
   > {
-    try {
-      // Create abort controller for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-      try {
-        // Fetch inscription content
-        const url = `${ORDINALS_API_BASE}/content/${inscriptionId}`;
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            'Accept': '*/*',
-            'User-Agent': 'KILN.1-Verifier/0.1.1'
-          }
-        });
-
-        clearTimeout(timeoutId);
-
-        // Check HTTP status
-        if (!response.ok) {
-          return {
-            success: false,
-            error: `HTTP ${response.status}: ${response.statusText}. Inscription may not exist or ordinals.com is unavailable.`
-          };
-        }
-
-        // Check content length (safety limit)
-        const contentLength = response.headers.get('content-length');
-        if (contentLength && parseInt(contentLength, 10) > MAX_CONTENT_SIZE) {
-          return {
-            success: false,
-            error: `Content too large (${contentLength} bytes). Maximum allowed: ${MAX_CONTENT_SIZE} bytes.`
-          };
-        }
-
-        // Read content as ArrayBuffer for accurate byte-level hashing
-        const content = await response.arrayBuffer();
-        const contentType = response.headers.get('content-type') || 'application/octet-stream';
-
-        return {
-          success: true,
-          content,
-          contentType
-        };
-
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-    } catch (error) {
-      // Handle fetch errors (network, timeout, etc.)
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          return {
-            success: false,
-            error: `Request timed out after ${FETCH_TIMEOUT_MS / 1000} seconds. ordinals.com may be slow or unavailable.`
-          };
-        }
-        return {
-          success: false,
-          error: `Network error: ${error.message}`
-        };
-      }
-      return {
-        success: false,
-        error: 'Unknown network error occurred'
-      };
+    // Use resilient fetch with failover and caching
+    const result = await fetchInscriptionWithFailover(inscriptionId);
+    if (!result.success) {
+      return result;
     }
+
+    return {
+      success: true,
+      content: result.content,
+      contentType: result.contentType,
+    };
   }
 
   /**

@@ -13,9 +13,16 @@
 
 import { FC, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { Connection, Transaction, VersionedTransaction, PublicKey } from '@solana/web3.js';
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { MemoDisplay } from '../teleburn/MemoDisplay';
+import {
+  refreshBlockhashIfNeeded,
+  confirmTransactionWithTimeout,
+  sendTransactionWithRetry,
+  validateAccountStateBeforeSend,
+  DEFAULT_PRIORITY_FEE_MICROLAMPORTS,
+} from '@/lib/transaction-utils';
 
 interface Step4ExecuteProps {
   formData: TeleburnFormData;
@@ -88,7 +95,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           owner: publicKey.toBase58(),
           inscriptionId: formData.inscriptionId,
           sha256: formData.sha256,
-          priorityMicrolamports: 2_000,
+          priorityMicrolamports: DEFAULT_PRIORITY_FEE_MICROLAMPORTS, // Use default from utils
         }),
       });
 
@@ -126,34 +133,96 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
             }
           }
           
-          // Update blockhash to ensure it's fresh
-          const { blockhash } = await connection.getLatestBlockhash('confirmed');
-          burnMemoTx.recentBlockhash = blockhash;
+          // Refresh blockhash to ensure it's fresh (handles expiry automatically)
+          if (burnMemoTx instanceof Transaction) {
+            burnMemoTx = await refreshBlockhashIfNeeded(burnMemoTx, connection);
+          }
         }
       } catch (parseErr) {
         console.error(`❌ EXECUTION: Failed to parse transaction:`, parseErr);
         throw new Error(`Failed to parse transaction: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
       }
       
+      // Validate account state before sending (for legacy transactions)
+      if (burnMemoTx instanceof Transaction && publicKey) {
+        try {
+          const accountValidation = await validateAccountStateBeforeSend(
+            connection,
+            new PublicKey(formData.mint),
+            publicKey
+          );
+          if (!accountValidation.valid) {
+            throw new Error(`Account validation failed: ${accountValidation.reason}`);
+          }
+        } catch (validationError) {
+          console.warn(`⚠️ Account validation warning:`, validationError);
+          // Don't block execution, but log the warning
+        }
+      }
+      
       // Sign the transaction (wallet will set correct fee payer)
       console.log(`🔍 EXECUTION: About to sign transaction. Type: ${burnMemoTx instanceof VersionedTransaction ? 'VersionedTransaction' : 'Transaction'}`);
       
-      const signedBurnMemoTx = await signTransaction(burnMemoTx);
-      
-      // Broadcast transaction
-      updateTxStatus(0, { status: 'broadcasting' });
-      
-      // Serialize the signed transaction
-      const serializedTx = signedBurnMemoTx.serialize();
-      
-      const burnMemoSig = await connection.sendRawTransaction(serializedTx);
-      
-      // Confirm transaction
-      updateTxStatus(0, { status: 'confirming' });
-      await connection.confirmTransaction(burnMemoSig, 'confirmed');
-      
-      updateTxStatus(0, { status: 'success', signature: burnMemoSig });
-      console.log(`✅ EXECUTION: Burn+memo transaction confirmed: ${burnMemoSig}`);
+      // For legacy transactions, use enhanced send with retry
+      if (burnMemoTx instanceof Transaction) {
+        updateTxStatus(0, { status: 'broadcasting' });
+        
+        const burnMemoSig = await sendTransactionWithRetry(
+          connection,
+          burnMemoTx,
+          async (tx) => {
+            // Ensure fresh blockhash before signing
+            const freshTx = await refreshBlockhashIfNeeded(tx, connection);
+            return await signTransaction(freshTx) as Transaction;
+          },
+          {
+            maxRetries: 3,
+            baseDelayMs: 1000,
+          }
+        );
+        
+        // Confirm with timeout
+        updateTxStatus(0, { status: 'confirming' });
+        const confirmation = await confirmTransactionWithTimeout(
+          connection,
+          burnMemoSig,
+          {
+            timeoutMs: 30_000, // 30 seconds
+            commitment: 'confirmed',
+          }
+        );
+        
+        if (!confirmation.confirmed) {
+          throw new Error(`Transaction confirmation failed: ${confirmation.error || 'Timeout'}`);
+        }
+        
+        updateTxStatus(0, { status: 'success', signature: burnMemoSig });
+        console.log(`✅ EXECUTION: Burn+memo transaction confirmed: ${burnMemoSig}`);
+      } else {
+        // For versioned transactions, use standard flow (wallet handles differently)
+        const signedBurnMemoTx = await signTransaction(burnMemoTx);
+        
+        updateTxStatus(0, { status: 'broadcasting' });
+        const serializedTx = signedBurnMemoTx.serialize();
+        const burnMemoSig = await connection.sendRawTransaction(serializedTx);
+        
+        updateTxStatus(0, { status: 'confirming' });
+        const confirmation = await confirmTransactionWithTimeout(
+          connection,
+          burnMemoSig,
+          {
+            timeoutMs: 30_000,
+            commitment: 'confirmed',
+          }
+        );
+        
+        if (!confirmation.confirmed) {
+          throw new Error(`Transaction confirmation failed: ${confirmation.error || 'Timeout'}`);
+        }
+        
+        updateTxStatus(0, { status: 'success', signature: burnMemoSig });
+        console.log(`✅ EXECUTION: Burn+memo transaction confirmed: ${burnMemoSig}`);
+      }
 
       // Mark as completed
       setCompleted(true);

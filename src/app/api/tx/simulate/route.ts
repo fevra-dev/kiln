@@ -15,6 +15,8 @@ import { z } from 'zod';
 import { createDryRunService, DryRunService } from '@/lib/dry-run';
 import { TeleburnMethod } from '@/lib/transaction-builder';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
+import { checkEmergencyShutdown } from '@/lib/emergency-shutdown';
 
 /**
  * Request schema for dry run simulation
@@ -47,6 +49,34 @@ const simulateRequestSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check emergency shutdown first
+    const shutdownResponse = checkEmergencyShutdown(request);
+    if (shutdownResponse) return shutdownResponse;
+
+    // Check rate limit (5 requests per minute)
+    const rateLimitResult = await checkRateLimit(request, {
+      maxRequests: 5,
+      windowMs: 60000, // 1 minute
+    });
+
+    if (!rateLimitResult.allowed) {
+      const corsHeaders = getCorsHeaders(request);
+      return NextResponse.json(
+        {
+          success: false,
+          error: rateLimitResult.error || 'Rate limit exceeded',
+          code: 'RATE_LIMIT_EXCEEDED',
+        },
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateLimitResult),
+          },
+        }
+      );
+    }
+
     // Check CORS origin
     if (!isOriginAllowed(request)) {
       return NextResponse.json(
@@ -122,24 +152,32 @@ export async function POST(request: NextRequest) {
     console.log('  - Warnings count:', report.warnings.length);
     console.log('📊 API: Report errors:', report.errors);
 
-    // Return dry run report with CORS headers
+    // Return dry run report with CORS and rate limit headers
     const corsHeaders = getCorsHeaders(request);
-    return NextResponse.json({
-      success: true,
-      report,
-      receipt, // JSON string for download
-      debug: {
-        mint: mint.toBase58(),
-        inscriptionId: validated.inscriptionId,
-        rpcUrl,
-        reportSuccess: report.success,
-        reportErrors: report.errors,
+    return NextResponse.json(
+      {
+        success: true,
+        report,
+        receipt, // JSON string for download
+        debug: {
+          mint: mint.toBase58(),
+          inscriptionId: validated.inscriptionId,
+          rpcUrl,
+          reportSuccess: report.success,
+          reportErrors: report.errors,
+        },
+        metadata: {
+          timestamp: report.timestamp,
+          sbt01_version: '0.1.1',
+        },
       },
-      metadata: {
-        timestamp: report.timestamp,
-        sbt01_version: '0.1.1',
-      },
-    }, { headers: corsHeaders });
+      {
+        headers: {
+          ...corsHeaders,
+          ...getRateLimitHeaders(rateLimitResult),
+        },
+      }
+    );
 
   } catch (error) {
     // Handle validation errors

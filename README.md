@@ -33,6 +33,17 @@ KILN.1 is a **production-grade teleburn protocol** for permanently migrating Sol
 - pnpm ≥ 8.0.0
 - Solana wallet (Phantom, Solflare, or Backpack)
 
+### BMAD-METHOD Integration
+
+**✅ BMAD-METHOD v6 Alpha is integrated!** This project uses BMAD for AI-driven agile development.
+
+**Quick Start with BMAD:**
+1. Load any BMAD agent in your IDE (Cursor/Claude Code)
+2. Run `*workflow-init` to set up your project workflow
+3. Use workflows for development, planning, and documentation
+
+**See [BMAD Integration Guide](./docs/BMAD_INTEGRATION.md) for complete documentation.**
+
 ### Installation
 
 ```bash

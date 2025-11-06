@@ -13,6 +13,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { z } from 'zod';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
+import { checkEmergencyShutdown } from '@/lib/emergency-shutdown';
 
 const verifyRequestSchema = z.object({
   mint: z.string(),
@@ -21,6 +23,34 @@ const verifyRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Check emergency shutdown first
+    const shutdownResponse = checkEmergencyShutdown(request);
+    if (shutdownResponse) return shutdownResponse;
+
+    // Check rate limit (10 requests per minute - more lenient for read-only)
+    const rateLimitResult = await checkRateLimit(request, {
+      maxRequests: 10,
+      windowMs: 60000, // 1 minute
+    });
+
+    if (!rateLimitResult.allowed) {
+      const corsHeaders = getCorsHeaders(request);
+      return NextResponse.json(
+        {
+          success: false,
+          error: rateLimitResult.error || 'Rate limit exceeded',
+          code: 'RATE_LIMIT_EXCEEDED',
+        },
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateLimitResult),
+          },
+        }
+      );
+    }
+
     // Check CORS origin
     if (!isOriginAllowed(request)) {
       return NextResponse.json(
@@ -186,20 +216,31 @@ export async function POST(request: NextRequest) {
     }
 
     const corsHeaders = getCorsHeaders(request);
-    return NextResponse.json({
-      success: true,
-      status,
-      mint: validated.mint,
-      supply: supply,
-      decimals: decimals,
-      confidence,
-      message,
-      inscriptionId,
-      sha256,
-      teleburnTimestamp,
-      sealSignature,
-      burnSignature,
-    }, { headers: corsHeaders });
+    return NextResponse.json(
+      {
+        success: true,
+        status,
+        mint: validated.mint,
+        supply: supply,
+        decimals: decimals,
+        confidence,
+        message,
+        inscriptionId,
+        sha256,
+        teleburnTimestamp,
+        sealSignature,
+        burnSignature,
+        metadata: {
+          timestamp: new Date().toISOString(),
+        },
+      },
+      {
+        headers: {
+          ...corsHeaders,
+          ...getRateLimitHeaders(rateLimitResult),
+        },
+      }
+    );
 
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -1,0 +1,178 @@
+{
+  "timestamp": "2025-11-06T02:23:40.629Z",
+  "totalFindings": 18,
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "securityScore": 94,
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "category": "Dependencies",
+      "title": "Could not run npm audit",
+      "description": "npm audit command failed",
+      "recommendation": "Manually verify dependencies are up to date",
+      "status": "WARNING"
+    },
+    {
+      "severity": "LOW",
+      "category": "Input Validation",
+      "title": "Zod validation schemas present",
+      "description": "Input validation using Zod schemas detected",
+      "location": "src/lib/schemas.ts",
+      "recommendation": "Verify all user inputs use these schemas",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "Authorization",
+      "title": "Rate limiting implemented",
+      "description": "Rate limiter module found",
+      "location": "src/lib/rate-limiter.ts",
+      "recommendation": "Verify rate limits are appropriate for production",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "Authorization",
+      "title": "Emergency shutdown mechanism present",
+      "description": "Emergency shutdown feature implemented",
+      "location": "src/lib/emergency-shutdown.ts",
+      "recommendation": "Test emergency shutdown procedure",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "Cryptography",
+      "title": "Cryptographic functions used",
+      "description": "Proper crypto APIs detected",
+      "location": "src/lib/teleburn.ts",
+      "recommendation": "Verify using secure random generators",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "Transaction Security",
+      "title": "Recent blockhash usage",
+      "description": "Transactions use recent blockhash",
+      "location": "src/lib/transaction-builder.ts",
+      "recommendation": "Verify blockhash expiry is handled",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "Transaction Security",
+      "title": "Frozen account detection",
+      "description": "Frozen account checks implemented",
+      "location": "src/lib/transaction-builder.ts",
+      "recommendation": "Verify all frozen accounts are handled",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "Transaction Security",
+      "title": "Transaction size validation",
+      "description": "Transaction size limits enforced",
+      "location": "src/lib/transaction-builder.ts",
+      "recommendation": "Verify limits match Solana requirements",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "Rate limiting on API route",
+      "description": "Rate limiting implemented in src/app/api/tx/seal/route.ts",
+      "location": "src/app/api/tx/seal/route.ts",
+      "recommendation": "Verify rate limits are appropriate",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "Emergency shutdown on API route",
+      "description": "Emergency shutdown check in src/app/api/tx/seal/route.ts",
+      "location": "src/app/api/tx/seal/route.ts",
+      "recommendation": "Test emergency shutdown procedure",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "CORS headers configured",
+      "description": "CORS handling in src/app/api/tx/seal/route.ts",
+      "location": "src/app/api/tx/seal/route.ts",
+      "recommendation": "Verify CORS policy is restrictive",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "Rate limiting on API route",
+      "description": "Rate limiting implemented in src/app/api/tx/retire/route.ts",
+      "location": "src/app/api/tx/retire/route.ts",
+      "recommendation": "Verify rate limits are appropriate",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "Emergency shutdown on API route",
+      "description": "Emergency shutdown check in src/app/api/tx/retire/route.ts",
+      "location": "src/app/api/tx/retire/route.ts",
+      "recommendation": "Test emergency shutdown procedure",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "CORS headers configured",
+      "description": "CORS handling in src/app/api/tx/retire/route.ts",
+      "location": "src/app/api/tx/retire/route.ts",
+      "recommendation": "Verify CORS policy is restrictive",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "Rate limiting on API route",
+      "description": "Rate limiting implemented in src/app/api/tx/burn-memo/route.ts",
+      "location": "src/app/api/tx/burn-memo/route.ts",
+      "recommendation": "Verify rate limits are appropriate",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "Emergency shutdown on API route",
+      "description": "Emergency shutdown check in src/app/api/tx/burn-memo/route.ts",
+      "location": "src/app/api/tx/burn-memo/route.ts",
+      "recommendation": "Test emergency shutdown procedure",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "API Security",
+      "title": "CORS headers configured",
+      "description": "CORS handling in src/app/api/tx/burn-memo/route.ts",
+      "location": "src/app/api/tx/burn-memo/route.ts",
+      "recommendation": "Verify CORS policy is restrictive",
+      "status": "PASS"
+    },
+    {
+      "severity": "LOW",
+      "category": "Configuration",
+      "title": ".env in .gitignore",
+      "description": "Environment files excluded from git",
+      "location": ".gitignore",
+      "recommendation": "Verify .env.local also excluded",
+      "status": "PASS"
+    }
+  ],
+  "recommendations": [
+    "✅ No critical or high severity issues found",
+    "📋 Review all findings and implement recommendations",
+    "🧪 Run security tests in CI/CD pipeline",
+    "🔍 Conduct manual penetration testing before mainnet launch"
+  ]
+}

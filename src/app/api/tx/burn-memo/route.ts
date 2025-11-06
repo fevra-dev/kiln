@@ -15,6 +15,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
 import { buildBurnMemoTransaction } from '@/lib/local-burn/build-burn-memo-tx';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
+import { checkEmergencyShutdown } from '@/lib/emergency-shutdown';
 
 /**
  * Request schema for burn+memo transaction
@@ -32,6 +34,34 @@ const burnMemoRequestSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check emergency shutdown first
+    const shutdownResponse = checkEmergencyShutdown(request);
+    if (shutdownResponse) return shutdownResponse;
+
+    // Check rate limit (5 requests per minute)
+    const rateLimitResult = await checkRateLimit(request, {
+      maxRequests: 5,
+      windowMs: 60000, // 1 minute
+    });
+
+    if (!rateLimitResult.allowed) {
+      const corsHeaders = getCorsHeaders(request);
+      return NextResponse.json(
+        {
+          success: false,
+          error: rateLimitResult.error || 'Rate limit exceeded',
+          code: 'RATE_LIMIT_EXCEEDED',
+        },
+        {
+          status: 429, // Too Many Requests
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateLimitResult),
+          },
+        }
+      );
+    }
+
     // Check CORS origin
     if (!isOriginAllowed(request)) {
       return NextResponse.json(
@@ -57,22 +87,30 @@ export async function POST(request: NextRequest) {
       validated.priorityMicrolamports
     );
 
-    // Return transaction + metadata with CORS headers
+    // Return transaction + metadata with CORS and rate limit headers
     const corsHeaders = getCorsHeaders(request);
-    return NextResponse.json({
-      success: true,
-      transaction: result.transaction, // base64 serialized transaction
-      isVersioned: result.isVersioned,
-      nftType: result.nftType,
-      description: `BURN + MEMO: Burn ${result.nftType} and record teleburn proof in single transaction`,
-      metadata: {
-        action: 'burn-memo',
-        mint: validated.mint,
-        inscriptionId: validated.inscriptionId,
+    return NextResponse.json(
+      {
+        success: true,
+        transaction: result.transaction, // base64 serialized transaction
+        isVersioned: result.isVersioned,
         nftType: result.nftType,
-        timestamp: new Date().toISOString(),
+        description: `BURN + MEMO: Burn ${result.nftType} and record teleburn proof in single transaction`,
+        metadata: {
+          action: 'burn-memo',
+          mint: validated.mint,
+          inscriptionId: validated.inscriptionId,
+          nftType: result.nftType,
+          timestamp: new Date().toISOString(),
+        },
       },
-    }, { headers: corsHeaders });
+      {
+        headers: {
+          ...corsHeaders,
+          ...getRateLimitHeaders(rateLimitResult),
+        },
+      }
+    );
 
   } catch (error) {
     // Handle validation errors
