@@ -585,5 +585,6 @@ if (require.main === module) {
   main().catch(console.error);
 }
 
-export { ComprehensiveSecurityAuditor, SecurityCheck };
+export { ComprehensiveSecurityAuditor };
+export type { SecurityCheck };
 
