@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getCorsHeaders } from './cors';
 
 // ============================================================================
 // CONFIGURATION
@@ -61,6 +62,10 @@ export function checkEmergencyShutdown(
     return null; // Shutdown not active, proceed normally
   }
 
+  // Get CORS headers for the response
+  const corsHeaders = getCorsHeaders(request);
+  const retryAfter = process.env.EMERGENCY_SHUTDOWN_RETRY_AFTER || '300'; // Default 5 minutes
+
   // Return 503 Service Unavailable
   return NextResponse.json(
     {
@@ -72,8 +77,9 @@ export function checkEmergencyShutdown(
     {
       status: 503, // Service Unavailable
       headers: {
-        'Retry-After': '3600', // Suggest retry after 1 hour
+        'Retry-After': retryAfter,
         'X-Emergency-Shutdown': 'true',
+        ...corsHeaders,
       },
     }
   );

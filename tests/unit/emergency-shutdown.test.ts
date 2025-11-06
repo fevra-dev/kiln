@@ -74,13 +74,13 @@ describe('Emergency Shutdown', () => {
   });
 
   describe('checkEmergencyShutdown', () => {
-    it('should return undefined when shutdown is not active', () => {
+    it('should return null when shutdown is not active', () => {
       process.env.EMERGENCY_SHUTDOWN = 'false';
       const request = createMockRequest();
 
       const result = checkEmergencyShutdown(request);
 
-      expect(result).toBeUndefined();
+      expect(result).toBeNull();
     });
 
     it('should return 503 response when shutdown is active', () => {
@@ -144,23 +144,33 @@ describe('Emergency Shutdown', () => {
       expect(result?.headers.get('Retry-After')).toBe('300'); // Default 5 minutes
     });
 
-    it('should include CORS headers when origin is present', () => {
+    it('should include CORS headers when origin is present and allowed', () => {
+      // Set NODE_ENV to development to allow localhost origins
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
       process.env.EMERGENCY_SHUTDOWN = 'true';
-      const request = createMockRequest('https://example.com');
+      
+      // Use localhost origin (allowed in development mode)
+      const request = createMockRequest('http://localhost:3000');
 
       const result = checkEmergencyShutdown(request);
 
-      expect(result?.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
-      expect(result?.headers.get('Access-Control-Allow-Methods')).toBe('GET,POST,PUT,DELETE,OPTIONS');
+      expect(result?.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000');
+      expect(result?.headers.get('Access-Control-Allow-Methods')).toBe('POST, OPTIONS');
+      
+      // Restore original NODE_ENV
+      process.env.NODE_ENV = originalEnv;
     });
 
-    it('should not include CORS headers when origin is missing', () => {
+    it('should include basic CORS headers when origin is missing', () => {
       process.env.EMERGENCY_SHUTDOWN = 'true';
-      const request = createMockRequest();
+      const request = createMockRequest(); // No origin header
 
       const result = checkEmergencyShutdown(request);
 
-      expect(result?.headers.get('Access-Control-Allow-Origin')).toBeNull();
+      // When no origin, should still include basic CORS headers
+      expect(result?.headers.get('Access-Control-Allow-Methods')).toBe('POST, OPTIONS');
+      expect(result?.headers.get('Access-Control-Allow-Origin')).toBeNull(); // No origin-specific header
     });
   });
 });

@@ -19,11 +19,7 @@ import { fetchInscriptionWithFailover, getCachedSha256 } from './inscription-res
 /** Ordinals API base URL */
 const ORDINALS_API_BASE = process.env['ORDINALS_API_URL'] || 'https://ordinals.com';
 
-/** Timeout for inscription content fetch (30 seconds) */
-const FETCH_TIMEOUT_MS = 30000;
-
-/** Maximum content size to fetch (100MB - safety limit) */
-const MAX_CONTENT_SIZE = 100 * 1024 * 1024;
+// Note: Timeout and size limits are handled by inscription-resilience layer
 
 // ============================================================================
 // MAIN VERIFIER CLASS
@@ -279,7 +275,11 @@ export class InscriptionVerifier {
 
     } catch (error) {
       // Metadata fetch is optional, don't throw
-      console.warn('Failed to fetch inscription metadata:', error);
+      // Log metadata fetch failure (development only)
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to fetch inscription metadata:', error);
+      }
       return null;
     }
   }

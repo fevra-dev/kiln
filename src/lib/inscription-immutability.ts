@@ -13,7 +13,7 @@
  * @version 0.1.1
  */
 
-import { fetchInscriptionWithFailover, getCachedSha256 } from './inscription-resilience';
+import { fetchInscriptionWithFailover } from './inscription-resilience';
 
 // ============================================================================
 // TYPES

@@ -7,7 +7,7 @@
  * @version 0.1.1
  */
 
-import { InscriptionVerifier } from './inscription-verifier';
+// InscriptionVerifier not used in this file - removed to fix lint error
 
 // ============================================================================
 // CONFIGURATION

@@ -29,6 +29,7 @@ export function initializeRpcSystem(): void {
   
   // Check for numbered backup variables (SOLANA_RPC_BACKUP_1, SOLANA_RPC_BACKUP_2, etc.)
   let backupIndex = 1;
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const backupUrl = process.env[`SOLANA_RPC_BACKUP_${backupIndex}`];
     if (!backupUrl) break;

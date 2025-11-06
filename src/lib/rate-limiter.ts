@@ -104,7 +104,7 @@ function getClientIdentifier(request: NextRequest): string {
   const realIp = request.headers.get('x-real-ip');
   const cfConnectingIp = request.headers.get('cf-connecting-ip');
 
-  let ip = forwarded?.split(',')[0]?.trim() 
+  const ip = forwarded?.split(',')[0]?.trim() 
     || realIp 
     || cfConnectingIp 
     || request.ip 

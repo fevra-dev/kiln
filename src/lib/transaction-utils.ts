@@ -15,12 +15,9 @@
 import {
   Connection,
   Transaction,
-  VersionedTransaction,
   PublicKey,
   ComputeBudgetProgram,
   Commitment,
-  BlockhashWithExpiryBlockHeight,
-  Signer,
   TransactionSignature,
 } from '@solana/web3.js';
 
@@ -146,7 +143,11 @@ export class DynamicPriorityFeeCalculator {
       // Ensure minimum fee
       return Math.max(recommendedFee, this.getDefaultFee('low'));
     } catch (error) {
-      console.warn('Failed to calculate dynamic priority fee, using default:', error);
+      // Log fee calculation failure (development only)
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to calculate dynamic priority fee, using default:', error);
+      }
       return this.getDefaultFee(priority);
     }
   }
@@ -468,10 +469,14 @@ export async function sendTransactionWithRetry(
 
       // Exponential backoff
       const delayMs = baseDelayMs * Math.pow(2, attempt);
-      console.log(
-        `⚠️ Transaction send failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delayMs}ms...`,
-        error
-      );
+      // Log retry attempt (development only)
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log(
+          `⚠️ Transaction send failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delayMs}ms...`,
+          error
+        );
+      }
 
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
@@ -515,7 +520,6 @@ export async function confirmTransactionWithTimeout(
   blockTime?: number | null;
 }> {
   const timeoutMs = config.timeoutMs ?? DEFAULT_CONFIRMATION_TIMEOUT_MS;
-  const commitment = config.commitment ?? 'confirmed';
   const pollingIntervalMs = config.pollingIntervalMs ?? 1000;
 
   const startTime = Date.now();
@@ -590,7 +594,7 @@ export async function validateAccountStateBeforeSend(
   connection: Connection,
   mint: PublicKey,
   owner: PublicKey,
-  expectedSlot?: number
+  _expectedSlot?: number
 ): Promise<{
   valid: boolean;
   reason?: string;
@@ -686,7 +690,11 @@ export async function sendTransactionEnhanced(
   // 3. Validate compute units (optional, but recommended)
   const cuValidation = await validateComputeUnits(transaction, connection);
   if (!cuValidation.valid && cuValidation.recommendation) {
-    console.warn(`⚠️ Compute unit validation: ${cuValidation.recommendation}`);
+    // Log compute unit validation warning (development only)
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.warn(`⚠️ Compute unit validation: ${cuValidation.recommendation}`);
+    }
   }
 
   // 4. Send with retry
