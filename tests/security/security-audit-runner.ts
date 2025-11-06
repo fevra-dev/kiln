@@ -550,7 +550,7 @@ class SecurityAuditor {
     const medium = this.findings.filter(f => f.severity === 'MEDIUM' && f.status === 'FAIL').length;
     const low = this.findings.filter(f => f.severity === 'LOW' && f.status === 'FAIL').length;
 
-    const totalFailures = critical + high + medium + low;
+    const _totalFailures = critical + high + medium + low; // Used for potential future reporting
     const totalFindings = this.findings.length;
     const passed = this.findings.filter(f => f.status === 'PASS').length;
 
