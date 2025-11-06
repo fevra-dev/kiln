@@ -621,6 +621,13 @@ export async function validateAccountStateBeforeSend(
     }
 
     const tokenAccount = tokenAccounts.value[0];
+    if (!tokenAccount) {
+      return {
+        valid: false,
+        reason: 'Token account not found for owner',
+        tokenAccountExists: false,
+      };
+    }
     const accountInfo = await connection.getAccountInfo(tokenAccount.pubkey);
 
     if (!accountInfo) {
