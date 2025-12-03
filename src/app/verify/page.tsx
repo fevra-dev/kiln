@@ -432,20 +432,28 @@ export default function VerifyPage() {
                     <div className="memo-grid">
                       <div className="memo-row">
                         <span className="memo-label">Standard</span>
-                        <span className="memo-value">{String(result.kilnMemo.standard || 'Kiln')}</span>
+                        <span className="memo-value">
+                          {String((result.kilnMemo as Record<string, unknown>)?.['standard'] || 'Kiln')}
+                        </span>
                       </div>
                       <div className="memo-row">
                         <span className="memo-label">Version</span>
-                        <span className="memo-value">{String(result.kilnMemo.version || '-')}</span>
+                        <span className="memo-value">
+                          {String((result.kilnMemo as Record<string, unknown>)?.['version'] || '-')}
+                        </span>
                       </div>
                       <div className="memo-row">
                         <span className="memo-label">Action</span>
-                        <span className="memo-value text-orange-400">{String(result.kilnMemo.action || '-')}</span>
+                        <span className="memo-value text-orange-400">
+                          {String((result.kilnMemo as Record<string, unknown>)?.['action'] || '-')}
+                        </span>
                       </div>
-                      {result.kilnMemo.method && (
+                      {(result.kilnMemo as Record<string, unknown>)?.['method'] && (
                         <div className="memo-row">
                           <span className="memo-label">Method</span>
-                          <span className="memo-value">{String(result.kilnMemo.method)}</span>
+                          <span className="memo-value">
+                            {String((result.kilnMemo as Record<string, unknown>)?.['method'])}
+                          </span>
                         </div>
                       )}
                       {(result.kilnMemo.inscription as { id?: string })?.id && (
