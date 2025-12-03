@@ -463,40 +463,40 @@ export default function VerifyPage() {
                           <span className="memo-value">{kilnMemoMethodDisplay}</span>
                         </div>
                       )}
-                      {(result.kilnMemo.inscription as { id?: string })?.id && (
+                      {(result.kilnMemo['inscription'] as { id?: string })?.id && (
                         <div className="memo-row">
                           <span className="memo-label">Inscription</span>
                           <a
-                            href={`https://ordinals.com/inscription/${(result.kilnMemo.inscription as { id: string }).id}`}
+                            href={`https://ordinals.com/inscription/${(result.kilnMemo['inscription'] as { id: string }).id}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="memo-value text-orange-400 hover:text-orange-300 hover:underline"
                           >
-                            {(result.kilnMemo.inscription as { id: string }).id.slice(0, 24)}... →
+                            {(result.kilnMemo['inscription'] as { id: string }).id.slice(0, 24)}... →
                           </a>
                         </div>
                       )}
-                      {(result.kilnMemo.solana as { mint?: string })?.mint && (
+                      {(result.kilnMemo['solana'] as { mint?: string })?.mint && (
                         <div className="memo-row">
                           <span className="memo-label">Solana Mint</span>
                           <span className="memo-value font-mono text-xs">
-                            {(result.kilnMemo.solana as { mint: string }).mint.slice(0, 16)}...
+                            {(result.kilnMemo['solana'] as { mint: string }).mint.slice(0, 16)}...
                           </span>
                         </div>
                       )}
-                      {(result.kilnMemo.media as { sha256?: string })?.sha256 && (
+                      {(result.kilnMemo['media'] as { sha256?: string })?.sha256 && (
                         <div className="memo-row">
                           <span className="memo-label">Media SHA-256</span>
                           <span className="memo-value font-mono text-xs">
-                            {(result.kilnMemo.media as { sha256: string }).sha256.slice(0, 16)}...
+                            {(result.kilnMemo['media'] as { sha256: string }).sha256.slice(0, 16)}...
                           </span>
                         </div>
                       )}
-                      {result.kilnMemo.timestamp && (
+                      {result.kilnMemo['timestamp'] && (
                         <div className="memo-row">
                           <span className="memo-label">Timestamp</span>
                           <span className="memo-value">
-                            {new Date(Number(result.kilnMemo.timestamp) * 1000).toLocaleString()}
+                            {new Date(Number(result.kilnMemo['timestamp']) * 1000).toLocaleString()}
                           </span>
                         </div>
                       )}
