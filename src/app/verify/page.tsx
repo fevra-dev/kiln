@@ -218,14 +218,17 @@ export default function VerifyPage() {
               >
                 ঌ
               </a>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
                 [ Teleburn Verification ]
               </h1>
             </div>
-            <div className="status-badge px-3 py-1 border border-terminal-text/30 text-xs">
-              MAINNET
+            <div className="status-badge">
+              <span>ONLINE</span>
             </div>
           </div>
+          <p className="text-lg text-matrix-red/80 mb-2">
+            <span className="text-terminal-prompt">$</span> verify_teleburn
+          </p>
         </div>
 
         {/* Verification Form */}

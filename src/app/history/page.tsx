@@ -103,8 +103,8 @@ export default function HistoryPage() {
     <div className="min-h-screen bg-terminal-bg text-terminal-text font-mono">
       {/* Header */}
       <header className="border-b border-matrix-red/30 bg-matrix-black/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <a 
                 href="/" 
@@ -121,6 +121,9 @@ export default function HistoryPage() {
               <span>ONLINE</span>
             </div>
           </div>
+          <p className="text-lg text-matrix-red/80 mb-2">
+            <span className="text-terminal-prompt">$</span> query_teleburn_history --wallet {publicKey?.toBase58().slice(0, 8) || '...'}
+          </p>
         </div>
       </header>
 
@@ -128,7 +131,6 @@ export default function HistoryPage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Terminal Style Header */}
         <div className="terminal-output mb-6">
-          <div className="text-terminal-prompt mb-2">$ query_teleburn_history --wallet {publicKey?.toBase58().slice(0, 8) || '...'}</div>
           <div className="text-terminal-text/70 text-sm">
             {loading && '> Searching blockchain for Kiln teleburns...'}
             {!loading && connected && `> Found ${teleburns.length} teleburn${teleburns.length !== 1 ? 's' : ''}`}
