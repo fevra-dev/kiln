@@ -32,6 +32,43 @@ That's it! Kiln automatically fetches and calculates the SHA-256 hash for you.
 
 ---
 
+## Don't Have an Inscription Yet?
+
+If you haven't inscribed your art on Bitcoin Ordinals yet, we recommend using a self-custodial inscribing tool.
+
+### Recommended: inscribe.dev by The Wizards of Ord
+
+[**inscribe.dev**](https://inscribe.dev/) is a self-custodial inscription tool built by [The Wizards of Ord](https://wizards.art/) team. It's one of the most feature-rich and reliable tools available.
+
+**Key Features:**
+- 🔐 **Self-custodial** - Your keys, your inscriptions
+- 📦 **Batch inscriptions** - Inscribe multiple files at once
+- 🎨 **Metadata & traits** - Add on-chain attributes
+- 👪 **Parent/child inscriptions** - Collection provenance
+- 💎 **Rare sat support** - Inscribe on specific sats
+- 🔄 **Reinscriptions** - Update existing inscriptions
+
+### 💡 Pro Tip: Link Your Solana NFT in Inscription Metadata
+
+When inscribing on Bitcoin, we **highly recommend** adding your Solana NFT mint address as a **trait/attribute** in the inscription metadata. This creates a **two-way on-chain link** between both blockchains:
+
+**How to do it on inscribe.dev:**
+1. Go to [inscribe.dev](https://inscribe.dev/)
+2. Connect your Bitcoin wallet (Xverse, Unisat, or Magic Eden)
+3. Upload your art file
+4. In the **Attributes** section, click **+ Add trait**:
+   - **Title**: `solana_mint` (or similar)
+   - **Value**: Your Solana NFT mint address (e.g., `6ivMgojprszJjAhuGwGQShwUtn98mm3pQ6idqzwy66Kb`)
+5. Complete the inscription process
+
+**Why this matters:**
+- ✅ Creates verifiable connection from **Bitcoin → Solana**
+- ✅ Combined with Kiln teleburn, creates connection from **Solana → Bitcoin**
+- ✅ **Two-way cryptographic proof** on both blockchains
+- ✅ Anyone can verify the relationship from either chain
+
+---
+
 ## Step-by-Step Teleburn Process
 
 ### Step 1: Enter Your Details
