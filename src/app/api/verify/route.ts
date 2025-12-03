@@ -335,7 +335,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           timestamp: new Date().toISOString(),
           protocol: 'Kiln',
-          version: kilnMemo?.version || null,
+          version: kilnMemo?.['version'] || null,
         },
       },
       {
