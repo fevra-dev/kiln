@@ -22,6 +22,7 @@ import { Connection, Transaction, VersionedTransaction, PublicKey } from '@solan
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { MemoDisplay } from '../teleburn/MemoDisplay';
 import { CopyButton } from '../ui/CopyButton';
+import { BurnCelebration } from '../ui/BurnCelebration';
 import {
   refreshBlockhashIfNeeded,
   confirmTransactionWithTimeout,
@@ -58,6 +59,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
   const { publicKey, signTransaction } = useWallet();
   const [executing, setExecuting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [updateMetadata, setUpdateMetadata] = useState(false);
   const [updatingMetadata, setUpdatingMetadata] = useState(false);
   const [metadataUpdateCompleted, setMetadataUpdateCompleted] = useState(false);
@@ -235,8 +237,9 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         console.log(`✅ EXECUTION: Burn+memo transaction confirmed: ${burnMemoSig}`);
       }
 
-      // Mark as completed
+      // Mark as completed and trigger celebration
       setCompleted(true);
+      setShowCelebration(true);
 
       // If user opted to update metadata, do it now
       if (updateMetadata && publicKey) {
@@ -843,6 +846,12 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           line-height: 1.6;
         }
       `}</style>
+
+      {/* Celebration Animation */}
+      <BurnCelebration 
+        isActive={showCelebration} 
+        onComplete={() => setShowCelebration(false)} 
+      />
     </div>
   );
 };

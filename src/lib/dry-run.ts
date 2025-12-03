@@ -94,8 +94,6 @@ export interface DryRunReport {
     fallbackRpcUrl?: string;
     pnftDetection?: {
       basicDetection: boolean;
-      solIncineratorAvailable: boolean;
-      solIncineratorDetection: boolean;
       finalDetection: boolean;
     };
   };

@@ -248,7 +248,10 @@ function TerminalInterface() {
             <span className="relative z-10">▶ INITIATE TELEBURN</span>
           </a>
           <a href="/verify" className="btn-matrix group">
-                <span className="relative z-10">▶ VERIFY STATUS</span>
+            <span className="relative z-10">▶ VERIFY STATUS</span>
+          </a>
+          <a href="/history" className="btn-matrix group">
+            <span className="relative z-10">▶ MY TELEBURNS</span>
           </a>
         </div>
           </div>
@@ -383,6 +386,7 @@ function Footer() {
             <div className="space-y-2 text-sm text-matrix-red/60">
               <a href="/teleburn" className="block hover:text-matrix-red cursor-pointer">→ Start Teleburn</a>
               <a href="/verify" className="block hover:text-matrix-red cursor-pointer">→ Verify Status</a>
+              <a href="/history" className="block hover:text-matrix-red cursor-pointer">→ My Teleburns</a>
             </div>
           </div>
           <div>

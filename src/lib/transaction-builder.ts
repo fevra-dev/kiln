@@ -332,7 +332,7 @@ export class TransactionBuilder {
     switch (method) {
       case 'teleburn-burn':
       case 'burn': { // Support old 'burn' for backward compatibility
-        // CRITICAL: Thaw frozen account first (like sol-incinerator)
+        // CRITICAL: Thaw frozen account first
         // This resolves "Account is frozen" errors for pNFTs
         
         console.log(`🔧 TRANSACTION BUILDER: Adding ThawAccount instruction...`);
@@ -370,7 +370,7 @@ export class TransactionBuilder {
           )
         );
         
-        // Close token account (reclaim SOL rent) - like sol-incinerator
+        // Close token account (reclaim SOL rent)
         transaction.add(
           createCloseAccountInstruction(
             ownerAta,
@@ -540,9 +540,9 @@ export class TransactionBuilder {
       if (accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
         console.log(`🎯 Detected Token-2022 mint ${mint.toBase58()}`);
         
-        // ALWAYS use SPL Token program for Token-2022 mints (like sol-incinerator)
+        // ALWAYS use SPL Token program for Token-2022 mints
         // This bypasses freeze restrictions that prevent burning with Token-2022 program
-        console.log(`🔧 FORCING SPL Token program for Token-2022 mint (sol-incinerator compatibility)`);
+        console.log(`🔧 FORCING SPL Token program for Token-2022 mint`);
         console.log(`🔧 This bypasses freeze restrictions for burnable pNFTs`);
         return TOKEN_PROGRAM_ID;
       }
