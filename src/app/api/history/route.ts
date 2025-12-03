@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
                     mint: memo.solana?.mint || 'unknown',
                     inscriptionId: memo.inscription?.id || 'unknown',
                     timestamp: memo.timestamp || 0,
-                    blockTime: tx.blockTime,
+                    blockTime: tx.blockTime ?? null,
                     memo,
                   });
                   break;
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
                     mint: memo.solana?.mint || 'unknown',
                     inscriptionId: memo.inscription?.id || 'unknown',
                     timestamp: memo.timestamp || 0,
-                    blockTime: tx.blockTime,
+                    blockTime: tx.blockTime ?? null,
                     memo,
                   });
                   break;
