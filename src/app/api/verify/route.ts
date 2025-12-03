@@ -216,10 +216,11 @@ export async function POST(request: NextRequest) {
             }
           }
           
-          // Get compiled instructions
-          const compiledInstructions = 'compiledInstructions' in message 
-            ? message.compiledInstructions 
-            : ('instructions' in message ? message.instructions : []);
+          // Get compiled instructions - cast to unknown first to avoid TypeScript narrowing issues
+          const msgAny = message as unknown as Record<string, unknown>;
+          const compiledInstructions = msgAny.compiledInstructions 
+            ?? msgAny.instructions 
+            ?? [];
           
           for (const ix of compiledInstructions as Array<{ programIdIndex: number; data: Uint8Array | string }>) {
             const programIdIndex = ix.programIdIndex;
