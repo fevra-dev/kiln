@@ -218,8 +218,8 @@ export async function POST(request: NextRequest) {
           
           // Get compiled instructions - cast to unknown first to avoid TypeScript narrowing issues
           const msgAny = message as unknown as Record<string, unknown>;
-          const compiledInstructions = msgAny.compiledInstructions 
-            ?? msgAny.instructions 
+          const compiledInstructions = msgAny['compiledInstructions'] 
+            ?? msgAny['instructions'] 
             ?? [];
           
           for (const ix of compiledInstructions as Array<{ programIdIndex: number; data: Uint8Array | string }>) {

@@ -399,7 +399,7 @@ function Footer() {
             KILN v0.1.1
           </div>
           <div className="text-sm text-matrix-red/60 font-mono">
-            BUILD.DATE: 2025-10-20
+            BUILD.DATE: 2025-12-03
           </div>
         </div>
       </div>
