@@ -180,10 +180,8 @@ export class DryRunService {
   private connection: Connection;
   private builder: TransactionBuilder;
   private decoder: TransactionDecoder;
-  private rpcUrl: string;
 
   constructor(rpcUrl: string) {
-    this.rpcUrl = rpcUrl;
     this.connection = new Connection(rpcUrl, 'confirmed');
     this.builder = new TransactionBuilder(rpcUrl);
     this.decoder = new TransactionDecoder(rpcUrl);
