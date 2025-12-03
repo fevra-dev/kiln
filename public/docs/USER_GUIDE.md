@@ -21,17 +21,14 @@ You'll need:
 1. ✅ A **Solana wallet** (like Phantom) with your NFT
 2. ✅ A small amount of **SOL** for transaction fees (~0.01 SOL)
 3. ✅ Your **Bitcoin Ordinals inscription ID** (looks like: `abc123...i0`)
-4. ✅ The **SHA-256 hash** of your inscription's media file
+
+That's it! Kiln automatically fetches and calculates the SHA-256 hash for you.
 
 ### How to Find Your Inscription ID
 
 1. Go to [ordinals.com](https://ordinals.com)
 2. Find your inscription
 3. Copy the full inscription ID from the URL (e.g., `3196a9df76157962672238a18e450d0398a78c77d114bd552c832d59b7081a2di0`)
-
-### How to Get the SHA-256 Hash
-
-The SHA-256 hash ensures your Solana NFT media matches your Bitcoin inscription media. Kiln will automatically fetch and verify this for you.
 
 ---
 

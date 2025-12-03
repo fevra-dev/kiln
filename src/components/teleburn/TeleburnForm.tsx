@@ -216,24 +216,37 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
           </div>
         </div>
 
-        {/* SHA-256 Hash */}
+        {/* SHA-256 Hash (Auto-filled, Read-only) */}
         <div className="form-field">
           <label htmlFor="sha256" className="form-label">
             <span className="text-terminal-prompt">→</span> CONTENT SHA-256 HASH
             {fetchingHash && (
               <span className="ml-2 text-xs opacity-70 animate-pulse">⟳ Fetching...</span>
             )}
+            <span className="ml-2 text-xs opacity-50">(auto-filled)</span>
           </label>
-          <input
-            id="sha256"
-            type="text"
-            value={formData.sha256}
-            onChange={(e) => handleChange('sha256', e.target.value)}
-            onBlur={() => handleBlur('sha256')}
-            className={`form-input ${touched.sha256 && errors.sha256 ? 'error' : ''}`}
-            placeholder="e.g., a1b2c3d4e5f6... (auto-filled from inscription)"
-            disabled={fetchingHash}
-          />
+          <div className="sha256-field-wrapper">
+            <input
+              id="sha256"
+              type="text"
+              value={formData.sha256}
+              readOnly
+              className={`form-input sha256-readonly ${touched.sha256 && errors.sha256 ? 'error' : ''} ${formData.sha256 ? 'has-value' : ''}`}
+              placeholder={fetchingHash ? "Fetching from inscription..." : "Enter inscription ID above to auto-fill"}
+            />
+            {formData.sha256 && (
+              <button
+                type="button"
+                className="copy-hash-btn"
+                onClick={() => {
+                  navigator.clipboard.writeText(formData.sha256);
+                }}
+                title="Copy SHA-256 hash"
+              >
+                📋
+              </button>
+            )}
+          </div>
           {touched.sha256 && errors.sha256 && (
             <div className="form-error">🚨 {errors.sha256}</div>
           )}
@@ -242,9 +255,9 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
               {hashFetchStatus}
             </div>
           )}
-          {!hashFetchStatus && (
+          {!hashFetchStatus && !formData.sha256 && (
             <div className="form-hint">
-              Auto-filled from inscription or enter manually (64-character hex)
+              Automatically calculated from your Bitcoin inscription
             </div>
           )}
         </div>
@@ -334,6 +347,40 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
         .form-input.error {
           border-color: rgba(200, 0, 0, 0.8);
           box-shadow: 0 0 10px rgba(200, 0, 0, 0.3);
+        }
+
+        .sha256-field-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .sha256-readonly {
+          cursor: default;
+          opacity: 0.8;
+        }
+
+        .sha256-readonly.has-value {
+          opacity: 1;
+          background: rgba(0, 50, 0, 0.3);
+          border-color: rgba(0, 200, 0, 0.3);
+        }
+
+        .copy-hash-btn {
+          position: absolute;
+          right: 0.5rem;
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: var(--terminal-text);
+          padding: 0.25rem 0.5rem;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .copy-hash-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: var(--terminal-text);
         }
 
         .form-error {

@@ -23,6 +23,7 @@ import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { MemoDisplay } from '../teleburn/MemoDisplay';
 import { CopyButton } from '../ui/CopyButton';
 import { BurnCelebration } from '../ui/BurnCelebration';
+import { KilnEventLogger } from '@/lib/event-logger';
 import {
   refreshBlockhashIfNeeded,
   confirmTransactionWithTimeout,
@@ -82,6 +83,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
     }
 
     setExecuting(true);
+    KilnEventLogger.log('teleburn_started', { mint: formData.mint, inscriptionId: formData.inscriptionId });
 
     try {
       const connection = new Connection(
@@ -240,6 +242,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       // Mark as completed and trigger celebration
       setCompleted(true);
       setShowCelebration(true);
+      KilnEventLogger.log('teleburn_success', { mint: formData.mint, inscriptionId: formData.inscriptionId });
 
       // If user opted to update metadata, do it now
       if (updateMetadata && publicKey) {

@@ -247,6 +247,9 @@ function TerminalInterface() {
           <a href="/teleburn" className="btn-matrix group">
             <span className="relative z-10">▶ INITIATE TELEBURN</span>
           </a>
+          <a href="/batch" className="btn-matrix group">
+            <span className="relative z-10">▶ BATCH TELEBURN</span>
+          </a>
           <a href="/verify" className="btn-matrix group">
             <span className="relative z-10">▶ VERIFY STATUS</span>
           </a>
