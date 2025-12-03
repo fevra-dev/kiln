@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
           if (log.includes('Program log: Memo')) {
             // Try to find JSON memo in logs
             const memoMatch = log.match(/Program log: Memo \(len \d+\): "(.*?)"/);
-            if (memoMatch) {
+            if (memoMatch && memoMatch[1]) {
               try {
                 const memoData = memoMatch[1];
                 const memo = JSON.parse(memoData) as KilnMemo;
