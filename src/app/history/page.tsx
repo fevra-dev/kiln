@@ -113,31 +113,22 @@ export default function HistoryPage() {
               >
                 ঌ
               </a>
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
+                [ My Teleburns ]
+              </h1>
             </div>
-            <WalletMultiButton />
+            <div className="status-badge">
+              <span>ONLINE</span>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Page Title */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
-              [ My Teleburns ]
-            </h1>
-            <div className="status-badge">
-              <span>ONLINE</span>
-            </div>
-          </div>
-          <p className="text-lg text-matrix-red/80 mb-2">
-            <span className="text-terminal-prompt">$</span> query_teleburn_history --wallet {publicKey?.toBase58().slice(0, 8) || '...'}
-          </p>
-        </div>
-
         {/* Terminal Style Header */}
         <div className="terminal-output mb-6">
+          <div className="text-terminal-prompt mb-2">$ query_teleburn_history --wallet {publicKey?.toBase58().slice(0, 8) || '...'}</div>
           <div className="text-terminal-text/70 text-sm">
             {loading && '> Searching blockchain for Kiln teleburns...'}
             {!loading && connected && `> Found ${teleburns.length} teleburn${teleburns.length !== 1 ? 's' : ''}`}
