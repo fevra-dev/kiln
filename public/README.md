@@ -307,41 +307,21 @@ git push origin feature/inscription-verify
 
 ### Core Documentation
 - [Teleburn Algorithm Specification](./docs/TELEBURN_ALGORITHM.md) - Complete algorithm specification
-- [Teleburn Migration Guide](./docs/TELEBURN_MIGRATION.md) - Migration from legacy implementation
-- [Algorithm Comparison](./docs/ALGORITHM_COMPARISON.md) - Visual comparison with Ethereum
-- [Teleburn Summary](./docs/TELEBURN_SUMMARY.md) - Implementation overview
-
-### Archived Documentation
-- [Enhanced System Prompt](./extras/enhanced_system_prompt.md) - Complete technical specification
-- [Implementation Quickstart](./extras/implementation_quickstart.md) - Week-by-week guide
-- [Implementation Summary](./extras/implementation_summary.md) - Feature overview
-- [KILN README](./extras/SBT01-README-v0.1.1.md) - Standard specification
-- [Marketplace Guide](./extras/SBT01-Marketplace-Guide.md) - Integration guide
-- [Token-2022 Compatibility](./extras/SBT01-Token2022-Compatibility.md) - Extension compatibility
+- [API Reference](./docs/API_REFERENCE.md) - API documentation
+- [Integration Guide](./docs/INTEGRATION_GUIDE.md) - How to integrate Kiln
+- [Security Audit Report](./docs/SECURITY_AUDIT_REPORT.md) - Security review
 
 ## 🔒 Security
 
 ### Reporting Vulnerabilities
 
-If you discover a security vulnerability, please email: security@...
+If you discover a security vulnerability, please email: **fev.dev@proton.me**
 
 **DO NOT** open a public GitHub issue.
 
-### Audit Status
-
-- [ ] Internal security review
-- [ ] External audit (planned)
-- [ ] Bug bounty program (planned)
-
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
-
-### Standard Licensing
-
-- **Kiln Specification**: CC0 (Public Domain)
-- **Reference Implementation**: MIT License
-- **Documentation**: CC BY 4.0
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
@@ -353,15 +333,14 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 ## 📞 Support
 
 - **Documentation**: [/docs](./docs)
-- **Issues**: [GitHub Issues](https://github.com/.../issues)
-- **Discord**: [Join Discord](#)
-- **Twitter**: [@...](#)
+- **Issues**: [GitHub Issues](https://github.com/fevra-dev/kiln/issues)
+- **Twitter**: [@fevra_](https://twitter.com/fevra_)
 
 ---
 
-**Built with ❤️ for the Solana and Bitcoin communities**
+**Built for the Solana and Bitcoin communities**
 
-*Last updated: October 23, 2025*  
+*Last updated: December 3, 2025*  
 *Version: 0.1.1*  
 *Status: Production Ready*
 

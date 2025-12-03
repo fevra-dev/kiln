@@ -1,7 +1,7 @@
 {
-  "name": "sbt01-teleburn",
+  "name": "kiln",
   "version": "0.1.1",
-  "description": "KILN.1 Teleburn Standard - Solana → Bitcoin Ordinals with cryptographic proof",
+  "description": "KILN Teleburn Protocol - Solana → Bitcoin Ordinals with cryptographic proof",
   "private": true,
   "scripts": {
     "dev": "next dev",

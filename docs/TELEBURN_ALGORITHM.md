@@ -401,7 +401,6 @@ Teleburn Address Derivation
 ## References
 
 - [Ordinals Teleburn Documentation](https://docs.ordinals.com/guides/teleburning.html)
-- [KILN-TELEBURN v0.1.1 Specification](../SBT01-README-v0.1.1.md)
 - [Ed25519 Curve](https://en.wikipedia.org/wiki/EdDSA#Ed25519)
 - [SHA-256 Hash Function](https://en.wikipedia.org/wiki/SHA-2)
 

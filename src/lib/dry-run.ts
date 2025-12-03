@@ -538,10 +538,33 @@ export class DryRunService {
         warnings.push(`Payer balance (${payerBalance / 1e9} SOL) may be insufficient for transaction fees and rent`);
       }
 
-      // Check if mint exists
+      // Check if mint exists and validate it's an NFT (not a fungible token)
       const mintInfo = await this.connection.getAccountInfo(params.mint);
       if (!mintInfo) {
         errors.push(`Mint account ${params.mint.toBase58()} does not exist`);
+      } else {
+        // Validate this is an NFT, not a fungible token
+        // NFTs have supply = 1 and decimals = 0
+        try {
+          const { unpackMint } = await import('@solana/spl-token');
+          const mintData = unpackMint(params.mint, mintInfo);
+          
+          if (mintData.decimals > 0) {
+            errors.push(
+              `This is a fungible token (decimals: ${mintData.decimals}), not an NFT. ` +
+              `Teleburn only supports NFTs (decimals = 0).`
+            );
+          }
+          
+          if (mintData.supply > 1n) {
+            errors.push(
+              `This token has supply > 1 (supply: ${mintData.supply}). ` +
+              `Teleburn only supports NFTs with supply = 1.`
+            );
+          }
+        } catch (parseError) {
+          warnings.push(`Could not validate mint type: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+        }
       }
 
       // Check if owner has tokens to retire
