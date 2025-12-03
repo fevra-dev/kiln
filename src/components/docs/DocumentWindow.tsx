@@ -121,13 +121,13 @@ export const DocumentWindow: FC<DocumentWindowProps> = ({
               title="Close"
             />
             <button
-              onClick={handleMaximize}
-              className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors"
-              title="Maximize"
+              className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors opacity-50 cursor-not-allowed"
+              title="Minimize (disabled)"
             />
             <button
+              onClick={handleMaximize}
               className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-600 transition-colors"
-              title="Minimize (disabled)"
+              title={isMaximized ? "Restore" : "Maximize"}
             />
           </div>
           <div className="text-xs text-matrix-red/80 font-mono ml-2 select-none">

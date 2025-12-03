@@ -1,64 +1,39 @@
-# Documentation
+# Kiln Documentation
 
-This folder contains the complete documentation for the KILN-TELEBURN v0.1.1.1 Teleburn Standard implementation.
+Complete documentation for the Kiln Teleburn Protocol.
 
-## 📚 Core Documentation
+## 📚 Available Documentation
 
-### Algorithm & Implementation
-- **[TELEBURN_ALGORITHM.md](./TELEBURN_ALGORITHM.md)** - Complete algorithm specification with examples
-- **[ALGORITHM_COMPARISON.md](./ALGORITHM_COMPARISON.md)** - Visual comparison with Ethereum teleburn
-- **[TELEBURN_SUMMARY.md](./TELEBURN_SUMMARY.md)** - Implementation overview and status
+| Document | Description |
+|----------|-------------|
+| [TELEBURN_SUMMARY.md](./TELEBURN_SUMMARY.md) | What is teleburn and how it works |
+| [TELEBURN_ALGORITHM.md](./TELEBURN_ALGORITHM.md) | Technical algorithm specification |
+| [API_REFERENCE.md](./API_REFERENCE.md) | API endpoints for developers |
+| [INTEGRATION_GUIDE.md](./INTEGRATION_GUIDE.md) | Integration instructions |
+| [SECURITY_AUDIT_REPORT.md](./SECURITY_AUDIT_REPORT.md) | Security considerations |
 
-### Migration & Development
-- **[TELEBURN_MIGRATION.md](./TELEBURN_MIGRATION.md)** - Migration guide from legacy implementation
-- **[TELEBURN_STANDARDIZATION.md](./TELEBURN_STANDARDIZATION.md)** - Complete standardization summary
+## 🔥 Quick Start
 
-## 🎯 Quick Reference
+1. Visit [kiln.hot/teleburn](https://kiln.hot/teleburn) to start
+2. Connect your Solana wallet
+3. Enter your NFT mint address and inscription ID
+4. Follow the wizard to complete the teleburn
 
-### For Developers
-1. **Algorithm Spec** → `TELEBURN_ALGORITHM.md`
-2. **Migration Guide** → `TELEBURN_MIGRATION.md`
-3. **Implementation Status** → `TELEBURN_SUMMARY.md`
+## 🔒 Security
 
-### For Users
-1. **How It Works** → `ALGORITHM_COMPARISON.md`
-2. **What Changed** → `TELEBURN_STANDARDIZATION.md`
-3. **Getting Started** → Main [README.md](../README.md)
+### Reporting Vulnerabilities
 
-## 🔗 Related Files
+If you discover a security vulnerability, please email: **fev.dev@proton.me**
 
-### Active Implementation
-- `src/lib/teleburn.ts` - Canonical implementation
-- `tests/unit/teleburn.test.ts` - 78 unit tests
-- `src/lib/transaction-builder.ts` - Transaction construction
+**DO NOT** open a public GitHub issue for security vulnerabilities.
 
-### Archived Documentation
-- `extras/` - Historical development files
-- `extras/README.md` - Archive index
+## 📞 Support
 
-## 📖 Documentation Structure
+- **Documentation**: [kiln.hot/docs](https://kiln.hot/docs)
+- **Twitter**: [@fevra_](https://twitter.com/fevra_)
+- **GitHub**: [github.com/fevra-dev/kiln](https://github.com/fevra-dev/kiln)
 
-```
-docs/
-├── README.md                    # This file
-├── TELEBURN_ALGORITHM.md        # Algorithm specification
-├── ALGORITHM_COMPARISON.md      # Visual comparison
-├── TELEBURN_MIGRATION.md        # Migration guide
-├── TELEBURN_STANDARDIZATION.md  # Standardization summary
-└── TELEBURN_SUMMARY.md          # Implementation overview
-```
+---
 
-## 🎯 Key Points
-
-- **Algorithm**: SHA-256 based derivation matching Ethereum pattern
-- **Security**: Domain separation + off-curve guarantee
-- **Testing**: 78 unit tests with 100% coverage
-- **Status**: Production ready
-- **Migration**: Legacy `derived-owner.ts` deprecated
-
-## 📞 Questions?
-
-- **Algorithm questions** → `TELEBURN_ALGORITHM.md`
-- **Migration help** → `TELEBURN_MIGRATION.md`
-- **Visual comparison** → `ALGORITHM_COMPARISON.md`
-- **Implementation status** → `TELEBURN_SUMMARY.md`
+**Kiln Teleburn Protocol v0.1.1**  
+*Last updated: December 3, 2025*

@@ -25,7 +25,9 @@ export default function HomePage() {
 
   const handlePasswordSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
-    if (password === 'iceland') {
+    // Access code can be configured via environment variable
+    const accessCode = process.env['NEXT_PUBLIC_ACCESS_CODE'] || 'iceland';
+    if (password === accessCode) {
       setPasswordEntered(true);
       setPasswordError(false);
       // Start boot sequence after typing animation completes
