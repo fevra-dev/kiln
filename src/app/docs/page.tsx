@@ -49,25 +49,10 @@ const DOCS: DocLink[] = [
     description: 'Technical explanation of the SHA-256 derivation algorithm',
     category: 'core',
   },
-  
-  // Developer Guides
-  {
-    path: '/docs/API_REFERENCE.md',
-    title: 'API Reference',
-    description: 'Complete API documentation for developers',
-    category: 'guides',
-  },
-  {
-    path: '/docs/INTEGRATION_GUIDE.md',
-    title: 'Integration Guide',
-    description: 'Step-by-step integration instructions for developers',
-    category: 'guides',
-  },
 ];
 
 const CATEGORIES = {
   core: { label: 'Core Documentation', icon: '🔥' },
-  guides: { label: 'User Guides', icon: '📚' },
 };
 
 interface OpenWindow {
