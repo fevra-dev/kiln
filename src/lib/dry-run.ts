@@ -200,18 +200,6 @@ export class DryRunService {
   
   /**
    * Reinitialize connection with a working RPC URL
-   * Called if initial RPC fails during dry run
-   */
-  private async reinitializeWithFallback(): Promise<void> {
-    const workingRpcUrl = await getWorkingRpcUrl(this.rpcUrl);
-    if (workingRpcUrl !== this.rpcUrl) {
-      this.rpcUrl = workingRpcUrl;
-      this.connection = new Connection(workingRpcUrl, 'confirmed');
-      this.builder = new TransactionBuilder(workingRpcUrl);
-      this.decoder = new TransactionDecoder(workingRpcUrl);
-    }
-  }
-
   /**
    * Execute complete dry run
    * 
