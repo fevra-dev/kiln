@@ -70,7 +70,7 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
         speedX: (Math.random() - 0.5) * 4,
         speedY: -Math.random() * 6 - 2,
         life: Math.random() * 100 + 50,
-        color: colors[Math.floor(Math.random() * colors.length)],
+        color: colors[Math.floor(Math.random() * colors.length)] || '#ff4400',
       });
     }
     
