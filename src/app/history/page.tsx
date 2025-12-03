@@ -367,6 +367,10 @@ export default function HistoryPage() {
       </footer>
 
       <style jsx>{`
+        .glow-text {
+          text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+
         .terminal-window {
           background: rgba(0, 0, 0, 0.8);
           border: 1px solid rgba(255, 0, 0, 0.3);
