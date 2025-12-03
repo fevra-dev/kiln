@@ -26,11 +26,12 @@ export const metadata: Metadata = {
     description: 'Permanently link Solana NFTs to Bitcoin Ordinals through cryptographic burning. Forging cryptographic burns with proof of burn. Irreversible. No custody.',
     type: 'website',
     siteName: 'Kiln',
+    url: 'https://kiln.hot',
     images: [
       {
         url: '/favicon.svg',
-        width: 512,
-        height: 512,
+        width: 32,
+        height: 32,
         alt: 'Kiln Logo',
       },
     ],
