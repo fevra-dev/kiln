@@ -28,7 +28,7 @@ That's it! Kiln automatically fetches and calculates the SHA-256 hash for you.
 
 1. Go to [ordinals.com](https://ordinals.com)
 2. Find your inscription
-3. Copy the full inscription ID from the URL (e.g., `3196a9df76157962672238a18e450d0398a78c77d114bd552c832d59b7081a2di0`)
+3. Copy the full inscription ID from the URL (e.g., `7a414bae133fc150086a78419ec3e7a8d808fc0628a36cb85126a44d5e86c2e9i0`)
 
 ---
 
@@ -58,7 +58,7 @@ When inscribing on Bitcoin, we **highly recommend** adding your Solana NFT mint 
 3. Upload your art file
 4. In the **Attributes** section, click **+ Add trait**:
    - **Title**: `solana_mint` (or similar)
-   - **Value**: Your Solana NFT mint address (e.g., `6ivMgojprszJjAhuGwGQShwUtn98mm3pQ6idqzwy66Kb`)
+   - **Value**: Your Solana NFT mint address (e.g., `A4go8JM9uuy6vzbRzPwg8F5ZkCkgqct1htscMpSECMhw`)
 5. Complete the inscription process
 
 **Why this matters:**
@@ -76,7 +76,7 @@ When inscribing on Bitcoin, we **highly recommend** adding your Solana NFT mint 
 1. Go to [kiln.hot/teleburn](https://kiln.hot/teleburn)
 2. Enter your **Solana NFT Mint Address**
    - Find this in your wallet or on Solscan
-   - It's a long string like `6ivMgojprszJjAhuGwGQShwUtn98mm3pQ6idqzwy66Kb`
+   - It's a long string like `A4go8JM9uuy6vzbRzPwg8F5ZkCkgqct1htscMpSECMhw`
 3. Enter your **Bitcoin Inscription ID**
    - The full ID including the `i0` at the end
 4. Click **Continue**
