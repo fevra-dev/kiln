@@ -109,12 +109,12 @@ export async function POST(request: NextRequest) {
           error: `Invalid account type. Expected 'mint' but got '${parsedData.parsed?.type || 'unknown'}'. Please provide a valid NFT mint address.`,
         }, { status: 400 });
       }
-    } else if (Buffer.isBuffer(accountData) || accountData instanceof Uint8Array) {
+    } else if (Buffer.isBuffer(accountData) || (accountData && typeof accountData !== 'string' && 'byteLength' in accountData)) {
       // Raw buffer data - try to manually decode mint layout
       // SPL Token Mint layout: 36 bytes mintAuthority + 8 bytes supply + 1 byte decimals + ...
       // Token-2022 has similar layout at the start
       try {
-        const data = Buffer.from(accountData);
+        const data = Buffer.from(accountData as Buffer);
         if (data.length >= 45) {
           // Supply is at offset 36, 8 bytes little-endian
           const supplyBigInt = data.readBigUInt64LE(36);
