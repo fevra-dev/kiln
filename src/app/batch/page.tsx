@@ -120,6 +120,8 @@ export default function BatchTeleburnPage() {
 
     for (let i = 0; i < readyItems.length; i++) {
       const item = readyItems[i];
+      if (!item) continue; // TypeScript guard
+      
       setCurrentIndex(i);
 
       // Update status to burning
