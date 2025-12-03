@@ -202,12 +202,11 @@ export default function BatchTeleburnPage() {
             <div className="flex items-center gap-4">
               <a 
                 href="/" 
-                className="text-3xl hover:text-matrix-red transition-colors duration-200"
+                className="text-4xl hover:text-matrix-red transition-colors duration-200"
                 title="Return to Home"
               >
                 ঌ
               </a>
-              <h1 className="text-3xl font-bold text-terminal-text glow-text">[ Batch Teleburn ]</h1>
             </div>
             <WalletMultiButton />
           </div>
@@ -216,9 +215,23 @@ export default function BatchTeleburnPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Page Title */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
+              [ Batch Teleburn ]
+            </h1>
+            <div className="status-badge">
+              <span>ONLINE</span>
+            </div>
+          </div>
+          <p className="text-lg text-matrix-red/80 mb-2">
+            <span className="text-terminal-prompt">$</span> batch_teleburn --multi
+          </p>
+        </div>
+
         {/* Terminal Header */}
         <div className="terminal-output mb-6">
-          <div className="text-terminal-prompt mb-2">$ batch_teleburn --multi</div>
           <div className="text-terminal-text/70 text-sm">
             {`> Add multiple NFTs to teleburn in a single session`}
             <span className="animate-terminal-blink ml-1">▊</span>

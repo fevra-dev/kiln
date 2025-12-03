@@ -108,12 +108,11 @@ export default function HistoryPage() {
             <div className="flex items-center gap-4">
               <a 
                 href="/" 
-                className="text-3xl hover:text-matrix-red transition-colors duration-200"
+                className="text-4xl hover:text-matrix-red transition-colors duration-200"
                 title="Return to Home"
               >
                 ঌ
               </a>
-              <h1 className="text-3xl font-bold text-terminal-text glow-text">[ My Teleburns ]</h1>
             </div>
             <WalletMultiButton />
           </div>
@@ -122,9 +121,23 @@ export default function HistoryPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Page Title */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
+              [ My Teleburns ]
+            </h1>
+            <div className="status-badge">
+              <span>ONLINE</span>
+            </div>
+          </div>
+          <p className="text-lg text-matrix-red/80 mb-2">
+            <span className="text-terminal-prompt">$</span> query_teleburn_history --wallet {publicKey?.toBase58().slice(0, 8) || '...'}
+          </p>
+        </div>
+
         {/* Terminal Style Header */}
         <div className="terminal-output mb-6">
-          <div className="text-terminal-prompt mb-2">$ query_teleburn_history --wallet {publicKey?.toBase58().slice(0, 8) || '...'}</div>
           <div className="text-terminal-text/70 text-sm">
             {loading && '> Searching blockchain for Kiln teleburns...'}
             {!loading && connected && `> Found ${teleburns.length} teleburn${teleburns.length !== 1 ? 's' : ''}`}
@@ -248,7 +261,7 @@ export default function HistoryPage() {
                         <span className="text-matrix-red">🔥</span>
                         <span className="text-terminal-text/60">Solana Mint:</span>
                         <a
-                          href={`https://solscan.io/token/${burn.mint}`}
+                          href={`https://orb.helius.dev/address/${burn.mint}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-orange-400 hover:text-orange-300 font-mono text-sm"
@@ -309,14 +322,39 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* Refresh Button */}
-        {connected && !loading && (
+        {/* Download History Button */}
+        {connected && !loading && teleburns.length > 0 && (
           <div className="mt-6 text-center">
             <button
-              onClick={fetchHistory}
+              onClick={() => {
+                const dataStr = JSON.stringify({
+                  wallet: publicKey?.toBase58(),
+                  exportedAt: new Date().toISOString(),
+                  count: teleburns.length,
+                  teleburns: teleburns.map(burn => ({
+                    signature: burn.signature,
+                    mint: burn.mint,
+                    inscriptionId: burn.inscriptionId,
+                    timestamp: burn.timestamp,
+                    blockTime: burn.blockTime,
+                    date: formatDate(burn.blockTime),
+                    version: burn.memo.version,
+                    method: burn.memo.method,
+                  })),
+                }, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `kiln-teleburns-${publicKey?.toBase58().slice(0, 8)}-${Date.now()}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              }}
               className="px-6 py-2 border border-terminal-text/30 hover:border-terminal-text transition-colors text-sm"
             >
-              🔄 Refresh History
+              Download History
             </button>
           </div>
         )}
