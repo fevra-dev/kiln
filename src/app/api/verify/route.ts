@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // Check if mint account exists and get supply
     // Try both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID
-    let mintAccount = await connection.getParsedAccountInfo(mint);
+    const mintAccount = await connection.getParsedAccountInfo(mint);
     
     if (!mintAccount.value) {
       return NextResponse.json({
