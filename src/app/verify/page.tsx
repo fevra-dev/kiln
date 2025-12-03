@@ -45,6 +45,15 @@ export default function VerifyPage() {
   const [metadataUpdateCompleted, setMetadataUpdateCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper references for Kiln memo rendering
+  const kilnMemoRecord = result?.kilnMemo
+    ? (result.kilnMemo as Record<string, unknown>)
+    : null;
+  const kilnMemoMethodDisplay =
+    kilnMemoRecord && kilnMemoRecord['method'] !== undefined && kilnMemoRecord['method'] !== null
+      ? String(kilnMemoRecord['method'])
+      : null;
+
   /**
    * Copy text to clipboard with feedback
    */
@@ -448,12 +457,10 @@ export default function VerifyPage() {
                           {String((result.kilnMemo as Record<string, unknown>)?.['action'] || '-')}
                         </span>
                       </div>
-                      {(result.kilnMemo as Record<string, unknown>)?.['method'] && (
+                      {kilnMemoMethodDisplay && (
                         <div className="memo-row">
                           <span className="memo-label">Method</span>
-                          <span className="memo-value">
-                            {String((result.kilnMemo as Record<string, unknown>)?.['method'])}
-                          </span>
+                          <span className="memo-value">{kilnMemoMethodDisplay}</span>
                         </div>
                       )}
                       {(result.kilnMemo.inscription as { id?: string })?.id && (
