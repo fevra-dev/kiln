@@ -26,6 +26,12 @@ interface DocLink {
 const DOCS: DocLink[] = [
   // Core User Documentation
   {
+    path: '/docs/USER_GUIDE.md',
+    title: '📖 User Guide',
+    description: 'Simple step-by-step guide for teleburning (start here!)',
+    category: 'core',
+  },
+  {
     path: '/README.md',
     title: 'Getting Started',
     description: 'Complete project overview, setup, and usage guide',
@@ -44,7 +50,7 @@ const DOCS: DocLink[] = [
     category: 'core',
   },
   
-  // User Guides
+  // Developer Guides
   {
     path: '/docs/API_REFERENCE.md',
     title: 'API Reference',
@@ -54,7 +60,7 @@ const DOCS: DocLink[] = [
   {
     path: '/docs/INTEGRATION_GUIDE.md',
     title: 'Integration Guide',
-    description: 'Step-by-step integration instructions',
+    description: 'Step-by-step integration instructions for developers',
     category: 'guides',
   },
 ];

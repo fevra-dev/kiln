@@ -376,9 +376,9 @@ function Footer() {
             <div className="text-sm font-bold mb-3 text-matrix-red uppercase">Resources</div>
             <div className="space-y-2 text-sm text-matrix-red/60">
               <a href="/docs" className="block hover:text-matrix-red cursor-pointer">→ Documentation</a>
-              <a href="/docs?doc=/README.md" className="block hover:text-matrix-red cursor-pointer">→ Getting Started</a>
+              <a href="/docs?doc=/docs/USER_GUIDE.md" className="block hover:text-matrix-red cursor-pointer">→ User Guide (Start Here!)</a>
               <a href="/docs?doc=/docs/TELEBURN_SUMMARY.md" className="block hover:text-matrix-red cursor-pointer">→ What is Teleburn</a>
-              <a href="/docs?doc=/docs/TELEBURN_ALGORITHM.md" className="block hover:text-matrix-red cursor-pointer">→ How It Works</a>
+              <a href="/docs?doc=/docs/TELEBURN_ALGORITHM.md" className="block hover:text-matrix-red cursor-pointer">→ Technical Details</a>
             </div>
           </div>
           <div>
