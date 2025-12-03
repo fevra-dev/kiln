@@ -10,7 +10,7 @@ import { WalletProviders } from '@/components/wallet/WalletProviders';
 
 export const metadata: Metadata = {
   title: 'Kiln | Teleburn',
-  description: '[CLASSIFIED] Cryptographically-verified teleburn protocol for permanent NFT migration. Proof of burn. Irreversible. No custody.',
+  description: 'Permanently link Solana NFTs to Bitcoin Ordinals through cryptographic burning. Forging cryptographic burns with proof of burn. Irreversible. No custody.',
 };
 
 export default function TeleburnLayout({

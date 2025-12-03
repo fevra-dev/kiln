@@ -10,8 +10,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Kiln',
-  description: '[CLASSIFIED] Cryptographically-verified teleburn protocol for permanent NFT migration. Proof of burn. Irreversible. No custody.',
+  title: 'Kiln | Teleburn Protocol',
+  description: 'Permanently link Solana NFTs to Bitcoin Ordinals through cryptographic burning. Forging cryptographic burns with proof of burn. Irreversible. No custody.',
   keywords: ['Solana', 'Bitcoin', 'Ordinals', 'NFT', 'Teleburn', 'KILN', 'Cryptography', 'Cypherpunk'],
   icons: {
     icon: [
@@ -20,6 +20,26 @@ export const metadata: Metadata = {
     ],
     shortcut: '/favicon.ico',
     apple: '/favicon.svg',
+  },
+  openGraph: {
+    title: 'Kiln | Teleburn Protocol',
+    description: 'Permanently link Solana NFTs to Bitcoin Ordinals through cryptographic burning. Forging cryptographic burns with proof of burn. Irreversible. No custody.',
+    type: 'website',
+    siteName: 'Kiln',
+    images: [
+      {
+        url: '/favicon.svg',
+        width: 512,
+        height: 512,
+        alt: 'Kiln Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Kiln | Teleburn Protocol',
+    description: 'Permanently link Solana NFTs to Bitcoin Ordinals through cryptographic burning. Forging cryptographic burns with proof of burn. Irreversible. No custody.',
+    images: ['/favicon.svg'],
   },
 };
 
