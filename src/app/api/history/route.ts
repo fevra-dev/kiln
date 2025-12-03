@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { z } from 'zod';
+import { Buffer } from 'buffer';
 
 // Request validation schema
 const HistoryRequestSchema = z.object({
@@ -79,60 +80,78 @@ export async function POST(request: NextRequest) {
 
         if (!tx || !tx.meta || !tx.meta.logMessages) continue;
 
-        // Search logs for Kiln memo
-        for (const log of tx.meta.logMessages) {
-          // Look for memo program invocation
-          if (log.includes('Program log: Memo')) {
-            // Try to find JSON memo in logs
-            const memoMatch = log.match(/Program log: Memo \(len \d+\): "(.*?)"/);
-            if (memoMatch && memoMatch[1]) {
-              try {
-                const memoData = memoMatch[1];
-                const memo = JSON.parse(memoData) as KilnMemo;
-
-                // Check if it's a Kiln teleburn memo
-                if (memo.standard === 'Kiln' && memo.action === 'teleburn') {
-                  teleburns.push({
-                    signature: sigInfo.signature,
-                    mint: memo.solana?.mint || 'unknown',
-                    inscriptionId: memo.inscription?.id || 'unknown',
-                    timestamp: memo.timestamp || 0,
-                    blockTime: tx.blockTime ?? null,
-                    memo,
-                  });
-                  break;
-                }
-              } catch {
-                // Not valid JSON, skip
-              }
+        // Parse memo from transaction instructions (same approach as verify API)
+        const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+        const message = tx.transaction.message;
+        const accountKeys: PublicKey[] = [];
+        
+        // Handle versioned message with staticAccountKeys
+        if ('staticAccountKeys' in message) {
+          accountKeys.push(...message.staticAccountKeys);
+        }
+        // Handle legacy message with accountKeys
+        if ('accountKeys' in message && Array.isArray(message.accountKeys)) {
+          for (const key of message.accountKeys) {
+            if (key instanceof PublicKey) {
+              accountKeys.push(key);
+            } else if (typeof key === 'string') {
+              accountKeys.push(new PublicKey(key));
             }
           }
-
-          // Alternative: Look for raw memo data in logs
-          if (log.includes('"standard":"Kiln"') || log.includes('"standard": "Kiln"')) {
-            try {
-              // Extract JSON from log
-              const jsonStart = log.indexOf('{');
-              const jsonEnd = log.lastIndexOf('}');
-              if (jsonStart !== -1 && jsonEnd !== -1) {
-                const memoJson = log.substring(jsonStart, jsonEnd + 1);
-                const memo = JSON.parse(memoJson) as KilnMemo;
-
-                if (memo.standard === 'Kiln' && memo.action === 'teleburn') {
-                  teleburns.push({
-                    signature: sigInfo.signature,
-                    mint: memo.solana?.mint || 'unknown',
-                    inscriptionId: memo.inscription?.id || 'unknown',
-                    timestamp: memo.timestamp || 0,
-                    blockTime: tx.blockTime ?? null,
-                    memo,
-                  });
-                  break;
-                }
+        }
+        
+        // Get compiled instructions
+        const msgAny = message as unknown as Record<string, unknown>;
+        const compiledInstructions = msgAny['compiledInstructions'] 
+          ?? msgAny['instructions'] 
+          ?? [];
+        
+        for (const ix of compiledInstructions as Array<{ programIdIndex: number; data: Uint8Array | string }>) {
+          const programIdIndex = ix.programIdIndex;
+          if (programIdIndex >= accountKeys.length) continue;
+          
+          const programId = accountKeys[programIdIndex];
+          if (!programId || !programId.equals(MEMO_PROGRAM_ID)) continue;
+          
+          try {
+            // Decode memo data
+            let memoBytes: Uint8Array;
+            if (ix.data instanceof Uint8Array) {
+              memoBytes = ix.data;
+            } else if (typeof ix.data === 'string') {
+              try {
+                memoBytes = Buffer.from(ix.data, 'base64');
+              } catch {
+                memoBytes = Buffer.from(ix.data);
               }
-            } catch {
-              // Skip on parse error
+            } else {
+              continue;
             }
+            
+            const memoData = new TextDecoder().decode(memoBytes);
+            const memo = JSON.parse(memoData) as KilnMemo;
+            
+            // Check if it's a Kiln teleburn memo (accepts any version including 0.1.2)
+            if ((memo.standard === 'Kiln' || memo.standard === 'KILN') && 
+                (memo.action === 'teleburn' || 
+                 memo.action === 'teleburn-burn' || 
+                 memo.action === 'teleburn-incinerate' || 
+                 memo.action === 'teleburn-derived' ||
+                 memo.action === 'burn' || 
+                 memo.action === 'incinerate' || 
+                 memo.action === 'retire')) {
+              teleburns.push({
+                signature: sigInfo.signature,
+                mint: memo.solana?.mint || 'unknown',
+                inscriptionId: memo.inscription?.id || 'unknown',
+                timestamp: memo.timestamp || 0,
+                blockTime: tx.blockTime ?? null,
+                memo,
+              });
+              break; // Found a Kiln memo, no need to check other instructions
+            }
+          } catch {
+            // Not valid JSON or not a Kiln memo, continue
           }
         }
       } catch {

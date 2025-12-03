@@ -113,7 +113,7 @@ export default function HistoryPage() {
               >
                 ঌ
               </a>
-              <h1 className="text-xl font-bold text-terminal-text">My Teleburns</h1>
+              <h1 className="text-3xl font-bold text-terminal-text glow-text">[ My Teleburns ]</h1>
             </div>
             <WalletMultiButton />
           </div>
@@ -388,6 +388,26 @@ export default function HistoryPage() {
 
         .animate-terminal-blink {
           animation: terminal-blink 1s infinite;
+        }
+
+        /* Custom wallet button styling - red/orange theme */
+        :global(.wallet-adapter-button) {
+          background: rgba(255, 68, 0, 0.2) !important;
+          border: 1px solid rgba(255, 100, 0, 0.5) !important;
+          color: #ff6600 !important;
+          font-family: 'JetBrains Mono', monospace !important;
+        }
+
+        :global(.wallet-adapter-button:hover) {
+          background: rgba(255, 68, 0, 0.4) !important;
+          border-color: #ff6600 !important;
+          color: #ff8800 !important;
+        }
+
+        :global(.wallet-adapter-button-trigger) {
+          background: rgba(255, 68, 0, 0.2) !important;
+          border: 1px solid rgba(255, 100, 0, 0.5) !important;
+          color: #ff6600 !important;
         }
       `}</style>
     </div>

@@ -218,8 +218,8 @@ export default function VerifyPage() {
               >
                 ঌ
               </a>
-              <h1 className="text-2xl sm:text-3xl font-bold text-terminal-text glow-text">
-                Teleburn Verification
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text">
+                [ Teleburn Verification ]
               </h1>
             </div>
             <div className="status-badge px-3 py-1 border border-terminal-text/30 text-xs">
