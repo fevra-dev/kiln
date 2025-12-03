@@ -78,45 +78,47 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
   }, []);
 
   useEffect(() => {
-    if (isActive) {
-      // Play sounds
-      playSounds();
-      
-      // Generate particles
-      setParticles(generateParticles());
-      
-      // Show celebration text after a brief delay
-      setTimeout(() => setShowText(true), 300);
-      
-      // Animate particles
-      const interval = setInterval(() => {
-        setParticles(prev => 
-          prev
-            .map(p => ({
-              ...p,
-              x: p.x + p.speedX * 0.5,
-              y: p.y + p.speedY * 0.5,
-              speedY: p.speedY + 0.1, // gravity
-              life: p.life - 2,
-              size: p.size * 0.98,
-            }))
-            .filter(p => p.life > 0)
-        );
-      }, 30);
-
-      // Clean up after animation completes
-      const timeout = setTimeout(() => {
-        clearInterval(interval);
-        setParticles([]);
-        setShowText(false);
-        onComplete?.();
-      }, 4000);
-
-      return () => {
-        clearInterval(interval);
-        clearTimeout(timeout);
-      };
+    if (!isActive) {
+      return; // Early return when not active
     }
+    
+    // Play sounds
+    playSounds();
+    
+    // Generate particles
+    setParticles(generateParticles());
+    
+    // Show celebration text after a brief delay
+    setTimeout(() => setShowText(true), 300);
+    
+    // Animate particles
+    const interval = setInterval(() => {
+      setParticles(prev => 
+        prev
+          .map(p => ({
+            ...p,
+            x: p.x + p.speedX * 0.5,
+            y: p.y + p.speedY * 0.5,
+            speedY: p.speedY + 0.1, // gravity
+            life: p.life - 2,
+            size: p.size * 0.98,
+          }))
+          .filter(p => p.life > 0)
+      );
+    }, 30);
+
+    // Clean up after animation completes
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setParticles([]);
+      setShowText(false);
+      onComplete?.();
+    }, 4000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, [isActive, playSounds, generateParticles, onComplete]);
 
   if (!isActive && particles.length === 0) return null;
