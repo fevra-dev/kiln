@@ -30,6 +30,7 @@ import { InscriptionVerificationResult } from '@/lib/types';
  * Teleburn Wizard Page
  * 
  * Complete state management for wizard flow.
+ * Note: No localStorage persistence - each session starts fresh.
  */
 export default function TeleburnPage() {
   const [currentStep, setCurrentStep] = useState<WizardStep>('connect');
@@ -38,9 +39,19 @@ export default function TeleburnPage() {
   const [showForm, setShowForm] = useState(true);
   const [isClient, setIsClient] = useState(false);
 
-  // Ensure client-side rendering to prevent hydration mismatch
+  // Clear any stale localStorage data on mount
   useEffect(() => {
     setIsClient(true);
+    
+    // Clear any old saved state to prevent stale data issues
+    try {
+      localStorage.removeItem('kiln_teleburn_form');
+      localStorage.removeItem('kiln_teleburn_step');
+      localStorage.removeItem('teleburn_currentStep');
+      localStorage.removeItem('teleburn_formData');
+    } catch {
+      // Ignore localStorage errors
+    }
   }, []);
 
   const handleFormSubmit = (data: TeleburnFormData) => {
@@ -63,11 +74,11 @@ export default function TeleburnPage() {
   };
 
   const handleExecuteComplete = () => {
-    // Reset wizard to allow new teleburn
+    // Reset wizard for new teleburn
     setCurrentStep('connect');
     setFormData(null);
     setVerificationResult(null);
-    setShowForm(false);
+    setShowForm(true);
   };
 
   // Show loading state during hydration

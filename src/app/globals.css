@@ -270,18 +270,25 @@ body {
 
 /* ASCII Art Container for Homepage - Responsive */
 .ascii-art-container {
-  font-size: clamp(0.5rem, 2vw, 1.25rem);
-  overflow-x: auto;
-  overflow-y: hidden;
+  font-size: clamp(0.35rem, 1.8vw, 1.25rem);
+  overflow: hidden;
   max-width: 100%;
+  width: 100%;
 }
 
 @media (max-width: 768px) {
   .ascii-art-container {
-    font-size: clamp(0.6rem, 2.5vw, 0.9rem);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    line-height: 1.1;
+    font-size: 0.32rem;
+    overflow: hidden;
+    line-height: 1.0;
+    transform-origin: center top;
+    padding: 0;
+    margin: 0 auto;
+  }
+  
+  .ascii-art {
+    font-size: inherit;
+    letter-spacing: -0.5px;
   }
   
   .kiln-version-box {
@@ -300,6 +307,30 @@ body {
   /* Reduce spacing in terminal box on mobile */
   .terminal {
     margin-top: 0.5rem;
+  }
+  
+  /* Mobile-friendly buttons */
+  .btn-matrix {
+    font-size: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Mobile-friendly status badges */
+  .status-badge, .status-badge-online {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .ascii-art-container {
+    font-size: 0.26rem;
+    line-height: 0.95;
+  }
+  
+  .ascii-art {
+    letter-spacing: -0.8px;
   }
 }
 
@@ -321,6 +352,41 @@ body {
   content: '■';
   color: #ff0000;
   animation: pulse-red 2s infinite;
+}
+
+/* Online Status Badge */
+.status-badge-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  background: rgba(20, 0, 0, 0.8);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #ff0000;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #ff0000;
+  border-radius: 50%;
+  animation: pulse-red-dot 1.5s infinite;
+  box-shadow: 0 0 8px #ff0000;
+}
+
+@keyframes pulse-red-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
 }
 
 /* Code Block */

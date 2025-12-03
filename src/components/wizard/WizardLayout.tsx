@@ -46,23 +46,17 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
       <div className="wizard-header border-b border-terminal-text/30 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <div className="mb-4">
-              <div className="flex items-center gap-4 mb-4">
-                {/* Home Button */}
-                <a 
-                  href="/" 
-                  className="home-button text-3xl hover:text-matrix-red transition-colors duration-200"
-                  title="Return to KILN Home"
-                >
-                  ঌ
-                </a>
-                <h1 className="text-3xl font-bold text-terminal-text glow-text">
-                  [ Kiln ঌ Teleburn ]
-                </h1>
-              </div>
-              <p className="text-sm opacity-70">
-                <span className="text-terminal-prompt">$</span> Irreversible NFT migration: Solana → Bitcoin Ordinals
-              </p>
+            <div>
+              <a 
+                href="/" 
+                className="text-3xl text-terminal-text glow-text hover:text-matrix-red transition-colors"
+                title="Return to Home"
+              >
+                ঌ
+              </a>
+            </div>
+            <div className="status-badge text-xs px-3 py-1 border border-terminal-text/30">
+              MAINNET
             </div>
           </div>
 

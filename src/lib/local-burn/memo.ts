@@ -1,5 +1,5 @@
 /**
- * Kiln Memo (v0.1.2) for inline burn transaction.
+ * Kiln Memo (v0.1.1) for inline burn transaction.
  *
  * This memo is embedded in the SAME transaction as the burn operation.
  * This provides:
@@ -11,9 +11,9 @@
  * Always use the transaction's blockTime and slot for verification.
  */
 
-export interface Sbt012RetireMemo {
+export interface Sbt011RetireMemo {
   standard: 'Kiln';
-  version: '0.1.2';
+  version: '0.1.1';
   /** Action type - teleburn operation (burn is implied) */
   action: 'teleburn';
   /** Method used to execute the burn (e.g., Metaplex burnV1) */
@@ -39,10 +39,10 @@ export function buildRetireMemo(params: {
   timestamp?: number;
   /** Expected slot/block height hint (non-authoritative) */
   slot?: number;
-}): Sbt012RetireMemo {
+}): Sbt011RetireMemo {
   return {
     standard: 'Kiln',
-    version: '0.1.2',
+    version: '0.1.1',
     action: 'teleburn',
     method: 'metaplex-burn-v1', // Method used to execute the burn
     inscription: { id: params.inscriptionId },

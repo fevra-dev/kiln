@@ -2,7 +2,11 @@
  * Update Metaplex NFT metadata to point to Ordinals inscription.
  * 
  * This function updates the NFT's metadata URI to point to the Ordinals content
- * at https://ordinals.com/inscription/{inscriptionId}
+ * at https://ordinals.com/content/{inscriptionId}
+ * 
+ * Using /content/ endpoint instead of /inscription/ because:
+ * - /content/ returns the raw content (image/media)
+ * - /inscription/ returns an HTML page with metadata
  * 
  * Requires:
  * - NFT must be mutable (updateAuthority must allow updates)
@@ -54,8 +58,8 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   // Fetch existing metadata to preserve other fields
   const existingMetadata = await fetchMetadata(umi, metadataPda);
 
-  // Build Ordinals URL
-  const ordinalsUrl = `https://ordinals.com/inscription/${inscriptionId}`;
+  // Build Ordinals content URL (raw content, not HTML page)
+  const ordinalsUrl = `https://ordinals.com/content/${inscriptionId}`;
 
   // Build transaction with compute budget
   let tb = transactionBuilder();

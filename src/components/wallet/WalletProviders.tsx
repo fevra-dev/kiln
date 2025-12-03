@@ -25,6 +25,16 @@ interface WalletProvidersProps {
 }
 
 /**
+ * Free public RPC endpoints (no auth required)
+ * Used as fallback when configured RPC returns 401/403
+ */
+const PUBLIC_RPC_ENDPOINTS = [
+  'https://solana-rpc.publicnode.com',
+  'https://api.mainnet-beta.solana.com',
+  'https://rpc.ankr.com/solana',
+];
+
+/**
  * Wallet Providers Component
  * 
  * Configures Solana wallet adapters for the application.
@@ -36,18 +46,26 @@ export const WalletProviders: FC<WalletProvidersProps> = ({
 }) => {
   // Configure RPC endpoint with fallbacks
   const endpoint = useMemo(() => {
-    // Use environment variable (Helius RPC for mainnet)
-    if (process.env['NEXT_PUBLIC_SOLANA_RPC']) {
-      return process.env['NEXT_PUBLIC_SOLANA_RPC'];
+    // Check if configured RPC looks like it has an API key that might be invalid
+    const configuredRpc = process.env['NEXT_PUBLIC_SOLANA_RPC'];
+    
+    // If configured RPC contains api-key parameter, warn user but still try it first
+    // The browser will show 401 errors if the key is invalid
+    if (configuredRpc) {
+      // Check if it's a Helius URL - they frequently have auth issues
+      if (configuredRpc.includes('helius') && configuredRpc.includes('api-key')) {
+        console.log('🔑 Using configured Helius RPC. If you see 401 errors, update NEXT_PUBLIC_SOLANA_RPC in .env.local');
+      }
+      return configuredRpc;
     }
     
-           // Fallback to appropriate network endpoint
-           if (network === WalletAdapterNetwork.Mainnet) {
-             // Use a more reliable RPC endpoint that doesn't block requests
-             console.warn('⚠️ Using public mainnet RPC. Set NEXT_PUBLIC_SOLANA_RPC for better performance.');
-             console.warn('📡 Using Allnodes public RPC: https://solana-rpc.publicnode.com');
-             return 'https://solana-rpc.publicnode.com'; // Allnodes public RPC (free, no auth required)
-           }
+    // Fallback to appropriate network endpoint
+    if (network === WalletAdapterNetwork.Mainnet) {
+      // Use a reliable free public RPC endpoint
+      console.warn('⚠️ Using public mainnet RPC. Set NEXT_PUBLIC_SOLANA_RPC for better performance.');
+      console.warn('📡 Using PublicNode RPC: https://solana-rpc.publicnode.com');
+      return PUBLIC_RPC_ENDPOINTS[0] as string;
+    }
     
     // For devnet
     return 'https://api.devnet.solana.com';

@@ -8,7 +8,7 @@
  */
 
 import { Connection, PublicKey } from '@solana/web3.js';
-import { getAccount } from '@solana/spl-token';
+import { getAccount, getMint } from '@solana/spl-token';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 // ============================================================================
@@ -67,10 +67,22 @@ export async function checkIfFrozenBeforeBurn(
 
     // Check if account is frozen
     if (accountInfo.isFrozen) {
+      // Get the actual freeze authority from the MINT account, not the token account
+      // The token account's "mint" field is just the mint address, NOT the freeze authority
+      let freezeAuthority: PublicKey | undefined;
+      try {
+        const mintInfo = await getMint(connection, accountInfo.mint, 'confirmed', tokenProgram);
+        freezeAuthority = mintInfo.freezeAuthority ?? undefined;
+      } catch (mintError) {
+        console.warn(`⚠️ Could not fetch mint info for freeze authority: ${mintError}`);
+        // Fall back to undefined if we can't get the mint info
+        freezeAuthority = undefined;
+      }
+
       return {
         frozen: true,
         tokenAccount,
-        freezeAuthority: accountInfo.mint, // Mint is the freeze authority
+        freezeAuthority, // Now correctly fetched from mint account
         balance: accountInfo.amount.toString(),
       };
     }
@@ -99,25 +111,52 @@ export async function checkIfFrozenBeforeBurn(
  * This function finds the associated token account for an NFT and checks
  * if it's frozen. Useful as a pre-flight check before burn operations.
  * 
+ * Auto-detects token program if not provided (checks both TOKEN_PROGRAM_ID 
+ * and TOKEN_2022_PROGRAM_ID).
+ * 
  * @param connection - Solana connection
  * @param mint - Mint address
  * @param owner - Token owner
- * @param tokenProgram - Token program ID
+ * @param tokenProgram - Token program ID (optional, will auto-detect)
  * @returns Check result with frozen status
  */
 export async function checkNFTFrozenStatus(
   connection: Connection,
   mint: PublicKey,
   owner: PublicKey,
-  tokenProgram: PublicKey = TOKEN_PROGRAM_ID
+  tokenProgram?: PublicKey
 ): Promise<FrozenAccountCheckResult> {
   try {
-    // Get associated token account
-    const { getAssociatedTokenAddressSync } = await import('@solana/spl-token');
-    const tokenAccount = getAssociatedTokenAddressSync(mint, owner, false, tokenProgram);
+    const { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
+    
+    // If tokenProgram not provided, try to auto-detect by checking which ATA exists
+    let programToUse = tokenProgram;
+    if (!programToUse) {
+      // Try SPL Token first (most common)
+      const splAta = getAssociatedTokenAddressSync(mint, owner, false, TOKEN_PROGRAM_ID);
+      const splAccount = await connection.getAccountInfo(splAta);
+      
+      if (splAccount) {
+        programToUse = TOKEN_PROGRAM_ID;
+      } else {
+        // Try TOKEN_2022
+        const token2022Ata = getAssociatedTokenAddressSync(mint, owner, false, TOKEN_2022_PROGRAM_ID);
+        const token2022Account = await connection.getAccountInfo(token2022Ata);
+        
+        if (token2022Account) {
+          programToUse = TOKEN_2022_PROGRAM_ID;
+        } else {
+          // Default to TOKEN_PROGRAM_ID if neither found
+          programToUse = TOKEN_PROGRAM_ID;
+        }
+      }
+    }
+    
+    // Get associated token account with detected program
+    const tokenAccount = getAssociatedTokenAddressSync(mint, owner, false, programToUse);
 
     // Check if frozen
-    return await checkIfFrozenBeforeBurn(connection, tokenAccount, tokenProgram);
+    return await checkIfFrozenBeforeBurn(connection, tokenAccount, programToUse);
   } catch (error) {
     return {
       frozen: false,

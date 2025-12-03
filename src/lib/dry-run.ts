@@ -128,6 +128,50 @@ export interface DryRunParams {
 }
 
 /**
+ * Free public RPC endpoints for fallback when configured RPC fails
+ */
+const FALLBACK_RPC_ENDPOINTS = [
+  'https://solana-rpc.publicnode.com',
+  'https://api.mainnet-beta.solana.com',
+];
+
+/**
+ * Validate RPC URL by making a test request
+ * Returns the working URL or a fallback
+ */
+async function getWorkingRpcUrl(rpcUrl: string): Promise<string> {
+  try {
+    // Quick test to see if RPC is responding
+    const connection = new Connection(rpcUrl, 'confirmed');
+    await connection.getSlot();
+    return rpcUrl;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    
+    // Check for auth errors (401, 403, Unauthorized)
+    if (errorMsg.includes('401') || errorMsg.includes('403') || errorMsg.includes('Unauthorized')) {
+      console.warn(`⚠️ RPC ${rpcUrl} returned auth error, trying fallbacks...`);
+      
+      // Try fallback endpoints
+      for (const fallback of FALLBACK_RPC_ENDPOINTS) {
+        try {
+          const testConn = new Connection(fallback, 'confirmed');
+          await testConn.getSlot();
+          console.log(`✅ Using fallback RPC: ${fallback}`);
+          return fallback;
+        } catch {
+          // Try next fallback
+        }
+      }
+    }
+    
+    // Return original URL if no fallback works (let actual error propagate later)
+    console.warn(`⚠️ Could not validate RPC, proceeding with original: ${rpcUrl}`);
+    return rpcUrl;
+  }
+}
+
+/**
  * Dry Run Service
  * 
  * Orchestrates complete teleburn simulation without signing
@@ -136,11 +180,36 @@ export class DryRunService {
   private connection: Connection;
   private builder: TransactionBuilder;
   private decoder: TransactionDecoder;
+  private rpcUrl: string;
 
   constructor(rpcUrl: string) {
+    this.rpcUrl = rpcUrl;
     this.connection = new Connection(rpcUrl, 'confirmed');
     this.builder = new TransactionBuilder(rpcUrl);
     this.decoder = new TransactionDecoder(rpcUrl);
+  }
+  
+  /**
+   * Initialize with RPC validation and fallback
+   * Use this instead of constructor for automatic RPC fallback
+   */
+  static async createWithFallback(rpcUrl: string): Promise<DryRunService> {
+    const workingRpcUrl = await getWorkingRpcUrl(rpcUrl);
+    return new DryRunService(workingRpcUrl);
+  }
+  
+  /**
+   * Reinitialize connection with a working RPC URL
+   * Called if initial RPC fails during dry run
+   */
+  private async reinitializeWithFallback(): Promise<void> {
+    const workingRpcUrl = await getWorkingRpcUrl(this.rpcUrl);
+    if (workingRpcUrl !== this.rpcUrl) {
+      this.rpcUrl = workingRpcUrl;
+      this.connection = new Connection(workingRpcUrl, 'confirmed');
+      this.builder = new TransactionBuilder(workingRpcUrl);
+      this.decoder = new TransactionDecoder(workingRpcUrl);
+    }
   }
 
   /**
@@ -374,12 +443,13 @@ export class DryRunService {
       }
 
       // Check frozen account status (if not pNFT)
+      // Note: pNFTs have a different freeze mechanism handled by Metaplex, skip for them
       if (nftType === 'REGULAR') {
         try {
           const frozenCheck = await checkNFTFrozenStatus(
             this.connection,
             params.mint,
-            params.payer,
+            params.owner, // Use owner (who holds the token), not payer (who pays fees)
             undefined // Will auto-detect token program
           );
           
@@ -665,5 +735,16 @@ export class DryRunService {
  */
 export function createDryRunService(rpcUrl: string): DryRunService {
   return new DryRunService(rpcUrl);
+}
+
+/**
+ * Helper function to create a dry run service with RPC fallback
+ * Use this for better reliability with potentially invalid RPC URLs
+ * 
+ * @param rpcUrl - Solana RPC URL
+ * @returns Promise<DryRunService> instance with validated RPC
+ */
+export async function createDryRunServiceWithFallback(rpcUrl: string): Promise<DryRunService> {
+  return DryRunService.createWithFallback(rpcUrl);
 }
 

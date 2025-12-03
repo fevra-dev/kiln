@@ -176,21 +176,11 @@ function Header() {
   return (
     <header className="border-b border-matrix-red/30 bg-matrix-black/50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-4">
-            <div className="ascii-art text-xs kiln-version-box">
-{`╔══════════════╗
-║  KILN  v0.1.1║
-╚══════════════╝`}
-            </div>
-          </div>
-          
-          {/* Status Indicators */}
-          <div className="flex items-center gap-4">
-            <div className="status-badge">
-              <span>ONLINE</span>
-            </div>
+        <div className="flex items-center justify-end">
+          {/* Status Indicator - Right aligned */}
+          <div className="status-badge-online">
+            <span className="pulse-dot"></span>
+            <span>ONLINE</span>
           </div>
         </div>
       </div>
@@ -234,16 +224,16 @@ function TerminalInterface() {
 ║                                                           ║
 ║                  ▓▒░ TELEBURN PROTOCOL ░▒▓                ║
 ║                                                           ║
-║               [ FORGING CRYPTOGRAPHIC BURNS ]              ║
+║               [ FORGING CRYPTOGRAPHIC BURNS ]             ║
 ║                                                           ║
-║               (  .      )                                 ║
-║           )           (              )                    ║
-║                 .  '   .   '  .  '  .                     ║
-║        (    , )       (.   )  (   ',    )                 ║
-║         .' ) ( . )    ,  ( ,     )   ( .                  ║
-║      ). , ( .   (  ) ( , ')  .' (  ,    )                 ║
-║     (_,) . ), ) _) _,')  (, ) '. )  ,. (' )               ║
-║ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ║
+║                      (  .      )                          ║
+║                  )           (              )             ║
+║                        .  '   .   '  .  '  .              ║
+║               (    , )       (.   )  (   ',    )          ║
+║                .' ) ( . )    ,  ( ,     )   ( .           ║
+║             ). , ( .   (  ) ( , ')  .' (  ,    )          ║
+║            (_,) . ), ) _) _,')  (, ) '. )  ,. (' )        ║
+║          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 `}
@@ -278,7 +268,7 @@ function TerminalInterface() {
           </div>
           <div className="code-block">
             <div className="text-matrix-red/60 mb-2">STATUS</div>
-            <div className="text-terminal-red">OFFLINE</div>
+            <div className="text-matrix-red">ONLINE</div>
           </div>
         </div>
       </div>

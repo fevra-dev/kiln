@@ -28,13 +28,62 @@ export default function VerifyPage() {
     inscriptionId?: string;
     sha256?: string;
     teleburnTimestamp?: number;
+    blockTime?: number;
     sealSignature?: string;
     burnSignature?: string;
     supply?: string;
+    isOfficialKilnBurn?: boolean;
+    kilnMemo?: Record<string, unknown>;
+    metadata?: {
+      timestamp: string;
+      protocol?: string;
+      version?: string | null;
+    };
   } | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [updatingMetadata, setUpdatingMetadata] = useState(false);
   const [metadataUpdateCompleted, setMetadataUpdateCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Copy text to clipboard with feedback
+   */
+  const handleCopy = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyFeedback(label);
+      setTimeout(() => setCopyFeedback(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  /**
+   * Download the Kiln memo as JSON
+   */
+  const handleDownloadMemo = () => {
+    if (!result?.kilnMemo) return;
+    
+    const memoWithMetadata = {
+      ...result.kilnMemo,
+      _verification: {
+        verifiedAt: new Date().toISOString(),
+        burnSignature: result.burnSignature,
+        blockTime: result.blockTime,
+        supply: result.supply,
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(memoWithMetadata, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kiln-teleburn-${result.mint.slice(0, 8)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,22 +193,19 @@ export default function VerifyPage() {
             <div className="flex items-center gap-4">
               <a 
                 href="/" 
-                className="home-button text-4xl hover:text-matrix-red transition-colors duration-200"
-                title="Return to KILN Home"
+                className="text-4xl text-terminal-text glow-text hover:text-matrix-red transition-colors"
+                title="Return to Home"
               >
                 ঌ
               </a>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text glow-text">
-                [ Teleburn Verification ]
+              <h1 className="text-2xl sm:text-3xl font-bold text-terminal-text glow-text">
+                Teleburn Verification
               </h1>
             </div>
-            <div className="status-badge">
-              <span>ONLINE</span>
+            <div className="status-badge px-3 py-1 border border-terminal-text/30 text-xs">
+              MAINNET
             </div>
           </div>
-          <p className="text-lg text-matrix-red/80 mb-2">
-            <span className="text-terminal-prompt">$</span> verify_teleburn_status
-          </p>
         </div>
 
         {/* Verification Form */}
@@ -212,100 +258,252 @@ export default function VerifyPage() {
           <div className="terminal-window" style={{ animation: 'none' }}>
             <div className="terminal-window-header">
               <div className="text-sm font-bold">VERIFICATION RESULT</div>
+              {result.isOfficialKilnBurn && (
+                <div className="kiln-badge">
+                  🔥 OFFICIAL KILN BURN
+                </div>
+              )}
             </div>
             <div className="terminal-window-content p-8">
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-4 border-b border-terminal-text/20">
-                  <div className="text-lg font-bold">STATUS</div>
-                  <div className="text-2xl">
-                    {result.status === 'unknown' ? '❓' : '✓'}
+                {/* Status Badge */}
+                <div className={`status-banner ${result.isOfficialKilnBurn ? 'official' : result.status === 'burned' ? 'burned' : 'active'}`}>
+                  <div className="status-icon">
+                    {result.isOfficialKilnBurn ? '🔥' : result.status === 'burned' ? '🔥' : result.status === 'active' ? '✓' : '❓'}
+                  </div>
+                  <div className="status-text">
+                    <div className="status-title">
+                      {result.isOfficialKilnBurn 
+                        ? 'OFFICIAL KILN TELEBURN' 
+                        : result.status === 'burned' 
+                          ? 'BURNED (NO KILN MEMO)' 
+                          : result.status === 'active' 
+                            ? 'ACTIVE (NOT BURNED)' 
+                            : 'UNKNOWN STATUS'}
+                    </div>
+                    <div className="status-subtitle">
+                      {result.isOfficialKilnBurn 
+                        ? 'Kiln protocol memo found on-chain' 
+                        : result.status === 'burned' 
+                          ? 'Supply is zero but no Kiln memo detected'
+                          : 'NFT is still active with positive supply'}
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="opacity-70">Mint:</span>
-                    <span className="font-mono text-xs">{result.mint}</span>
+                <div className="result-grid">
+                  {/* Mint Address */}
+                  <div className="result-row">
+                    <span className="result-label">Mint Address</span>
+                    <div className="result-value-group">
+                      <span className="font-mono text-xs">{result.mint.slice(0, 16)}...{result.mint.slice(-8)}</span>
+                      <button 
+                        onClick={() => handleCopy(result.mint, 'mint')}
+                        className="copy-btn"
+                        title="Copy mint address"
+                      >
+                        {copyFeedback === 'mint' ? '✓' : '📋'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="opacity-70">Status:</span>
-                    <span className="font-bold uppercase">{result.status}</span>
+
+                  {/* Supply */}
+                  <div className="result-row">
+                    <span className="result-label">Supply</span>
+                    <span className={`font-bold ${result.supply === '0' ? 'text-orange-400' : 'text-terminal-green'}`}>
+                      {result.supply || '0'}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="opacity-70">Confidence:</span>
-                    <span className="font-bold uppercase">{result.confidence}</span>
-                  </div>
+
+                  {/* Inscription Link - Prominent */}
                   {result.inscriptionId && (
-                    <div className="flex flex-col gap-2 pt-2 border-t border-terminal-text/20">
-                      <div className="flex justify-between items-start">
-                        <span className="opacity-70">Inscription ID:</span>
-                        <span className="font-mono text-xs break-all text-right max-w-[60%] text-orange-400">
-                          {result.inscriptionId}
-                        </span>
+                    <div className="inscription-link-box">
+                      <div className="inscription-header">
+                        <span className="text-orange-400 font-bold">🔗 BITCOIN INSCRIPTION</span>
                       </div>
                       <a
                         href={`https://ordinals.com/inscription/${result.inscriptionId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-blue-400 hover:text-blue-300 hover:underline self-end"
+                        className="inscription-link"
                       >
-                        View on ordinals.com →
+                        <span className="font-mono text-sm">{result.inscriptionId}</span>
+                        <span className="link-arrow">→</span>
                       </a>
+                      <button 
+                        onClick={() => handleCopy(result.inscriptionId!, 'inscription')}
+                        className="copy-btn-inline"
+                        title="Copy inscription ID"
+                      >
+                        {copyFeedback === 'inscription' ? '✓ Copied' : '📋 Copy ID'}
+                      </button>
                     </div>
                   )}
+
+                  {/* Timestamps */}
                   {result.teleburnTimestamp && (
-                    <div className="flex justify-between pt-2 border-t border-terminal-text/20">
-                      <span className="opacity-70">Teleburned:</span>
+                    <div className="result-row result-section">
+                      <span className="result-label">Memo Timestamp</span>
                       <span className="font-mono text-xs">
                         {new Date(result.teleburnTimestamp * 1000).toLocaleString()}
                       </span>
                     </div>
                   )}
-                  {result.sha256 && (
-                    <div className="flex justify-between pt-2 border-t border-terminal-text/20">
-                      <span className="opacity-70">SHA-256:</span>
-                      <span className="font-mono text-xs break-all text-right max-w-[60%]">
-                        {result.sha256}
+                  {result.blockTime && (
+                    <div className="result-row">
+                      <span className="result-label">Block Time</span>
+                      <span className="font-mono text-xs">
+                        {new Date(result.blockTime * 1000).toLocaleString()}
                       </span>
                     </div>
                   )}
-                  {result.sealSignature && (
-                    <div className="flex flex-col gap-1 pt-2 border-t border-terminal-text/20">
-                      <div className="flex justify-between">
-                        <span className="opacity-70">SEAL Tx:</span>
-                        <a
-                          href={`https://orb.helius.dev/tx/${result.sealSignature}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:text-blue-300 hover:underline font-mono"
+
+                  {/* SHA-256 */}
+                  {result.sha256 && (
+                    <div className="result-row result-section">
+                      <span className="result-label">SHA-256</span>
+                      <div className="result-value-group">
+                        <span className="font-mono text-xs">{result.sha256.slice(0, 16)}...{result.sha256.slice(-8)}</span>
+                        <button 
+                          onClick={() => handleCopy(result.sha256!, 'sha256')}
+                          className="copy-btn"
+                          title="Copy SHA-256"
                         >
-                          {result.sealSignature.slice(0, 16)}... →
-                        </a>
+                          {copyFeedback === 'sha256' ? '✓' : '📋'}
+                        </button>
                       </div>
                     </div>
                   )}
+
+                  {/* Transaction Signatures */}
                   {result.burnSignature && (
-                    <div className="flex flex-col gap-1 pt-2 border-t border-terminal-text/20">
-                      <div className="flex justify-between">
-                        <span className="opacity-70">RETIRE Tx:</span>
+                    <div className="result-row result-section">
+                      <span className="result-label">Burn Tx</span>
+                      <div className="result-value-group">
                         <a
-                          href={`https://orb.helius.dev/tx/${result.burnSignature}`}
+                          href={`https://orb.helius.dev/tx/${result.burnSignature}?tab=instructions`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:text-blue-300 hover:underline font-mono"
+                          className="text-xs text-orange-400 hover:text-orange-300 hover:underline font-mono"
                         >
-                          {result.burnSignature.slice(0, 16)}... →
+                          {result.burnSignature.slice(0, 12)}...
                         </a>
+                        <button 
+                          onClick={() => handleCopy(result.burnSignature!, 'burnSig')}
+                          className="copy-btn"
+                          title="Copy signature"
+                        >
+                          {copyFeedback === 'burnSig' ? '✓' : '📋'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {result.sealSignature && (
+                    <div className="result-row">
+                      <span className="result-label">Seal Tx</span>
+                      <div className="result-value-group">
+                        <a
+                          href={`https://orb.helius.dev/tx/${result.sealSignature}?tab=instructions`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-orange-400 hover:text-orange-300 hover:underline font-mono"
+                        >
+                          {result.sealSignature.slice(0, 12)}...
+                        </a>
+                        <button 
+                          onClick={() => handleCopy(result.sealSignature!, 'sealSig')}
+                          className="copy-btn"
+                          title="Copy signature"
+                        >
+                          {copyFeedback === 'sealSig' ? '✓' : '📋'}
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {result.message && (
-                  <div className="mt-6 p-4 bg-black/40 border border-terminal-text/20 text-xs">
-                    {result.message}
+                {/* Parsed Kiln Memo Display */}
+                {result.kilnMemo && (
+                  <div className="memo-display">
+                    <div className="memo-header">
+                      <span className="text-orange-400 font-bold">📜 KILN MEMO (ON-CHAIN)</span>
+                    </div>
+                    <div className="memo-grid">
+                      <div className="memo-row">
+                        <span className="memo-label">Standard</span>
+                        <span className="memo-value">{String(result.kilnMemo.standard || 'Kiln')}</span>
+                      </div>
+                      <div className="memo-row">
+                        <span className="memo-label">Version</span>
+                        <span className="memo-value">{String(result.kilnMemo.version || '-')}</span>
+                      </div>
+                      <div className="memo-row">
+                        <span className="memo-label">Action</span>
+                        <span className="memo-value text-orange-400">{String(result.kilnMemo.action || '-')}</span>
+                      </div>
+                      {result.kilnMemo.method && (
+                        <div className="memo-row">
+                          <span className="memo-label">Method</span>
+                          <span className="memo-value">{String(result.kilnMemo.method)}</span>
+                        </div>
+                      )}
+                      {(result.kilnMemo.inscription as { id?: string })?.id && (
+                        <div className="memo-row">
+                          <span className="memo-label">Inscription</span>
+                          <a
+                            href={`https://ordinals.com/inscription/${(result.kilnMemo.inscription as { id: string }).id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="memo-value text-orange-400 hover:text-orange-300 hover:underline"
+                          >
+                            {(result.kilnMemo.inscription as { id: string }).id.slice(0, 24)}... →
+                          </a>
+                        </div>
+                      )}
+                      {(result.kilnMemo.solana as { mint?: string })?.mint && (
+                        <div className="memo-row">
+                          <span className="memo-label">Solana Mint</span>
+                          <span className="memo-value font-mono text-xs">
+                            {(result.kilnMemo.solana as { mint: string }).mint.slice(0, 16)}...
+                          </span>
+                        </div>
+                      )}
+                      {(result.kilnMemo.media as { sha256?: string })?.sha256 && (
+                        <div className="memo-row">
+                          <span className="memo-label">Media SHA-256</span>
+                          <span className="memo-value font-mono text-xs">
+                            {(result.kilnMemo.media as { sha256: string }).sha256.slice(0, 16)}...
+                          </span>
+                        </div>
+                      )}
+                      {result.kilnMemo.timestamp && (
+                        <div className="memo-row">
+                          <span className="memo-label">Timestamp</span>
+                          <span className="memo-value">
+                            {new Date(Number(result.kilnMemo.timestamp) * 1000).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
+
+                {/* Download Memo Button */}
+                {result.kilnMemo && (
+                  <div className="download-section">
+                    <button
+                      onClick={handleDownloadMemo}
+                      className="download-btn"
+                    >
+                      📥 DOWNLOAD KILN MEMO (JSON)
+                    </button>
+                    <div className="text-xs opacity-60 mt-2">
+                      Save the on-chain Kiln teleburn proof for your records
+                    </div>
+                  </div>
+                )}
+
 
                 {/* Optional Metadata Update (only if burned and inscription found) */}
                 {result.status === 'burned' && result.inscriptionId && (
@@ -326,9 +524,9 @@ export default function VerifyPage() {
                               Update NFT Metadata to Ordinals Link
                             </div>
                             <div className="text-xs space-y-2 opacity-80">
-                              <p>Update this NFT&apos;s metadata image URL to point to the Ordinals inscription.</p>
-                              <p className="font-mono text-xs break-all">
-                                https://ordinals.com/inscription/{result.inscriptionId}
+                              <p>Update this NFT&apos;s metadata image URL to point to the Ordinals content.</p>
+                              <p className="font-mono text-xs break-all text-orange-400">
+                                https://ordinals.com/content/{result.inscriptionId}
                               </p>
                               <p className="text-xs italic">
                                 🚨 Requires: NFT must be mutable and you must be the update authority
@@ -391,8 +589,226 @@ export default function VerifyPage() {
           align-items: center;
           justify-content: space-between;
           padding: 1rem;
-          border-bottom: 1px solid var(--terminal-text)/30;
+          border-bottom: 1px solid rgba(255, 0, 0, 0.3);
           background: rgba(255, 0, 0, 0.05);
+        }
+
+        .kiln-badge {
+          background: linear-gradient(135deg, rgba(255, 100, 0, 0.3), rgba(255, 50, 0, 0.2));
+          border: 1px solid rgba(255, 100, 0, 0.5);
+          padding: 0.25rem 0.75rem;
+          font-size: 0.75rem;
+          font-weight: bold;
+          color: #ff6600;
+          animation: pulse-badge 2s infinite;
+        }
+
+        @keyframes pulse-badge {
+          0%, 100% { box-shadow: 0 0 5px rgba(255, 100, 0, 0.3); }
+          50% { box-shadow: 0 0 15px rgba(255, 100, 0, 0.6); }
+        }
+
+        .status-banner {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1.5rem;
+          margin-bottom: 1rem;
+          border: 1px solid rgba(255, 0, 0, 0.3);
+        }
+
+        .status-banner.official {
+          background: linear-gradient(135deg, rgba(255, 100, 0, 0.15), rgba(255, 50, 0, 0.1));
+          border-color: rgba(255, 100, 0, 0.5);
+        }
+
+        .status-banner.burned {
+          background: rgba(255, 150, 0, 0.1);
+          border-color: rgba(255, 150, 0, 0.3);
+        }
+
+        .status-banner.active {
+          background: rgba(0, 200, 0, 0.1);
+          border-color: rgba(0, 200, 0, 0.3);
+        }
+
+        .status-icon {
+          font-size: 2rem;
+        }
+
+        .status-title {
+          font-weight: bold;
+          font-size: 1rem;
+          margin-bottom: 0.25rem;
+        }
+
+        .status-subtitle {
+          font-size: 0.75rem;
+          opacity: 0.7;
+        }
+
+        .result-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+
+        .result-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid rgba(255, 0, 0, 0.1);
+        }
+
+        .result-row.result-section {
+          margin-top: 0.5rem;
+          padding-top: 1rem;
+          border-top: 1px solid rgba(255, 0, 0, 0.2);
+        }
+
+        .result-label {
+          font-size: 0.75rem;
+          opacity: 0.6;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          min-width: 120px;
+        }
+
+        .result-value-group {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .copy-btn {
+          background: transparent;
+          border: 1px solid rgba(255, 0, 0, 0.3);
+          color: var(--terminal-text);
+          padding: 0.25rem 0.5rem;
+          font-size: 0.75rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+          background: rgba(255, 0, 0, 0.1);
+          border-color: var(--terminal-text);
+        }
+
+        .download-section {
+          margin-top: 1.5rem;
+          padding: 1rem;
+          background: rgba(255, 100, 0, 0.05);
+          border: 1px solid rgba(255, 100, 0, 0.3);
+          text-align: center;
+        }
+
+        .download-btn {
+          background: transparent;
+          border: 1px solid rgba(255, 100, 0, 0.5);
+          color: #ff6600;
+          padding: 0.75rem 1.5rem;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.875rem;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+          background: rgba(255, 100, 0, 0.2);
+          box-shadow: 0 0 15px rgba(255, 100, 0, 0.3);
+        }
+
+        .inscription-link-box {
+          background: linear-gradient(135deg, rgba(255, 100, 0, 0.1), rgba(255, 50, 0, 0.05));
+          border: 1px solid rgba(255, 100, 0, 0.4);
+          padding: 1rem;
+          margin: 1rem 0;
+        }
+
+        .inscription-header {
+          margin-bottom: 0.75rem;
+          font-size: 0.75rem;
+        }
+
+        .inscription-link {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.75rem;
+          background: rgba(0, 0, 0, 0.4);
+          border: 1px solid rgba(255, 100, 0, 0.3);
+          color: #ff9500;
+          text-decoration: none;
+          transition: all 0.2s;
+          margin-bottom: 0.5rem;
+          word-break: break-all;
+        }
+
+        .inscription-link:hover {
+          background: rgba(255, 100, 0, 0.1);
+          border-color: rgba(255, 100, 0, 0.6);
+        }
+
+        .link-arrow {
+          margin-left: 0.5rem;
+          flex-shrink: 0;
+        }
+
+        .copy-btn-inline {
+          background: transparent;
+          border: 1px solid rgba(255, 100, 0, 0.3);
+          color: #ff9500;
+          padding: 0.25rem 0.75rem;
+          font-size: 0.75rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .copy-btn-inline:hover {
+          background: rgba(255, 100, 0, 0.1);
+        }
+
+        .memo-display {
+          background: rgba(255, 100, 0, 0.05);
+          border: 1px solid rgba(255, 120, 0, 0.4);
+          padding: 1rem;
+          margin: 1rem 0;
+        }
+
+        .memo-header {
+          margin-bottom: 1rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 1px solid rgba(255, 120, 0, 0.3);
+          font-size: 0.875rem;
+        }
+
+        .memo-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .memo-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.5rem 0;
+          border-bottom: 1px solid rgba(255, 120, 0, 0.15);
+        }
+
+        .memo-label {
+          font-size: 0.75rem;
+          opacity: 0.6;
+          text-transform: uppercase;
+          min-width: 100px;
+        }
+
+        .memo-value {
+          font-size: 0.875rem;
+          text-align: right;
         }
 
         .terminal-button {
@@ -417,6 +833,73 @@ export default function VerifyPage() {
         .terminal-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+          .result-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+          }
+
+          .result-label {
+            min-width: auto;
+          }
+
+          .result-value-group {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .memo-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+          }
+
+          .memo-label {
+            min-width: auto;
+          }
+
+          .memo-value {
+            text-align: left;
+            word-break: break-all;
+          }
+
+          .status-banner {
+            flex-direction: column;
+            text-align: center;
+            padding: 1rem;
+          }
+
+          .status-icon {
+            font-size: 1.5rem;
+          }
+
+          .status-title {
+            font-size: 0.875rem;
+          }
+
+          .inscription-link {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+
+          .inscription-link span {
+            font-size: 0.65rem;
+            word-break: break-all;
+          }
+
+          .kiln-badge {
+            font-size: 0.6rem;
+            padding: 0.15rem 0.5rem;
+          }
+
+          .download-btn {
+            font-size: 0.75rem;
+            padding: 0.5rem 1rem;
+          }
         }
       `}</style>
     </main>

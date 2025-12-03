@@ -16,6 +16,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { DryRunPreview } from '../teleburn/DryRunPreview';
 import { DryRunReport } from '@/lib/dry-run';
+import { SimulationSkeleton } from '../ui/Skeleton';
 
 interface Step3PreviewProps {
   formData: TeleburnFormData;
@@ -150,18 +151,19 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
         </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading State - Skeleton */}
       {loading && (
-        <div className="loading-box">
-          <div className="flex items-center justify-center gap-4 py-12">
-            <div className="spinner"></div>
-            <div>
-              <div className="font-bold mb-2">SIMULATING TELEBURN FLOW...</div>
-              <div className="text-sm opacity-70">
-                Building and simulating all transactions
+        <div className="loading-state">
+          <div className="loading-header mb-4">
+            <div className="flex items-center gap-3">
+              <div className="spinner"></div>
+              <div>
+                <div className="font-bold text-sm">SIMULATING TRANSACTION...</div>
+                <div className="text-xs opacity-60">Building and validating on-chain</div>
               </div>
             </div>
           </div>
+          <SimulationSkeleton />
         </div>
       )}
 

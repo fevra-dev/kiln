@@ -1,64 +1,107 @@
-# Documentation
+# Kiln Documentation
 
-This folder contains the complete documentation for the KILN-TELEBURN v0.1.1.1 Teleburn Standard implementation.
+Complete documentation for the Kiln Teleburn Protocol.
 
-## 📚 Core Documentation
+## 🔥 What is Teleburn?
 
-### Algorithm & Implementation
-- **[TELEBURN_ALGORITHM.md](./TELEBURN_ALGORITHM.md)** - Complete algorithm specification with examples
-- **[ALGORITHM_COMPARISON.md](./ALGORITHM_COMPARISON.md)** - Visual comparison with Ethereum teleburn
-- **[TELEBURN_SUMMARY.md](./TELEBURN_SUMMARY.md)** - Implementation overview and status
+Teleburn is a protocol for **permanently migrating** Solana NFTs to Bitcoin Ordinals:
 
-### Migration & Development
-- **[TELEBURN_MIGRATION.md](./TELEBURN_MIGRATION.md)** - Migration guide from legacy implementation
-- **[TELEBURN_STANDARDIZATION.md](./TELEBURN_STANDARDIZATION.md)** - Complete standardization summary
+1. You create a Bitcoin inscription of your NFT artwork
+2. You "teleburn" your Solana NFT using Kiln
+3. Your NFT is burned on Solana with proof linking to Bitcoin
+4. The migration is permanent and verifiable
 
-## 🎯 Quick Reference
+## 📚 Documentation
 
-### For Developers
-1. **Algorithm Spec** → `TELEBURN_ALGORITHM.md`
-2. **Migration Guide** → `TELEBURN_MIGRATION.md`
-3. **Implementation Status** → `TELEBURN_SUMMARY.md`
+### Getting Started
+- **[TELEBURN_SUMMARY.md](./TELEBURN_SUMMARY.md)** - What is teleburn and why use it
+- **[INTEGRATION_GUIDE.md](./INTEGRATION_GUIDE.md)** - How to use Kiln
+
+### Technical Docs
+- **[TELEBURN_ALGORITHM.md](./TELEBURN_ALGORITHM.md)** - How the algorithm works
+- **[API_REFERENCE.md](./API_REFERENCE.md)** - API endpoints for developers
+
+### Security
+- **[SECURITY_AUDIT_REPORT.md](./SECURITY_AUDIT_REPORT.md)** - Security considerations
+
+## 🎯 Quick Start
 
 ### For Users
-1. **How It Works** → `ALGORITHM_COMPARISON.md`
-2. **What Changed** → `TELEBURN_STANDARDIZATION.md`
-3. **Getting Started** → Main [README.md](../README.md)
 
-## 🔗 Related Files
+1. Go to [kiln.hot/teleburn](https://kiln.hot/teleburn)
+2. Connect your Solana wallet
+3. Select the NFT to teleburn
+4. Enter your Bitcoin inscription ID
+5. Review and sign the transaction
 
-### Active Implementation
-- `src/lib/teleburn.ts` - Canonical implementation
-- `tests/unit/teleburn.test.ts` - 78 unit tests
-- `src/lib/transaction-builder.ts` - Transaction construction
+### For Developers
 
-### Archived Documentation
-- `extras/` - Historical development files
-- `extras/README.md` - Archive index
+```typescript
+// Verify a teleburn
+const response = await fetch('/api/verify', {
+  method: 'POST',
+  body: JSON.stringify({ mint: 'YOUR_MINT_ADDRESS' })
+});
 
-## 📖 Documentation Structure
-
-```
-docs/
-├── README.md                    # This file
-├── TELEBURN_ALGORITHM.md        # Algorithm specification
-├── ALGORITHM_COMPARISON.md      # Visual comparison
-├── TELEBURN_MIGRATION.md        # Migration guide
-├── TELEBURN_STANDARDIZATION.md  # Standardization summary
-└── TELEBURN_SUMMARY.md          # Implementation overview
+const result = await response.json();
+// result.isOfficialKilnBurn = true if Kiln memo found
+// result.kilnMemo = full memo object
 ```
 
-## 🎯 Key Points
+## 📋 Kiln Memo Format
 
-- **Algorithm**: SHA-256 based derivation matching Ethereum pattern
-- **Security**: Domain separation + off-curve guarantee
-- **Testing**: 78 unit tests with 100% coverage
-- **Status**: Production ready
-- **Migration**: Legacy `derived-owner.ts` deprecated
+```json
+{
+  "standard": "Kiln",
+  "version": "0.1.1",
+  "action": "teleburn",
+  "method": "metaplex-burn-v1",
+  "inscription": { "id": "abc123...i0" },
+  "solana": { "mint": "6ivMgoj..." },
+  "media": { "sha256": "3fc113..." },
+  "timestamp": 1764732009
+}
+```
 
-## 📞 Questions?
+## 🔐 Security
 
-- **Algorithm questions** → `TELEBURN_ALGORITHM.md`
-- **Migration help** → `TELEBURN_MIGRATION.md`
-- **Visual comparison** → `ALGORITHM_COMPARISON.md`
-- **Implementation status** → `TELEBURN_SUMMARY.md`
+- All transactions are simulated before execution
+- User must sign every transaction
+- Content hash verified before burn
+- Burns are irreversible - verify carefully!
+
+## ❓ FAQ
+
+**Q: Is teleburn reversible?**
+A: No. Once burned, the NFT cannot be recovered. This is by design.
+
+**Q: Do I need the inscription first?**
+A: Yes. Create your Bitcoin inscription before teleburning.
+
+**Q: How do I verify a teleburn?**
+A: Go to `/verify` and enter the mint address.
+
+**Q: What if I enter the wrong inscription ID?**
+A: The burn will still occur but link to the wrong inscription. Always double-check!
+
+## 🔒 Security
+
+### Reporting Vulnerabilities
+
+If you discover a security vulnerability, please email: **fev.dev@proton.me**
+
+**DO NOT** open a public GitHub issue.
+
+## 📞 Support
+
+- **Documentation**: [/docs](/docs)
+- **Issues**: [GitHub Issues](https://github.com/fevra-dev/kiln/issues)
+- **Twitter**: [@fevra_](https://twitter.com/fevra_)
+
+---
+
+**Built for the Solana and Bitcoin communities**
+
+*Last updated: December 3, 2025*  
+*Version: 0.1.1*  
+*Status: Production Ready*

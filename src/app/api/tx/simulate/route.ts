@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PublicKey } from '@solana/web3.js';
 import { z } from 'zod';
-import { createDryRunService, DryRunService } from '@/lib/dry-run';
+import { createDryRunServiceWithFallback, DryRunService } from '@/lib/dry-run';
 import { TeleburnMethod } from '@/lib/transaction-builder';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
@@ -116,8 +116,8 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Create dry run service
-    const dryRun = createDryRunService(rpcUrl);
+    // Create dry run service with RPC fallback for auth errors
+    const dryRun = await createDryRunServiceWithFallback(rpcUrl);
 
     // Execute dry run
     console.log('🔄 API: Starting dry run execution...');

@@ -26,6 +26,9 @@ dependencies:
   '@metaplex-foundation/umi-signer-wallet-adapters':
     specifier: ^1.4.1
     version: 1.4.1(@metaplex-foundation/umi@1.4.1)(@solana/web3.js@1.98.4)
+  '@metaplex-foundation/umi-web3js-adapters':
+    specifier: ^1.4.1
+    version: 1.4.1(@metaplex-foundation/umi@1.4.1)(@solana/web3.js@1.98.4)
   '@noble/hashes':
     specifier: ^1.3.3
     version: 1.8.0

@@ -7,6 +7,11 @@
  * Shows real-time status updates for each transaction.
  * Displays success confirmation with proof details.
  * 
+ * Features:
+ * - Confirmation modal before execution
+ * - Copy buttons for signatures
+ * - Real-time status updates
+ * 
  * @description Transaction execution step with wallet signing
  * @version 0.1.1
  */
@@ -16,6 +21,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, Transaction, VersionedTransaction, PublicKey } from '@solana/web3.js';
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { MemoDisplay } from '../teleburn/MemoDisplay';
+import { CopyButton } from '../ui/CopyButton';
 import {
   refreshBlockhashIfNeeded,
   confirmTransactionWithTimeout,
@@ -55,6 +61,8 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
   const [updateMetadata, setUpdateMetadata] = useState(false);
   const [updatingMetadata, setUpdatingMetadata] = useState(false);
   const [metadataUpdateCompleted, setMetadataUpdateCompleted] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmChecked, setConfirmChecked] = useState(false);
   const [txStates, setTxStates] = useState<TxState[]>([
     { name: 'BURN+MEMO', status: 'pending' },
   ]);
@@ -376,29 +384,6 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         </div>
       )}
 
-      {/* Phantom Wallet Note */}
-      {!executing && !completed && (
-        <div className="info-box">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">ℹ️</div>
-            <div>
-              <div className="font-bold mb-2">PHANTOM WALLET WARNINGS</div>
-              <div className="text-sm space-y-2">
-                <p>Phantom may show security warnings because <code>kiln.hot</code> is a new domain:</p>
-                <ul className="list-disc list-inside opacity-80">
-                  <li><strong>&quot;This domain is new or has not been reviewed yet&quot;</strong> - This is normal for new dApps</li>
-                  <li><strong>&quot;This dApp could be malicious&quot;</strong> - Phantom&apos;s safety feature for unreviewed domains</li>
-                  <li>You can safely click <strong>&quot;Proceed anyway (unsafe)&quot;</strong> to continue</li>
-                </ul>
-                <p className="mt-3 text-terminal-green">
-                  ✅ These warnings are expected and do not affect the security of your teleburn.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Transaction Status */}
       <div className="status-box">
         <div className="text-xs font-bold mb-4 text-terminal-prompt">
@@ -426,7 +411,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
               </div>
               {tx.status === 'success' && tx.signature && (
                 <a
-                  href={`https://orb.helius.dev/tx/${tx.signature}`}
+                  href={`https://orb.helius.dev/tx/${tx.signature}?tab=instructions`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs hover:text-terminal-text transition-colors"
@@ -436,9 +421,9 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
               )}
             </div>
             {tx.signature && (
-              <div className="signature">
-                <span className="opacity-50">Signature: </span>
-                <span className="font-mono text-xs">{tx.signature.slice(0, 16)}...{tx.signature.slice(-16)}</span>
+              <div className="signature flex items-center gap-2">
+                <span className="opacity-50">Signature:</span>
+                <CopyButton text={tx.signature} size="sm" />
               </div>
             )}
           </div>
@@ -574,7 +559,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
 
         {!executing && !completed && (
           <button
-            onClick={executeTransactions}
+            onClick={() => setShowConfirmModal(true)}
             className="terminal-button px-8 py-3"
           >
             ⚡ EXECUTE TELEBURN
@@ -582,7 +567,160 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         )}
       </div>
 
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <div className="text-2xl">🔥</div>
+              <h3 className="text-xl font-bold">CONFIRM TELEBURN</h3>
+            </div>
+            
+            <div className="modal-body">
+              <div className="confirm-details">
+                <div className="detail-row">
+                  <span className="detail-label">Mint:</span>
+                  <CopyButton text={formData.mint} size="sm" />
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Inscription:</span>
+                  <span className="detail-value text-xs">{formData.inscriptionId.slice(0, 20)}...</span>
+                </div>
+              </div>
+              
+              <div className="confirm-warning">
+                <p>⚠️ This action is <strong>IRREVERSIBLE</strong>.</p>
+                <p>Your NFT will be permanently burned.</p>
+              </div>
+              
+              <label className="confirm-checkbox">
+                <input
+                  type="checkbox"
+                  checked={confirmChecked}
+                  onChange={(e) => setConfirmChecked(e.target.checked)}
+                />
+                <span>I understand this action cannot be undone</span>
+              </label>
+            </div>
+            
+            <div className="modal-actions">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setConfirmChecked(false);
+                }}
+                className="terminal-button-secondary px-6 py-2"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setConfirmChecked(false);
+                  executeTransactions();
+                }}
+                disabled={!confirmChecked}
+                className="terminal-button px-6 py-2"
+              >
+                🔥 CONFIRM BURN
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.9);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 1rem;
+        }
+
+        .modal-content {
+          background: rgba(20, 0, 0, 0.98);
+          border: 2px solid rgba(255, 0, 0, 0.6);
+          max-width: 450px;
+          width: 100%;
+          box-shadow: 0 0 50px rgba(255, 0, 0, 0.4);
+        }
+
+        .modal-header {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1.5rem;
+          border-bottom: 1px solid rgba(255, 0, 0, 0.3);
+          background: rgba(255, 0, 0, 0.05);
+        }
+
+        .modal-body {
+          padding: 1.5rem;
+        }
+
+        .confirm-details {
+          background: rgba(0, 0, 0, 0.5);
+          padding: 1rem;
+          margin-bottom: 1rem;
+          font-size: 0.875rem;
+        }
+
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+        }
+
+        .detail-row:last-child {
+          margin-bottom: 0;
+        }
+
+        .detail-label {
+          opacity: 0.6;
+        }
+
+        .confirm-warning {
+          background: rgba(255, 100, 0, 0.1);
+          border: 1px solid rgba(255, 100, 0, 0.3);
+          padding: 1rem;
+          margin-bottom: 1rem;
+          text-align: center;
+          font-size: 0.875rem;
+        }
+
+        .confirm-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          cursor: pointer;
+          padding: 0.75rem;
+          background: rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(255, 0, 0, 0.2);
+        }
+
+        .confirm-checkbox input {
+          width: 1.25rem;
+          height: 1.25rem;
+          cursor: pointer;
+        }
+
+        .confirm-checkbox span {
+          font-size: 0.875rem;
+        }
+
+        .modal-actions {
+          display: flex;
+          justify-content: space-between;
+          padding: 1.5rem;
+          border-top: 1px solid rgba(255, 0, 0, 0.3);
+          gap: 1rem;
+        }
+
         .warning-box, .status-box, .success-box {
           padding: 1.5rem;
           border: 1px solid rgba(255, 0, 0, 0.3);

@@ -16,8 +16,8 @@
  */
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { publicKey, transactionBuilder, keypairIdentity } from '@metaplex-foundation/umi';
-import { generateSigner } from '@metaplex-foundation/umi';
+import { publicKey, transactionBuilder, createNoopSigner, signerIdentity } from '@metaplex-foundation/umi';
+import { toWeb3JsInstruction } from '@metaplex-foundation/umi-web3js-adapters';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import {
   fetchDigitalAssetWithAssociatedToken,
@@ -27,7 +27,7 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
-import { VersionedTransaction, VersionedMessage, Connection } from '@solana/web3.js';
+import { Connection, PublicKey, VersionedTransaction, TransactionMessage } from '@solana/web3.js';
 import { buildRetireMemo } from './memo';
 
 /**
@@ -41,6 +41,50 @@ import { buildRetireMemo } from './memo';
  * @param priorityMicrolamports - Optional priority fee in microlamports
  * @returns Serialized transaction ready for client signing
  */
+/**
+ * Free public RPC endpoints for fallback when configured RPC fails
+ */
+const FALLBACK_RPC_ENDPOINTS = [
+  'https://solana-rpc.publicnode.com',
+  'https://api.mainnet-beta.solana.com',
+];
+
+/**
+ * Validate RPC URL by making a test request
+ * Returns the working URL or a fallback
+ */
+async function getWorkingRpcUrl(rpcUrl: string): Promise<string> {
+  try {
+    // Quick test to see if RPC is responding
+    const connection = new Connection(rpcUrl, 'confirmed');
+    await connection.getSlot();
+    return rpcUrl;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    
+    // Check for auth errors (401, 403, Unauthorized)
+    if (errorMsg.includes('401') || errorMsg.includes('403') || errorMsg.includes('Unauthorized')) {
+      console.warn(`⚠️ RPC ${rpcUrl} returned auth error, trying fallbacks...`);
+      
+      // Try fallback endpoints
+      for (const fallback of FALLBACK_RPC_ENDPOINTS) {
+        try {
+          const testConn = new Connection(fallback, 'confirmed');
+          await testConn.getSlot();
+          console.log(`✅ Using fallback RPC: ${fallback}`);
+          return fallback;
+        } catch {
+          // Try next fallback
+        }
+      }
+    }
+    
+    // Return original URL if no fallback works (let actual error propagate later)
+    console.warn(`⚠️ Could not validate RPC, proceeding with original: ${rpcUrl}`);
+    return rpcUrl;
+  }
+}
+
 export async function buildBurnMemoTransaction(
   rpcUrl: string,
   mint: string,
@@ -53,16 +97,14 @@ export async function buildBurnMemoTransaction(
   isVersioned: boolean;
   nftType: 'PNFT' | 'REGULAR';
 }> {
-  // Create server-side Umi instance with a dummy keypair for building
-  // The transaction won't be signed, so the keypair doesn't need to be valid
-  const umi = createUmi(rpcUrl);
-  const dummyKeypair = generateSigner(umi);
-  umi.use(keypairIdentity(dummyKeypair));
+  // Validate RPC URL and get working endpoint (with fallback)
+  const workingRpcUrl = await getWorkingRpcUrl(rpcUrl);
+  
+  // Create server-side Umi instance
+  const umi = createUmi(workingRpcUrl);
   
   // Register SPL Token programs with Umi
   // This is required for burnV1 to recognize associated token accounts
-  // Create minimal program objects with stub implementations
-  // Using type assertion to satisfy Program interface requirements
   umi.programs.add({
     name: 'splToken',
     publicKey: publicKey(TOKEN_PROGRAM_ID.toString()),
@@ -80,6 +122,15 @@ export async function buildBurnMemoTransaction(
   
   const mintPk = publicKey(mint);
   const ownerPk = publicKey(owner);
+  
+  // Create a "noop" signer for the owner - this represents the owner's public key
+  // for transaction building without having their private key.
+  // The client wallet will provide the actual signature.
+  const ownerSigner = createNoopSigner(ownerPk);
+  
+  // Set the owner as the Umi identity (required for transaction building)
+  // This makes the owner the default signer/fee payer for all instructions
+  umi.use(signerIdentity(ownerSigner));
 
   // Fetch digital asset to determine NFT type
   const asset = await fetchDigitalAssetWithAssociatedToken(umi, mintPk, ownerPk);
@@ -105,9 +156,12 @@ export async function buildBurnMemoTransaction(
   tb = tb.add(setComputeUnitPrice(umi, { microLamports: priorityMicrolamports }));
 
   // Add burn instruction (works for both pNFT and regular NFT)
+  // CRITICAL: Set the authority to the actual owner (using noop signer)
+  // This ensures correct account derivation for the burn instruction
   tb = tb.add(
     burnV1(umi, {
       mint: mintPk,
+      authority: ownerSigner, // Use the owner as authority, not Umi identity
       token: asset.token.publicKey,
       tokenRecord: asset.tokenRecord?.publicKey,
       metadata: metadataPda,
@@ -140,59 +194,49 @@ export async function buildBurnMemoTransaction(
     bytesCreatedOnChain: 0,
   });
 
-  // Build the transaction (without sending)
-  // The transaction will be built with the dummy keypair as fee payer
-  // The client will set the correct fee payer when signing
+  // Build the transaction using web3.js directly to avoid Umi's signing requirements
+  // This extracts the instructions from Umi and builds a versioned transaction manually
   
-  // CRITICAL: Fetch blockhash BEFORE building to ensure it's available
-  // Umi's transaction builder should automatically fetch blockhash during build(),
-  // but we need to ensure it's actually set correctly
-  const connection = new Connection(rpcUrl, 'confirmed');
-  const { blockhash } = await connection.getLatestBlockhash();
+  // Fetch blockhash
+  const connection = new Connection(workingRpcUrl, 'confirmed');
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
   
-  // Get the built transaction from Umi
-  const builtTx = await tb.build(umi);
-  const message = builtTx.message;
+  console.log(`🔗 BUILD BURN+MEMO: Fetched blockhash ${blockhash.slice(0, 8)}... (lastValidBlockHeight: ${lastValidBlockHeight})`);
+  console.log(`🔥 BUILD BURN+MEMO: NFT type detected: ${nftType}`);
+  console.log(`👤 BUILD BURN+MEMO: Owner/Authority: ${owner}`);
+  console.log(`🎫 BUILD BURN+MEMO: Token account: ${asset.token.publicKey}`);
+  console.log(`📝 BUILD BURN+MEMO: Token record: ${asset.tokenRecord?.publicKey || 'N/A (regular NFT)'}`);
   
-  // Convert Umi TransactionMessage to Solana VersionedMessage format
-  const versionedMessage = message as unknown as VersionedMessage;
+  // Extract instructions from the Umi transaction builder
+  // This gets the properly constructed instructions without triggering signing
+  const umiInstructions = tb.getInstructions();
   
-  // CRITICAL: VersionedTransaction requires blockhash to be in the message structure
-  // We need to ensure the blockhash is properly set. Since VersionedMessage doesn't
-  // expose a direct setter, we'll use Object.defineProperty to force-set it
-  // on the message's internal structure
-  const messageWithBlockhash = Object.assign({}, versionedMessage, {
+  console.log(`📋 BUILD BURN+MEMO: Extracted ${umiInstructions.length} instructions from Umi`);
+  
+  // Convert Umi instructions to web3.js instructions
+  const web3JsInstructions = umiInstructions.map((ix) => toWeb3JsInstruction(ix));
+  
+  // Get the owner as web3.js PublicKey for the transaction
+  const ownerWeb3Js = new PublicKey(owner);
+  
+  // Create a versioned transaction message
+  const messageV0 = new TransactionMessage({
+    payerKey: ownerWeb3Js,
     recentBlockhash: blockhash,
-  }) as VersionedMessage;
+    instructions: web3JsInstructions,
+  }).compileToV0Message();
   
-  // Create versioned transaction with blockhash set
-  const versionedTx = new VersionedTransaction(messageWithBlockhash);
+  // Create the versioned transaction (without signatures - client will sign)
+  const versionedTx = new VersionedTransaction(messageV0);
   
-  // CRITICAL: Verify blockhash is actually set by checking the transaction
-  // If it's not set, we'll get an error during serialization
-  let serializedMessage: Uint8Array;
-  try {
-    serializedMessage = versionedTx.serialize();
-    
-    // After successful serialization, verify the blockhash is actually in the transaction
-    // by deserializing and checking
-    const deserialized = VersionedTransaction.deserialize(serializedMessage);
-    if (!deserialized.message.recentBlockhash) {
-      throw new Error('Blockhash was not set in the deserialized transaction');
-    }
-  } catch (error) {
-    // If serialization or verification fails, provide detailed error
-    if (error instanceof Error && (error.message.includes('blockhash') || error.message.includes('Blockhash was not set'))) {
-      console.error('❌ BUILD BURN+MEMO: Blockhash verification failed');
-      console.error('Blockhash we tried to set:', blockhash);
-      console.error('Error:', error.message);
-      throw new Error(`Transaction build failed: Blockhash could not be set in VersionedTransaction. This indicates Umi's transaction builder did not properly fetch or set the blockhash. Please verify RPC connection and Umi configuration. Error: ${error.message}`);
-    }
-    throw error;
-  }
+  console.log(`✅ BUILD BURN+MEMO: Transaction built with blockhash ${blockhash.slice(0, 8)}...`);
+  console.log(`📊 BUILD BURN+MEMO: Transaction has ${web3JsInstructions.length} instructions`);
+  
+  // Serialize the full transaction (with empty signatures that client will fill)
+  const serializedTx = versionedTx.serialize();
   
   // Convert to base64 for transport
-  const base64Tx = Buffer.from(serializedMessage).toString('base64');
+  const base64Tx = Buffer.from(serializedTx).toString('base64');
 
   return {
     transaction: base64Tx,

@@ -196,7 +196,7 @@ export function InscriptionVerificationStep({
             <div className="font-medium mb-1">Latest Burn Transaction (Solana)</div>
             <div className="space-x-2">
               <a
-                href={`https://orb.helius.dev/tx/${latestBurn.signature}`}
+                href={`https://orb.helius.dev/tx/${latestBurn.signature}?tab=instructions`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:text-blue-800 hover:underline"
