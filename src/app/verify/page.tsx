@@ -53,6 +53,17 @@ export default function VerifyPage() {
     kilnMemoRecord && kilnMemoRecord['method'] !== undefined && kilnMemoRecord['method'] !== null
       ? String(kilnMemoRecord['method'])
       : null;
+  
+  // Helper for timestamp display
+  const kilnMemoTimestamp = kilnMemoRecord?.['timestamp'];
+  const kilnMemoTimestampDisplay = kilnMemoTimestamp
+    ? new Date(Number(kilnMemoTimestamp) * 1000).toLocaleString()
+    : null;
+  
+  // Helper for nested objects
+  const kilnMemoInscription = kilnMemoRecord?.['inscription'] as { id?: string } | null | undefined;
+  const kilnMemoSolana = kilnMemoRecord?.['solana'] as { mint?: string } | null | undefined;
+  const kilnMemoMedia = kilnMemoRecord?.['media'] as { sha256?: string } | null | undefined;
 
   /**
    * Copy text to clipboard with feedback
@@ -463,40 +474,40 @@ export default function VerifyPage() {
                           <span className="memo-value">{kilnMemoMethodDisplay}</span>
                         </div>
                       )}
-                      {(result.kilnMemo['inscription'] as { id?: string })?.id && (
+                      {kilnMemoInscription?.id && (
                         <div className="memo-row">
                           <span className="memo-label">Inscription</span>
                           <a
-                            href={`https://ordinals.com/inscription/${(result.kilnMemo['inscription'] as { id: string }).id}`}
+                            href={`https://ordinals.com/inscription/${kilnMemoInscription.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="memo-value text-orange-400 hover:text-orange-300 hover:underline"
                           >
-                            {(result.kilnMemo['inscription'] as { id: string }).id.slice(0, 24)}... →
+                            {kilnMemoInscription.id.slice(0, 24)}... →
                           </a>
                         </div>
                       )}
-                      {(result.kilnMemo['solana'] as { mint?: string })?.mint && (
+                      {kilnMemoSolana?.mint && (
                         <div className="memo-row">
                           <span className="memo-label">Solana Mint</span>
                           <span className="memo-value font-mono text-xs">
-                            {(result.kilnMemo['solana'] as { mint: string }).mint.slice(0, 16)}...
+                            {kilnMemoSolana.mint.slice(0, 16)}...
                           </span>
                         </div>
                       )}
-                      {(result.kilnMemo['media'] as { sha256?: string })?.sha256 && (
+                      {kilnMemoMedia?.sha256 && (
                         <div className="memo-row">
                           <span className="memo-label">Media SHA-256</span>
                           <span className="memo-value font-mono text-xs">
-                            {(result.kilnMemo['media'] as { sha256: string }).sha256.slice(0, 16)}...
+                            {kilnMemoMedia.sha256.slice(0, 16)}...
                           </span>
                         </div>
                       )}
-                      {result.kilnMemo['timestamp'] && (
+                      {kilnMemoTimestampDisplay && (
                         <div className="memo-row">
                           <span className="memo-label">Timestamp</span>
                           <span className="memo-value">
-                            {new Date(Number(result.kilnMemo['timestamp']) * 1000).toLocaleString()}
+                            {kilnMemoTimestampDisplay}
                           </span>
                         </div>
                       )}
