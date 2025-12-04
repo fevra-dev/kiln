@@ -164,7 +164,7 @@ describe('Teleburn Address Derivation', () => {
     it('uses domain separation in derivation', async () => {
       // Domain separation ensures different addresses from raw hash
       // This is tested indirectly by ensuring determinism
-      expect(TELEBURN_DOMAIN).toBe('SBT01:solana:v1');
+      expect(TELEBURN_DOMAIN).toBe('kiln.teleburn.solana.v1');
     });
 
     it('derives off-curve addresses (no private key)', async () => {
@@ -373,7 +373,8 @@ describe('Teleburn Address Derivation', () => {
     it('domain separation prevents cross-protocol collisions', () => {
       // Different domains should produce different addresses
       // This is ensured by using TELEBURN_DOMAIN in preimage
-      expect(TELEBURN_DOMAIN).toContain('SBT01');
+      expect(TELEBURN_DOMAIN).toContain('kiln');
+      expect(TELEBURN_DOMAIN).toContain('teleburn');
       expect(TELEBURN_DOMAIN).toContain('solana');
       expect(TELEBURN_DOMAIN).toContain('v1');
     });

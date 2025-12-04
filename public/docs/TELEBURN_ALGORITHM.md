@@ -57,7 +57,7 @@ When "teleburning" a Solana NFT to Bitcoin Ordinals, we need to prove the Solana
    index = parse_int(index_string)  # u32
 
 2. Construct preimage:
-   salt = UTF8("SBT01:solana:v1")
+   salt = UTF8("kiln.teleburn.solana.v1")
    preimage = txid || index_be || salt
    
    where:
@@ -82,7 +82,7 @@ def deriveTeleburnAddress(inscription_id: str) -> PublicKey:
     txid, index = parse_inscription_id(inscription_id)
     
     # Construct preimage
-    salt = b"SBT01:solana:v1"
+    salt = b"kiln.teleburn.solana.v1"
     preimage = txid + index.to_bytes(4, 'big') + salt
     
     # Hash
@@ -107,7 +107,7 @@ The algorithm follows a similar pattern to [Ethereum's Ordinals teleburn](https:
 | **Hash Function** | SHA-256 | SHA-256 |
 | **Output Size** | 20 bytes | 32 bytes |
 | **Iteration** | None | Until off-curve |
-| **Domain Separation** | ❌ No | ✅ Yes (`SBT01:solana:v1`) |
+| **Domain Separation** | ❌ No | ✅ Yes (`kiln.teleburn.solana.v1`) |
 | **Curve Constraint** | N/A (any 20 bytes valid) | Off-curve Ed25519 |
 
 ### Why Different?
@@ -143,7 +143,7 @@ On-curve Ed25519 points have a ~1 in 2^252 chance of having a corresponding priv
 
 ### 2. **Domain Separation (Cross-Chain Safety)**
 
-The salt `SBT01:solana:v1` ensures:
+The salt `kiln.teleburn.solana.v1` ensures:
 
 - ✅ Different addresses on different chains (Solana vs Ethereum)
 - ✅ Protection against cross-protocol attacks

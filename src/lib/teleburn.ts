@@ -16,7 +16,7 @@
  * 2. **Construct Preimage**: 
  *    ```
  *    preimage = txid (32 bytes) || index (4 bytes, big-endian) || salt
- *    salt = "SBT01:solana:v1" (UTF-8)
+ *    salt = "kiln.teleburn.solana.v1" (UTF-8)
  *    ```
  * 
  * 3. **Hash and Iterate**:
@@ -75,9 +75,9 @@ export const INCINERATOR = new PublicKey('1nc1nerator111111111111111111111111111
  * This prevents cross-chain collisions if the same inscription ID
  * is used on multiple chains (e.g., Solana vs Ethereum).
  * 
- * Format: <protocol>:<chain>:<version>
+ * Format: <protocol>.<domain>.<chain>.<version> (reverse-DNS notation)
  */
-export const TELEBURN_DOMAIN = 'SBT01:solana:v1';
+export const TELEBURN_DOMAIN = 'kiln.teleburn.solana.v1';
 
 // ============================================================================
 // TYPES

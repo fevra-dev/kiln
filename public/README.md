@@ -19,7 +19,7 @@ Kiln is a **production-grade teleburn protocol** for permanently migrating Solan
 ✅ **Inscription Verification Gate** - Prevents sealing to wrong/corrupted inscriptions  
 ✅ **Temporal Anchoring** - Timestamps + block heights in all on-chain memos  
 ✅ **Hardened Derived Owner** - Deterministic off-curve addresses (no private key exists)  
-✅ **Domain Separation** - Cross-chain safety with SBT01:solana:v1 salt  
+✅ **Domain Separation** - Cross-chain safety with kiln.teleburn.solana.v1 salt  
 ✅ **Dry Run Mode** - Full simulation before any on-chain action  
 ✅ **Multi-RPC Verification** - Confidence-scored teleburn status checks  
 ✅ **Token-2022 Compatible** - Detects and handles extension limitations  
@@ -206,12 +206,12 @@ deriveTeleburnAddress(inscriptionId) → PublicKey
 
 **Algorithm:**
 ```
-Input:  txid (32 bytes) || index (4 bytes, big-endian) || salt ("SBT01:solana:v1")
+Input:  txid (32 bytes) || index (4 bytes, big-endian) || salt ("kiln.teleburn.solana.v1")
 Hash:   SHA-256
 Output: 32-byte off-curve Solana PublicKey
 ```
 
-- **Domain separation:** `"SBT01:solana:v1"` prevents cross-chain collisions
+- **Domain separation:** `"kiln.teleburn.solana.v1"` prevents cross-chain collisions
 - **Off-curve guarantee:** No private key exists (assets permanently locked)
 - **Deterministic:** Same inscription ID → same address (always)
 - **Ethereum compatible:** Follows same pattern as Ordinals teleburn
