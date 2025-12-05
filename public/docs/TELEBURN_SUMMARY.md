@@ -1,50 +1,71 @@
-# What is Teleburn?
+# KILN Teleburn Protocol v1.0 — Summary
 
-**Teleburn** permanently links Solana NFTs to Bitcoin Ordinals through cryptographic burning.
+**Teleburn** permanently links Solana NFTs to Bitcoin Ordinals through a minimal, verifiable burn mechanism.
 
-## The Problem
+## The Protocol
 
-NFTs are trapped on their original blockchain with no native way to move between chains.
+### Solana Burn Memo
+```
+teleburn:6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0
+```
 
-## The Solution
+### Bitcoin Inscription Metadata
 
-1. **Burn** your Solana NFT (permanently destroy it)
-2. **Record** the burn with your Bitcoin inscription ID
-3. **Verify** the link using SHA-256 cryptography
+**Minimal:**
+```json
+{"p":"kiln","op":"teleburn","v":1,"mint":"6ivMgoj..."}
+```
 
-## Key Benefits
+**Standard (recommended):**
+```json
+{"p":"kiln","op":"teleburn","v":1,"mint":"6ivMgoj...","name":"DeGod #1234","collection":"DeGods"}
+```
 
-- **Irreversible**: Permanent cross-chain link
-- **No Custody**: Your assets are never held by third parties
-- **Cryptographically Secure**: SHA-256 ensures tamper-proof verification
-- **Verifiable**: Anyone can verify the burn is linked to your inscription
+**Full:**
+```json
+{"p":"kiln","op":"teleburn","v":1,"mint":"6ivMgoj...","name":"DeGod #1234","collection":"DeGods","burn_tx":"5Kj2nF...","attributes":[{"trait_type":"Eyes","value":"Laser"}]}
+```
 
 ## How It Works
 
-1. **Derive Address**: Create unique Solana address from Bitcoin inscription ID
-2. **Burn NFT**: Permanently destroy the NFT (supply → 0)
-3. **Record Memo**: Store inscription ID and burn details with real-time timestamps
-4. **Verify Link**: Use inscription ID to verify burn legitimacy
+1. **Burn NFT**: Permanently destroy the Solana NFT (supply → 0)
+2. **Record Memo**: Store inscription ID in simple string format: `teleburn:<inscription_id>`
+3. **Inscribe on Bitcoin**: Include metadata with Solana mint address
+4. **Verify Bidirectionally**: Check link from either chain
+
+## Key Benefits
+
+- **Minimal**: ~78 bytes on Solana, ~75-300 bytes on Bitcoin
+- **Simple**: No complex JSON, no derived addresses, no SHA-256 verification
+- **Verifiable**: Anyone can verify the burn is linked to your inscription
+- **Ecosystem-Friendly**: Generic `teleburn:` prefix for wide adoption
 
 ## NFT Compatibility
 
 - **✅ Standard NFTs**: SPL Token program NFTs work perfectly
 - **✅ Programmable NFTs (pNFTs)**: Token-2022 NFTs supported with SPL Token compatibility
-- **✅ Frozen pNFTs**: Can be burned using SPL Token program (same as sol-incinerator)
+- **✅ Frozen pNFTs**: Can be burned using SPL Token program
 - **✅ All Solana NFTs**: Compatible with existing burn tools and wallets
 
-## Use Cases
+## Bidirectional Verification
 
-- **Permanent Migration**: Move NFTs from Solana to Bitcoin
-- **Cross-Chain Proof**: Prove ownership across blockchains
-- **Asset Linking**: Create verifiable connections between digital assets
+```
+Solana → Bitcoin:  teleburn:abc123...i0
+Bitcoin → Solana:  {"p":"kiln","mint":"6ivMgoj..."}
+```
 
-## Security
+Both chains point to each other. Verify from either direction.
 
-- **Off-Curve Addresses**: No private key exists for derived addresses
-- **SHA-256 Hashing**: Cryptographically secure derivation
-- **Public Verification**: Anyone can verify burn legitimacy
+## Size Comparison
+
+| Format | Size |
+|--------|------|
+| Solana memo | ~78 bytes |
+| Minimal inscription | ~75 bytes |
+| Standard inscription | ~120 bytes |
+| Full inscription | ~300 bytes |
+| Old JSON memo (v0.1.x) | ~250 bytes |
 
 ---
 
-**Ready to teleburn?** Start with our [Getting Started Guide](/README.md) or learn the [technical details](/docs/TELEBURN_ALGORITHM.md).
+**Ready to teleburn?** Start with our [User Guide](/docs/USER_GUIDE.md) or learn the [technical specification](/docs/TELEBURN_SPEC_v1.0.md).

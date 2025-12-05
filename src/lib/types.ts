@@ -418,9 +418,6 @@ export interface SealTransactionRequest {
   /** Bitcoin inscription ID */
   inscriptionId: string;
   
-  /** Media SHA-256 hash (hex) */
-  sha256: string;
-  
   /** Network selection */
   network?: 'mainnet' | 'devnet';
   
@@ -441,14 +438,8 @@ export interface RetireTransactionRequest {
   /** Bitcoin inscription ID */
   inscriptionId: string;
   
-  /** Media SHA-256 hash (hex) */
-  sha256: string;
-  
   /** Retirement method */
   method: TeleburnMethod;
-  
-  /** Bump seed (REQUIRED for teleburn-derived) */
-  bump?: number;
 }
 
 /**

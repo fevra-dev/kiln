@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
 import { checkEmergencyShutdown } from '@/lib/emergency-shutdown';
+import { parseAnyTeleburnMemo } from '@/lib/teleburn';
 
 const verifyRequestSchema = z.object({
   mint: z.string(),
@@ -246,31 +247,51 @@ export async function POST(request: NextRequest) {
               }
               
               const memoData = new TextDecoder().decode(memoBytes);
-              const memoJson = JSON.parse(memoData);
               
-              // Check if it's a Kiln memo
-              if ((memoJson.standard === 'Kiln' || memoJson.standard === 'KILN') && memoJson.solana?.mint === validated.mint) {
-                if ((memoJson.action === 'teleburn-seal' || memoJson.action === 'seal') && memoJson.inscription?.id) {
-                  inscriptionId = memoJson.inscription.id;
-                  sha256 = memoJson.media?.sha256;
-                  sealSignature = sigInfo.signature;
-                } else if (
-                  // Check for teleburn actions
-                  (memoJson.action === 'teleburn' || 
-                   memoJson.action === 'teleburn-burn' || memoJson.action === 'teleburn-incinerate' || memoJson.action === 'teleburn-derived' ||
-                   memoJson.action === 'burn' || memoJson.action === 'incinerate' || memoJson.action === 'retire')
-                  && memoJson.inscription?.id
-                ) {
-                  inscriptionId = inscriptionId || memoJson.inscription.id;
-                  sha256 = sha256 || memoJson.media?.sha256;
-                  kilnMemo = memoJson;
-                  blockTime = tx.blockTime || undefined;
-                  if (memoJson.timestamp) {
-                    teleburnTimestamp = typeof memoJson.timestamp === 'number' ? memoJson.timestamp : parseInt(memoJson.timestamp, 10);
-                  } else if (tx.blockTime) {
-                    teleburnTimestamp = tx.blockTime;
+              // Try parsing as v1.0 or legacy teleburn memo
+              try {
+                const parseResult = parseAnyTeleburnMemo(memoData);
+                inscriptionId = parseResult.inscriptionId;
+                kilnMemo = { 
+                  inscriptionId: parseResult.inscriptionId,
+                  format: parseResult.format,
+                  memo: memoData 
+                };
+                blockTime = tx.blockTime || undefined;
+                teleburnTimestamp = tx.blockTime;
+                burnSignature = sigInfo.signature;
+              } catch {
+                // Not a v1.0 memo, try legacy JSON format
+                try {
+                  const memoJson = JSON.parse(memoData);
+                  
+                  // Check if it's a Kiln memo
+                  if ((memoJson.standard === 'Kiln' || memoJson.standard === 'KILN') && memoJson.solana?.mint === validated.mint) {
+                    if ((memoJson.action === 'teleburn-seal' || memoJson.action === 'seal') && memoJson.inscription?.id) {
+                      inscriptionId = memoJson.inscription.id;
+                      sha256 = memoJson.media?.sha256;
+                      sealSignature = sigInfo.signature;
+                    } else if (
+                      // Check for teleburn actions
+                      (memoJson.action === 'teleburn' || 
+                       memoJson.action === 'teleburn-burn' || memoJson.action === 'teleburn-incinerate' || memoJson.action === 'teleburn-derived' ||
+                       memoJson.action === 'burn' || memoJson.action === 'incinerate' || memoJson.action === 'retire')
+                      && memoJson.inscription?.id
+                    ) {
+                      inscriptionId = inscriptionId || memoJson.inscription.id;
+                      sha256 = sha256 || memoJson.media?.sha256;
+                      kilnMemo = memoJson;
+                      blockTime = tx.blockTime || undefined;
+                      if (memoJson.timestamp) {
+                        teleburnTimestamp = typeof memoJson.timestamp === 'number' ? memoJson.timestamp : parseInt(memoJson.timestamp, 10);
+                      } else if (tx.blockTime) {
+                        teleburnTimestamp = tx.blockTime;
+                      }
+                      burnSignature = sigInfo.signature;
+                    }
                   }
-                  burnSignature = sigInfo.signature;
+                } catch {
+                  // Not JSON or not a KILN memo, continue
                 }
               }
             } catch {

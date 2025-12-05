@@ -26,7 +26,6 @@ const simulateRequestSchema = z.object({
   payer: z.string().describe('Fee payer public key'),
   mint: z.string().describe('Token mint address'),
   inscriptionId: z.string().describe('Bitcoin inscription ID (txidi0)'),
-  sha256: z.string().regex(/^[0-9a-f]{64}$/i).describe('Content SHA-256 hash'),
   authority: z.array(z.string()).optional().describe('Optional multi-sig authorities'),
 
   // Retire params
@@ -132,7 +131,6 @@ export async function POST(request: NextRequest) {
       payer,
       mint,
       inscriptionId: validated.inscriptionId,
-      sha256: validated.sha256,
       authority,
       owner,
       method: validated.method as TeleburnMethod,

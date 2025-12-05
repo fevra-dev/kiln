@@ -106,7 +106,6 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           mint: formData.mint,
           owner: publicKey.toBase58(),
           inscriptionId: formData.inscriptionId,
-          sha256: formData.sha256,
           priorityMicrolamports: DEFAULT_PRIORITY_FEE_MICROLAMPORTS, // Use default from utils
         }),
       });
@@ -515,29 +514,12 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
             
             {/* Memo Display */}
             <div className="mb-6">
-              <MemoDisplay 
-                memo={{
-                  standard: 'Kiln',
-                  version: '0.1.1',
-                  action: 'teleburn-derived',
-                  timestamp: Math.floor(Date.now() / 1000),
-                  block_height: 245678901, // Example Solana slot
-                  inscription: {
-                    id: formData.inscriptionId
-                  },
-                  solana: {
-                    mint: formData.mint
-                  },
-                  media: {
-                    sha256: formData.sha256
-                  },
-                  derived: {
-                    owner: '6NtdpWum9Teym6SrZBAgfsJYu5vg2GoGapT2yyXvn3gP', // Would be actual derived
-                    algorithm: 'SHA-256(txid || index || salt)'
-                  }
-                }}
-                title="TELEBURN PROOF"
-              />
+              <div className="memo-display-simple p-4 bg-black/50 border border-red-500/30 rounded">
+                <div className="text-sm font-bold mb-2 text-red-400">TELEBURN MEMO (v1.0)</div>
+                <code className="text-xs text-green-400 break-all">
+                  teleburn:{formData.inscriptionId}
+                </code>
+              </div>
             </div>
             
             <div className="text-xs opacity-60 mb-4">

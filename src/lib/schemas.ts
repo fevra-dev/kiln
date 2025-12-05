@@ -185,7 +185,6 @@ export const sealRequestSchema = z.object({
   payer: PublicKeySchema,
   mint: PublicKeySchema,
   inscriptionId: InscriptionIdSchema,
-  sha256: Sha256Schema,
   authority: z.array(PublicKeySchema).optional(),
   priorityMicrolamports: z.number().int().min(0).optional(), // Optional priority fee
   computeUnits: z.number().int().min(1_000).max(1_400_000).optional() // Optional compute unit limit
@@ -223,7 +222,6 @@ export const retireRequestSchema = z.object({
   owner: PublicKeySchema,
   mint: PublicKeySchema,
   inscriptionId: InscriptionIdSchema,
-  sha256: Sha256Schema,
   method: TeleburnMethodSchema,
   amount: z.string().optional(),
   priorityMicrolamports: z.number().int().min(0).optional(), // Optional priority fee

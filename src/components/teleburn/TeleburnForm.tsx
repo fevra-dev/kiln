@@ -6,23 +6,20 @@
  * User input form for teleburn parameters:
  * - Solana mint address
  * - Bitcoin inscription ID
- * - Content SHA-256 hash
  * - Retire method: teleburn-derived (fixed)
  * 
  * @description Main input form for teleburn wizard
- * @version 0.1.1
+ * @version 1.0
  */
 
 import { FC, useState, useEffect } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { TeleburnMethod } from '@/lib/transaction-builder';
-import { isValidInscriptionId, isValidPublicKey, isValidSha256 } from '@/lib/schemas';
-import { InscriptionVerifier } from '@/lib/inscription-verifier';
+import { isValidInscriptionId, isValidPublicKey } from '@/lib/schemas';
 
 export interface TeleburnFormData {
   mint: string;
   inscriptionId: string;
-  sha256: string;
   method: TeleburnMethod;
 }
 
@@ -45,14 +42,11 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
   const [formData, setFormData] = useState<TeleburnFormData>({
     mint: initialData?.mint || '',
     inscriptionId: initialData?.inscriptionId || '',
-    sha256: initialData?.sha256 || '',
     method: initialData?.method || 'teleburn-derived',
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof TeleburnFormData, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof TeleburnFormData, boolean>>>({});
-  const [fetchingHash, setFetchingHash] = useState(false);
-  const [hashFetchStatus, setHashFetchStatus] = useState<string>('');
 
   const handleChange = (field: keyof TeleburnFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -63,44 +57,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
     }
   };
 
-  // Auto-fetch SHA-256 when inscription ID changes
-  useEffect(() => {
-    const fetchHash = async () => {
-      // Only fetch if inscription ID is valid and SHA-256 is empty
-      if (formData.inscriptionId && isValidInscriptionId(formData.inscriptionId) && !formData.sha256) {
-        setFetchingHash(true);
-        setHashFetchStatus('🔍 Fetching inscription content...');
-
-        try {
-          const result = await InscriptionVerifier.fetchAndHash(formData.inscriptionId);
-          
-          if (result.success && result.actualSha256) {
-            setFormData(prev => ({ ...prev, sha256: result.actualSha256 || '' }));
-            setHashFetchStatus(`✓ Auto-filled SHA-256 from inscription ${result.contentType ? `(${result.contentType})` : ''}`);
-            
-            // Clear status after 3 seconds
-            setTimeout(() => setHashFetchStatus(''), 3000);
-          } else {
-            setHashFetchStatus(`🚨 ${result.error || 'Could not fetch inscription'}`);
-            setTimeout(() => setHashFetchStatus(''), 3000);
-          }
-        } catch (error) {
-          console.error('Error fetching inscription:', error);
-          setHashFetchStatus('🚨 Error fetching inscription');
-          setTimeout(() => setHashFetchStatus(''), 3000);
-        } finally {
-          setFetchingHash(false);
-        }
-      }
-    };
-
-    // Debounce the fetch
-    const timer = setTimeout(() => {
-      fetchHash();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [formData.inscriptionId, formData.sha256]);
+  // SHA-256 auto-fetch removed in v1.0 protocol
 
   const handleBlur = (field: keyof TeleburnFormData) => {
     setTouched(prev => ({ ...prev, [field]: true }));
@@ -133,13 +90,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
         }
         break;
 
-      case 'sha256':
-        if (!value) {
-          error = 'SHA-256 hash is required';
-        } else if (!isValidSha256(value)) {
-          error = 'Invalid SHA-256. Expected: 64 character hex string';
-        }
-        break;
+      // SHA-256 validation removed in v1.0 protocol
     }
 
     setErrors(prev => ({ ...prev, [field]: error }));
@@ -147,9 +98,9 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
   };
 
   const validateAll = (): boolean => {
-    const fields: (keyof TeleburnFormData)[] = ['mint', 'inscriptionId', 'sha256'];
+    const fields: (keyof TeleburnFormData)[] = ['mint', 'inscriptionId'];
     const results = fields.map(field => validateField(field, formData[field]));
-    setTouched({ mint: true, inscriptionId: true, sha256: true });
+    setTouched({ mint: true, inscriptionId: true });
     return results.every(r => r);
   };
 
@@ -216,51 +167,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
           </div>
         </div>
 
-        {/* SHA-256 Hash (Auto-filled, Read-only) */}
-        <div className="form-field">
-          <label htmlFor="sha256" className="form-label">
-            <span className="text-terminal-prompt">→</span> CONTENT SHA-256 HASH
-            {fetchingHash && (
-              <span className="ml-2 text-xs opacity-70 animate-pulse">⟳ Fetching...</span>
-            )}
-            <span className="ml-2 text-xs opacity-50">(auto-filled)</span>
-          </label>
-          <div className="sha256-field-wrapper">
-            <input
-              id="sha256"
-              type="text"
-              value={formData.sha256}
-              readOnly
-              className={`form-input sha256-readonly ${touched.sha256 && errors.sha256 ? 'error' : ''} ${formData.sha256 ? 'has-value' : ''}`}
-              placeholder={fetchingHash ? "Fetching from inscription..." : "Enter inscription ID above to auto-fill"}
-            />
-            {formData.sha256 && (
-              <button
-                type="button"
-                className="copy-hash-btn"
-                onClick={() => {
-                  navigator.clipboard.writeText(formData.sha256);
-                }}
-                title="Copy SHA-256 hash"
-              >
-                📋
-              </button>
-            )}
-          </div>
-          {touched.sha256 && errors.sha256 && (
-            <div className="form-error">🚨 {errors.sha256}</div>
-          )}
-          {hashFetchStatus && (
-            <div className="form-hint text-terminal-green">
-              {hashFetchStatus}
-            </div>
-          )}
-          {!hashFetchStatus && !formData.sha256 && (
-            <div className="form-hint">
-              Automatically calculated from your Bitcoin inscription
-            </div>
-          )}
-        </div>
+        {/* SHA-256 field removed in v1.0 protocol */}
 
         {/* Retire Method - Fixed to teleburn-derived */}
         <div className="method-info">
@@ -349,22 +256,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
           box-shadow: 0 0 10px rgba(200, 0, 0, 0.3);
         }
 
-        .sha256-field-wrapper {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .sha256-readonly {
-          cursor: default;
-          opacity: 0.8;
-        }
-
-        .sha256-readonly.has-value {
-          opacity: 1;
-          background: rgba(0, 50, 0, 0.3);
-          border-color: rgba(0, 200, 0, 0.3);
-        }
+        /* SHA-256 styles removed in v1.0 protocol */
 
         .copy-hash-btn {
           position: absolute;

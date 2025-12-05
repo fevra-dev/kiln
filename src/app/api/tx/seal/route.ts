@@ -90,7 +90,6 @@ export async function POST(request: NextRequest) {
       payer,
       mint,
       inscriptionId: validated.inscriptionId,
-      sha256: validated.sha256,
       authority,
       rpcUrl,
       priorityFee,

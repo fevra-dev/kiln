@@ -26,7 +26,6 @@ export default function VerifyPage() {
     confidence: string;
     message?: string;
     inscriptionId?: string;
-    sha256?: string;
     teleburnTimestamp?: number;
     blockTime?: number;
     sealSignature?: string;
@@ -63,7 +62,7 @@ export default function VerifyPage() {
   // Helper for nested objects
   const kilnMemoInscription = kilnMemoRecord?.['inscription'] as { id?: string } | null | undefined;
   const kilnMemoSolana = kilnMemoRecord?.['solana'] as { mint?: string } | null | undefined;
-  const kilnMemoMedia = kilnMemoRecord?.['media'] as { sha256?: string } | null | undefined;
+  // SHA256 removed in v1.0 protocol
 
   /**
    * Copy text to clipboard with feedback
@@ -381,22 +380,7 @@ export default function VerifyPage() {
                     </div>
                   )}
 
-                  {/* SHA-256 */}
-                  {result.sha256 && (
-                    <div className="result-row result-section">
-                      <span className="result-label">SHA-256</span>
-                      <div className="result-value-group">
-                        <span className="font-mono text-xs">{result.sha256.slice(0, 16)}...{result.sha256.slice(-8)}</span>
-                        <button 
-                          onClick={() => handleCopy(result.sha256!, 'sha256')}
-                          className="copy-btn"
-                          title="Copy SHA-256"
-                        >
-                          {copyFeedback === 'sha256' ? '✓' : '📋'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  {/* SHA-256 removed in v1.0 protocol */}
 
                   {/* Transaction Signatures */}
                   {result.burnSignature && (
@@ -498,14 +482,7 @@ export default function VerifyPage() {
                           </span>
                         </div>
                       )}
-                      {kilnMemoMedia?.sha256 && (
-                        <div className="memo-row">
-                          <span className="memo-label">Media SHA-256</span>
-                          <span className="memo-value font-mono text-xs">
-                            {kilnMemoMedia.sha256.slice(0, 16)}...
-                          </span>
-                        </div>
-                      )}
+                      {/* SHA-256 removed in v1.0 protocol */}
                       {kilnMemoTimestampDisplay && (
                         <div className="memo-row">
                           <span className="memo-label">Timestamp</span>

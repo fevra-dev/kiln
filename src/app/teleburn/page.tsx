@@ -7,11 +7,10 @@
  * Orchestrates complete multi-step flow with state management.
  * 
  * Flow:
- * 1. Input Form → Enter mint, inscription ID, SHA-256
+ * 1. Input Form → Enter mint, inscription ID
  * 2. Connect Wallet → Connect Solana wallet
- * 3. Verify Inscription → SHA-256 content verification gate
- * 4. Preview → Dry run simulation
- * 5. Execute → Sign and broadcast transactions
+ * 3. Preview → Dry run simulation
+ * 4. Execute → Sign and broadcast transactions
  * 
  * @description Complete teleburn wizard interface
  * @version 0.1.1
@@ -21,10 +20,8 @@ import { useState, useEffect } from 'react';
 import { WizardLayout, WizardStep } from '@/components/wizard/WizardLayout';
 import { TeleburnForm, TeleburnFormData } from '@/components/teleburn/TeleburnForm';
 import { Step1Connect } from '@/components/wizard/Step1Connect';
-import { Step2Verify } from '@/components/wizard/Step2Verify';
 import { Step3Preview } from '@/components/wizard/Step3Preview';
 import { Step4Execute } from '@/components/wizard/Step4Execute';
-import { InscriptionVerificationResult } from '@/lib/types';
 
 /**
  * Teleburn Wizard Page
@@ -35,7 +32,6 @@ import { InscriptionVerificationResult } from '@/lib/types';
 export default function TeleburnPage() {
   const [currentStep, setCurrentStep] = useState<WizardStep>('connect');
   const [formData, setFormData] = useState<TeleburnFormData | null>(null);
-  const [, setVerificationResult] = useState<InscriptionVerificationResult | null>(null);
   const [showForm, setShowForm] = useState(true);
   const [isClient, setIsClient] = useState(false);
 
@@ -61,11 +57,6 @@ export default function TeleburnPage() {
   };
 
   const handleConnectComplete = () => {
-    setCurrentStep('verify');
-  };
-
-  const handleVerifyComplete = (result: InscriptionVerificationResult) => {
-    setVerificationResult(result);
     setCurrentStep('preview');
   };
 
@@ -77,7 +68,6 @@ export default function TeleburnPage() {
     // Reset wizard for new teleburn
     setCurrentStep('connect');
     setFormData(null);
-    setVerificationResult(null);
     setShowForm(true);
   };
 
@@ -194,7 +184,7 @@ export default function TeleburnPage() {
         <Step3Preview
           formData={formData}
           onComplete={handlePreviewComplete}
-          onBack={() => setCurrentStep('verify')}
+          onBack={() => setCurrentStep('connect')}
         />
       )}
 

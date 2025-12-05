@@ -90,7 +90,6 @@ export async function buildBurnMemoTransaction(
   mint: string,
   owner: string,
   inscriptionId: string,
-  sha256: string,
   priorityMicrolamports: number = 2_000
 ): Promise<{
   transaction: string; // base64 serialized transaction
@@ -173,17 +172,14 @@ export async function buildBurnMemoTransaction(
     })
   );
 
-  // Build memo with teleburn action
+  // Build memo with teleburn action (v1.0 format: teleburn:<inscription_id>)
   const memo = buildRetireMemo({
     inscriptionId,
-    mint,
-    sha256,
-    timestamp: Math.floor(Date.now() / 1000),
   });
 
-  // Add memo instruction
+  // Add memo instruction (v1.0 format: simple string, not JSON)
   const MEMO_PROGRAM_ID = publicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
-  const memoData = new TextEncoder().encode(JSON.stringify(memo));
+  const memoData = new TextEncoder().encode(memo); // memo is already a string (teleburn:...)
   tb = tb.add({
     instruction: {
       programId: MEMO_PROGRAM_ID,

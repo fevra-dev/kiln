@@ -7,7 +7,7 @@
  * Draggable, resizable windows for each document
  * 
  * @description Documentation hub for Kiln-Teleburn Protocol
- * @version 0.1.1
+ * @version 1.0
  */
 
 import Link from 'next/link';
@@ -44,15 +44,41 @@ const DOCS: DocLink[] = [
     category: 'core',
   },
   {
-    path: '/docs/TELEBURN_ALGORITHM.md',
-    title: 'How It Works',
-    description: 'Technical explanation of the SHA-256 derivation algorithm',
+    path: '/docs/TELEBURN_SPEC_v1.0.md',
+    title: 'Teleburn Protocol Specification',
+    description: 'Complete technical specification for v1.0 protocol',
     category: 'core',
+  },
+  {
+    path: '/docs/INSCRIPTION_METADATA_SPEC.md',
+    title: 'Inscription Metadata Specification',
+    description: 'Bitcoin inscription metadata format for bidirectional linking',
+    category: 'core',
+  },
+  // Developer Documentation
+  {
+    path: '/docs/API_REFERENCE.md',
+    title: 'API Reference',
+    description: 'Complete API documentation for developers',
+    category: 'guides',
+  },
+  {
+    path: '/docs/INTEGRATION_GUIDE.md',
+    title: 'Integration Guide',
+    description: 'Step-by-step guide for integrating the protocol',
+    category: 'guides',
+  },
+  {
+    path: '/docs/INSCRIPTION_METADATA_IMPLEMENTATION_GUIDE.md',
+    title: 'Inscription Metadata Implementation',
+    description: 'Guide for implementing Bitcoin inscription metadata',
+    category: 'guides',
   },
 ];
 
 const CATEGORIES = {
   core: { label: 'Core Documentation', icon: '🔥' },
+  guides: { label: 'Developer Guides', icon: '⚙️' },
 };
 
 interface OpenWindow {

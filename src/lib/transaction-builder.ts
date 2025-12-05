@@ -27,7 +27,7 @@ import {
   createAssociatedTokenAccountIdempotentInstruction,
 } from '@solana/spl-token';
 import { isPNFT } from './metaplex-burn';
-import { deriveTeleburnAddress } from './teleburn';
+import { buildTeleburnMemo, createMemoInstruction } from './teleburn';
 import { addPriorityFee, addDynamicPriorityFee, PriorityFeeConfig } from './transaction-utils';
 import { validateTransactionSize } from './transaction-size-validator';
 import { checkNFTFrozenStatus } from './frozen-account-detector';
@@ -53,7 +53,6 @@ export interface SealTransactionParams {
   payer: PublicKey;
   mint: PublicKey;
   inscriptionId: string;
-  sha256: string;
   authority?: PublicKey[]; // Optional multi-sig authorities
   rpcUrl?: string;
   priorityFee?: PriorityFeeConfig; // Optional priority fee configuration
@@ -67,7 +66,6 @@ export interface RetireTransactionParams {
   owner: PublicKey;
   mint: PublicKey;
   inscriptionId: string;
-  sha256: string;
   method: TeleburnMethod;
   amount?: bigint; // Amount to retire (default: 1 for NFTs)
   rpcUrl?: string;
@@ -125,7 +123,7 @@ export class TransactionBuilder {
    * @returns Built transaction ready for signing
    */
   async buildSealTransaction(params: SealTransactionParams): Promise<BuiltTransaction> {
-    const { payer, mint, inscriptionId, sha256, authority } = params;
+    const { payer, mint, inscriptionId, authority } = params;
 
     // Get current blockchain state for accurate timestamps (with failover)
     const { blockhash, slot } = await withRpcFailover(async (conn) => {
@@ -135,50 +133,14 @@ export class TransactionBuilder {
       ]);
       return { blockhash: blockhashResult.blockhash, slot: slotResult };
     });
-    const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
-
-    // Construct Kiln v0.1.1 seal memo payload
-    const sealMemo: Sbt01Seal = {
-      standard: 'Kiln',
-      version: '0.1.1',
-      source_chain: 'solana-mainnet',
-      target_chain: 'bitcoin-mainnet',
-      action: 'teleburn-seal',
-      timestamp,
-      block_height: slot,
-      inscription: {
-        id: inscriptionId,
-        network: 'bitcoin-mainnet' as const,
-      },
-      solana: {
-        mint: mint.toBase58(),
-      },
-      media: {
-        sha256,
-      },
-    };
-
-    // Add optional multi-sig authorities
-    if (authority && authority.length > 0) {
-      sealMemo.extra = {
-        signers: authority.map((a) => a.toBase58()),
-      };
-    }
-
-    // Serialize memo to JSON
-    const memoJson = JSON.stringify(sealMemo);
+    // Build v1.0 memo format: teleburn:<inscription_id>
+    const memo = buildTeleburnMemo(inscriptionId);
 
     // Create transaction
     const transaction = new Transaction();
 
     // Add memo instruction
-    transaction.add(
-      new TransactionInstruction({
-        keys: [],
-        programId: MEMO_PROGRAM_ID,
-        data: Buffer.from(memoJson, 'utf-8'),
-      })
-    );
+    transaction.add(createMemoInstruction(memo));
 
     // Set fee payer and blockhash
     transaction.feePayer = payer;
@@ -227,7 +189,7 @@ export class TransactionBuilder {
    * @returns Built transaction ready for signing
    */
   async buildRetireTransaction(params: RetireTransactionParams): Promise<BuiltTransaction> {
-    const { payer, owner, mint, inscriptionId, sha256, method, amount = 1n } = params;
+    const { payer, owner, mint, inscriptionId, method, amount = 1n } = params;
 
     // Check if this is a pNFT first (with failover)
     console.log(`🔍 TRANSACTION BUILDER: Checking if mint is a pNFT...`);
@@ -308,23 +270,8 @@ export class TransactionBuilder {
     // Create transaction
     const transaction = new Transaction();
 
-    // Build retire memo
-    const retireMemo: Sbt01Retire = {
-      standard: 'Kiln',
-      version: '0.1.1',
-      action: method,
-      timestamp,
-      block_height: slot,
-      inscription: {
-        id: inscriptionId,
-      },
-      solana: {
-        mint: mint.toBase58(),
-      },
-      media: {
-        sha256,
-      },
-    };
+    // Build v1.0 memo format: teleburn:<inscription_id>
+    const memo = buildTeleburnMemo(inscriptionId);
 
     // Add method-specific instructions
     let description = '';
@@ -422,12 +369,8 @@ export class TransactionBuilder {
       }
 
       case 'teleburn-derived': {
-        // Derive deterministic off-curve address from inscription ID for verification
-        const derivedOwner = await deriveTeleburnAddress(inscriptionId);
-
-        // Burn the token (reduce supply to 0)
-        // Note: We don't transfer to the derived address because it's off-curve
-        // and cannot own an ATA. Instead, we burn and record the derivation.
+        // v1.0: Simplified - just burn the token
+        // Derived address calculation removed in v1.0 protocol
         transaction.add(
           createBurnInstruction(
             ownerAta,
@@ -439,26 +382,13 @@ export class TransactionBuilder {
           )
         );
 
-        // Add derived owner to memo for cryptographic verification
-        // This proves the burn is linked to a specific Bitcoin inscription
-        retireMemo.derived = { 
-          bump: 0 // TODO: Extract bump from derived owner
-        };
-
-        description = `TELEBURN: Burn token linked to inscription (derived: ${derivedOwner.toBase58().slice(0, 8)}...)`;
+        description = `TELEBURN: Burn token linked to inscription`;
         break;
       }
     }
 
-    // Add retire memo instruction
-    const memoJson = JSON.stringify(retireMemo);
-    transaction.add(
-      new TransactionInstruction({
-        keys: [],
-        programId: MEMO_PROGRAM_ID,
-        data: Buffer.from(memoJson, 'utf-8'),
-      })
-    );
+    // Add retire memo instruction (v1.0 format: teleburn:<inscription_id>)
+    transaction.add(createMemoInstruction(memo));
 
     // Set fee payer and blockhash
     transaction.feePayer = payer;

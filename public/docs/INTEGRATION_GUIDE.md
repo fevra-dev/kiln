@@ -1,6 +1,6 @@
 # Integration Guide
 
-Step-by-step guide for integrating the KILN-Teleburn Protocol into your application.
+Step-by-step guide for integrating the KILN Teleburn Protocol v1.0 into your application.
 
 ## 🚀 Quick Start
 
@@ -13,16 +13,17 @@ npm install @solana/web3.js @solana/wallet-adapter-react
 ### 2. Basic Integration
 
 ```typescript
-import { deriveTeleburnAddress, verifyTeleburnAddress } from '@/lib/teleburn';
+import { buildTeleburnMemo, parseTeleburnMemo } from '@/lib/teleburn';
 import { TransactionBuilder } from '@/lib/transaction-builder';
 
-// Derive address from inscription ID
-const inscriptionId = 'abc123...def789i0';
-const derivedAddress = deriveTeleburnAddress(inscriptionId);
+// Build memo
+const inscriptionId = '6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0';
+const memo = buildTeleburnMemo(inscriptionId);
+console.log(memo); // "teleburn:6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0"
 
-// Verify the address
-const isValid = verifyTeleburnAddress(derivedAddress, inscriptionId);
-console.log('Address is valid:', isValid);
+// Parse memo
+const parsed = parseTeleburnMemo(memo);
+console.log(parsed); // "6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0"
 ```
 
 ## 🏗️ Complete Integration
@@ -36,79 +37,88 @@ const rpcUrl = 'https://api.mainnet-beta.solana.com';
 const builder = new TransactionBuilder(rpcUrl);
 ```
 
-### Step 2: Build Seal Transaction
+### Step 2: Build Burn Transaction
 
 ```typescript
-const sealParams = {
+const burnParams = {
   payer: wallet.publicKey,
+  owner: wallet.publicKey,
   mint: new PublicKey('7xKXy9H8P3ZYQEXxf5...'),
-  inscriptionId: 'abc123...def789i0',
-  sha256: 'a1b2c3d4e5f6...',
-  authority: wallet.publicKey
+  inscriptionId: '6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0',
+  method: 'teleburn-burn' as const
 };
 
-const sealTx = await builder.buildSealTransaction(sealParams);
+const burnTx = await builder.buildRetireTransaction(burnParams);
 ```
 
-### Step 3: Build Retire Transaction
+### Step 3: Sign and Send Transaction
 
 ```typescript
-const retireParams = {
-  payer: wallet.publicKey,
-  mint: new PublicKey('7xKXy9H8P3ZYQEXxf5...'),
-  inscriptionId: 'abc123...def789i0',
-  authority: wallet.publicKey
-};
-
-const retireTx = await builder.buildRetireTransaction(retireParams);
-```
-
-### Step 4: Sign and Send Transactions
-
-```typescript
-// Sign seal transaction
-const signedSealTx = await wallet.signTransaction(sealTx.transaction);
-const sealSignature = await connection.sendRawTransaction(signedSealTx.serialize());
+// Sign transaction
+const signedTx = await wallet.signTransaction(burnTx.transaction);
+const signature = await connection.sendRawTransaction(signedTx.serialize());
 
 // Wait for confirmation
-await connection.confirmTransaction(sealSignature);
-
-// Sign retire transaction
-const signedRetireTx = await wallet.signTransaction(retireTx.transaction);
-const retireSignature = await connection.sendRawTransaction(signedRetireTx.serialize());
-
-// Wait for confirmation
-await connection.confirmTransaction(retireSignature);
+await connection.confirmTransaction(signature);
+console.log('Teleburn complete:', signature);
 ```
 
 ## 🔍 Verification Integration
 
-### Verify Inscription
+### Verify Memo
 
 ```typescript
-import { InscriptionVerifier } from '@/lib/inscription-verifier';
+import { parseAnyTeleburnMemo, verifyMemo } from '@/lib/teleburn';
 
-const verifier = new InscriptionVerifier();
-const result = await verifier.verifyInscription('abc123...def789i0');
+// Parse memo from transaction
+const memo = 'teleburn:abc123...i0';
+const result = parseAnyTeleburnMemo(memo);
 
-if (result.valid) {
-  console.log('Inscription verified:', result.contentHash);
-} else {
-  console.error('Invalid inscription');
+if (result.format === 'v1') {
+  console.log('v1.0 format detected');
+  console.log('Inscription ID:', result.inscriptionId);
+}
+
+// Or use verify function
+const verification = verifyMemo(memo);
+if (verification.valid) {
+  console.log('Valid teleburn memo');
+  console.log('Format:', verification.format);
 }
 ```
 
-### Verify Teleburn
+### Verify Teleburn Transaction
 
 ```typescript
-// After teleburn is complete, verify the link
-const derivedAddress = deriveTeleburnAddress(inscriptionId);
-const isValid = verifyTeleburnAddress(derivedAddress, inscriptionId);
+import { Connection, PublicKey } from '@solana/web3.js';
+import { parseAnyTeleburnMemo } from '@/lib/teleburn';
 
-if (isValid) {
-  console.log('Teleburn verified successfully');
-} else {
-  console.error('Teleburn verification failed');
+async function verifyTeleburn(mint: PublicKey, connection: Connection) {
+  // Get recent transactions for the mint
+  const signatures = await connection.getSignaturesForAddress(mint, { limit: 10 });
+  
+  for (const sigInfo of signatures) {
+    const tx = await connection.getTransaction(sigInfo.signature);
+    
+    // Check for memo instruction
+    const memoIx = tx?.transaction.message.instructions.find(
+      ix => ix.programId.equals(MEMO_PROGRAM_ID)
+    );
+    
+    if (memoIx) {
+      const memoData = Buffer.from(memoIx.data).toString('utf-8');
+      
+      try {
+        const result = parseAnyTeleburnMemo(memoData);
+        console.log('Found teleburn:', result.inscriptionId);
+        return result;
+      } catch {
+        // Not a teleburn memo
+      }
+    }
+  }
+  
+  return null;
 }
 ```
 
@@ -118,32 +128,59 @@ if (isValid) {
 
 ```tsx
 import { useState } from 'react';
-import { deriveTeleburnAddress } from '@/lib/teleburn';
+import { buildTeleburnMemo, isValidInscriptionId } from '@/lib/teleburn';
+import { TransactionBuilder } from '@/lib/transaction-builder';
 
 function TeleburnForm() {
   const [inscriptionId, setInscriptionId] = useState('');
-  const [derivedAddress, setDerivedAddress] = useState<PublicKey | null>(null);
+  const [mint, setMint] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleDerive = () => {
+  const handleTeleburn = async () => {
+    if (!isValidInscriptionId(inscriptionId)) {
+      alert('Invalid inscription ID');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const address = deriveTeleburnAddress(inscriptionId);
-      setDerivedAddress(address);
+      const builder = new TransactionBuilder(rpcUrl);
+      const result = await builder.buildRetireTransaction({
+        payer: wallet.publicKey,
+        owner: wallet.publicKey,
+        mint: new PublicKey(mint),
+        inscriptionId,
+        method: 'teleburn-burn'
+      });
+
+      // Sign and send
+      const signed = await wallet.signTransaction(result.transaction);
+      await connection.sendRawTransaction(signed.serialize());
+      
+      alert('Teleburn successful!');
     } catch (error) {
-      console.error('Invalid inscription ID:', error);
+      console.error('Teleburn failed:', error);
+      alert('Teleburn failed: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
       <input
+        value={mint}
+        onChange={(e) => setMint(e.target.value)}
+        placeholder="NFT Mint Address"
+      />
+      <input
         value={inscriptionId}
         onChange={(e) => setInscriptionId(e.target.value)}
-        placeholder="Enter inscription ID"
+        placeholder="Inscription ID"
       />
-      <button onClick={handleDerive}>Derive Address</button>
-      {derivedAddress && (
-        <p>Derived Address: {derivedAddress.toBase58()}</p>
-      )}
+      <button onClick={handleTeleburn} disabled={loading}>
+        {loading ? 'Processing...' : 'Teleburn NFT'}
+      </button>
     </div>
   );
 }
@@ -154,13 +191,18 @@ function TeleburnForm() {
 ### Common Errors
 
 ```typescript
+import { buildTeleburnMemo, isValidInscriptionId } from '@/lib/teleburn';
+
 try {
-  const address = deriveTeleburnAddress(inscriptionId);
+  if (!isValidInscriptionId(inscriptionId)) {
+    throw new Error('Invalid inscription ID format');
+  }
+  
+  const memo = buildTeleburnMemo(inscriptionId);
 } catch (error) {
   if (error.message.includes('Invalid inscription ID')) {
     console.error('Please check your inscription ID format');
-  } else if (error.message.includes('Invalid hex')) {
-    console.error('Inscription ID must be valid hex');
+    console.error('Expected format: <64-hex-chars>i<number>');
   } else {
     console.error('Unknown error:', error);
   }
@@ -171,7 +213,7 @@ try {
 
 ```typescript
 try {
-  const tx = await builder.buildSealTransaction(params);
+  const tx = await builder.buildRetireTransaction(params);
 } catch (error) {
   if (error.message.includes('Insufficient funds')) {
     console.error('Not enough SOL for transaction');
@@ -193,9 +235,6 @@ const builder = new TransactionBuilder(rpcUrl);
 
 // For Token-2022 NFTs, the builder uses SPL Token program for compatibility
 // This matches the behavior of sol-incinerator and wallet burn tools
-const tokenProgram = await builder.detectTokenProgram(mint);
-// Returns TOKEN_PROGRAM_ID for maximum compatibility
-
 // All NFT types are supported:
 // ✅ SPL Token NFTs (standard)
 // ✅ Token-2022 pNFTs (programmable)
@@ -207,15 +246,26 @@ const tokenProgram = await builder.detectTokenProgram(mint);
 ### Unit Tests
 
 ```typescript
-import { deriveTeleburnAddress } from '@/lib/teleburn';
+import { buildTeleburnMemo, parseTeleburnMemo, isValidInscriptionId } from '@/lib/teleburn';
 
 describe('Teleburn', () => {
-  test('derives correct address', () => {
-    const inscriptionId = 'abc123...def789i0';
-    const address = deriveTeleburnAddress(inscriptionId);
+  test('builds memo correctly', () => {
+    const inscriptionId = '6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0';
+    const memo = buildTeleburnMemo(inscriptionId);
     
-    expect(address).toBeDefined();
-    expect(address.toBase58()).toMatch(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+    expect(memo).toBe('teleburn:6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0');
+  });
+
+  test('parses memo correctly', () => {
+    const memo = 'teleburn:abc123...i0';
+    const inscriptionId = parseTeleburnMemo(memo);
+    
+    expect(inscriptionId).toBe('abc123...i0');
+  });
+
+  test('validates inscription ID', () => {
+    expect(isValidInscriptionId('6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0')).toBe(true);
+    expect(isValidInscriptionId('invalid')).toBe(false);
   });
 });
 ```
@@ -226,14 +276,20 @@ describe('Teleburn', () => {
 import { TransactionBuilder } from '@/lib/transaction-builder';
 
 describe('Transaction Builder', () => {
-  test('builds seal transaction', async () => {
+  test('builds burn transaction', async () => {
     const builder = new TransactionBuilder(rpcUrl);
-    const params = { /* ... */ };
+    const params = {
+      payer: testWallet.publicKey,
+      owner: testWallet.publicKey,
+      mint: testMint,
+      inscriptionId: '6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0',
+      method: 'teleburn-burn' as const
+    };
     
-    const tx = await builder.buildSealTransaction(params);
+    const tx = await builder.buildRetireTransaction(params);
     
     expect(tx.transaction).toBeDefined();
-    expect(tx.instructions).toHaveLength(2);
+    expect(tx.estimatedFee).toBeGreaterThan(0);
   });
 });
 ```
@@ -243,9 +299,22 @@ describe('Transaction Builder', () => {
 ### 1. Always Validate Input
 
 ```typescript
-function validateInscriptionId(id: string): boolean {
-  const regex = /^[a-fA-F0-9]{64}i\d+$/;
-  return regex.test(id);
+import { isValidInscriptionId } from '@/lib/teleburn';
+
+function validateInput(inscriptionId: string, mint: string): boolean {
+  if (!isValidInscriptionId(inscriptionId)) {
+    console.error('Invalid inscription ID format');
+    return false;
+  }
+  
+  try {
+    new PublicKey(mint);
+  } catch {
+    console.error('Invalid mint address');
+    return false;
+  }
+  
+  return true;
 }
 ```
 
@@ -269,11 +338,15 @@ async function sendTransaction(tx: Transaction) {
 ### 3. Verify Before Proceeding
 
 ```typescript
-// Always verify the inscription before teleburn
-const verification = await verifier.verifyInscription(inscriptionId);
-if (!verification.valid) {
-  throw new Error('Invalid inscription');
+// Always validate the inscription ID before building transaction
+if (!isValidInscriptionId(inscriptionId)) {
+  throw new Error('Invalid inscription ID format');
 }
+
+// Build transaction
+const tx = await builder.buildRetireTransaction({
+  // ... params
+});
 ```
 
 ## 🔐 Security Considerations
@@ -283,11 +356,13 @@ if (!verification.valid) {
 - **Implement rate limiting** to prevent abuse
 - **Log all transactions** for audit purposes
 - **Test on devnet** before mainnet deployment
+- **Verify memo format** before processing transactions
 
 ## 📞 Support
 
 - **Documentation**: [API Reference](/docs/API_REFERENCE.md)
-- **Examples**: [GitHub Repository](https://github.com/fevra-dev)
+- **Specification**: [Teleburn Protocol v1.0](/docs/TELEBURN_SPEC_v1.0.md)
+- **Examples**: [GitHub Repository](https://github.com/fevra-dev/kiln)
 - **Issues**: Create an issue on GitHub
 
 ---

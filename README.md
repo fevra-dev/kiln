@@ -17,10 +17,10 @@ Kiln is a **teleburn protocol** for permanently migrating Solana NFTs to Bitcoin
 ### Key Features
 
 - **Single Transaction Burn** - Burn + memo in one atomic transaction
-- **On-Chain Proof** - Kiln memo embedded with SHA-256 verification
-- **Inscription Verification** - Content hash validation before burn
+- **On-Chain Proof** - Simple `teleburn:<inscription_id>` memo format
+- **Minimal Protocol** - ~78 bytes on-chain (vs 250+ bytes for JSON)
 - **Public Verification** - Anyone can verify a teleburn at `/verify`
-- **Download Proof** - Export your Kiln memo as JSON
+- **Bidirectional Linkage** - Solana memo ↔ Bitcoin metadata
 
 ## 🚀 Quick Start
 
@@ -53,26 +53,28 @@ Visit `http://localhost:3000`
 ### The Teleburn Flow
 
 1. **Connect Wallet** - Connect your Solana wallet
-2. **Select NFT** - Choose NFT to teleburn
-3. **Enter Inscription ID** - Provide your Bitcoin inscription ID
-4. **Verify Content** - SHA-256 content verification
-5. **Simulate** - Dry-run the transaction
-6. **Execute** - Sign and broadcast the burn
+2. **Enter Details** - NFT mint address and Bitcoin inscription ID
+3. **Preview** - Dry-run the transaction
+4. **Execute** - Sign and broadcast the burn
 
-### Kiln Memo Format
+### Kiln Memo Format (v1.0)
 
-Every teleburn records an on-chain memo:
+Every teleburn records a simple on-chain memo:
+
+```
+teleburn:6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0
+```
+
+**Size:** ~78 bytes (vs ~250+ bytes for JSON format)
+
+The Bitcoin inscription includes metadata linking back:
 
 ```json
 {
-  "standard": "Kiln",
-  "version": "0.1.1",
-  "action": "teleburn",
-  "method": "metaplex-burn-v1",
-  "inscription": { "id": "abc123...i0" },
-  "solana": { "mint": "6ivMgoj..." },
-  "media": { "sha256": "3fc113..." },
-  "timestamp": 1764732009
+  "p": "kiln",
+  "op": "teleburn",
+  "v": 1,
+  "mint": "6ivMgojHapfvDKS7pFSwgCPzPvPPCT2y8Pv1zHfLqTBL"
 }
 ```
 
@@ -182,5 +184,5 @@ MIT License - See [LICENSE](./LICENSE)
 **Built for the Solana and Bitcoin communities**
 
 *Last updated: December 3, 2025*  
-*Version: 0.1.1*  
+*Version: 1.0*  
 *Status: Production Ready*

@@ -22,7 +22,7 @@ You'll need:
 2. ✅ A small amount of **SOL** for transaction fees (~0.01 SOL)
 3. ✅ Your **Bitcoin Ordinals inscription ID** (looks like: `abc123...i0`)
 
-That's it! Kiln automatically fetches and calculates the SHA-256 hash for you.
+That's it! Kiln uses a simple memo format to link your burn to your inscription.
 
 ### How to Find Your Inscription ID
 
@@ -48,24 +48,30 @@ If you haven't inscribed your art on Bitcoin Ordinals yet, we recommend using a 
 - 💎 **Rare sat support** - Inscribe on specific sats
 - 🔄 **Reinscriptions** - Update existing inscriptions
 
-### 💡 Pro Tip: Link Your Solana NFT in Inscription Metadata
+### 💡 Pro Tip: Use KILN Inscription Metadata Format
 
-When inscribing on Bitcoin, we **highly recommend** adding your Solana NFT mint address as a **trait/attribute** in the inscription metadata. This creates a **two-way on-chain link** between both blockchains:
+When inscribing on Bitcoin, we **highly recommend** using the KILN metadata format. This creates a **two-way on-chain link** between both blockchains:
 
-**How to do it on inscribe.dev:**
-1. Go to [inscribe.dev](https://inscribe.dev/)
-2. Connect your Bitcoin wallet (Xverse, Unisat, or Magic Eden)
-3. Upload your art file
-4. In the **Attributes** section, click **+ Add trait**:
-   - **Title**: `solana_mint` (or similar)
-   - **Value**: Your Solana NFT mint address (e.g., `A4go8JM9uuy6vzbRzPwg8F5ZkCkgqct1htscMpSECMhw`)
-5. Complete the inscription process
+**KILN Metadata Format (Standard):**
+```json
+{
+  "p": "kiln",
+  "op": "teleburn",
+  "v": 1,
+  "mint": "A4go8JM9uuy6vzbRzPwg8F5ZkCkgqct1htscMpSECMhw",
+  "name": "Your NFT Name",
+  "collection": "Your Collection"
+}
+```
 
 **Why this matters:**
 - ✅ Creates verifiable connection from **Bitcoin → Solana**
-- ✅ Combined with Kiln teleburn, creates connection from **Solana → Bitcoin**
+- ✅ Combined with Kiln teleburn memo, creates connection from **Solana → Bitcoin**
 - ✅ **Two-way cryptographic proof** on both blockchains
 - ✅ Anyone can verify the relationship from either chain
+- ✅ Follows BRC-20 conventions for easy indexing
+
+See the [Inscription Metadata Specification](/docs/INSCRIPTION_METADATA_SPEC.md) for complete details.
 
 ---
 
@@ -87,32 +93,28 @@ When inscribing on Bitcoin, we **highly recommend** adding your Solana NFT mint 
 2. Select your wallet (Phantom, Solflare, etc.)
 3. Approve the connection in your wallet
 
-### Step 3: Verify Your Inscription
+### Step 3: Preview the Transaction
 
 Kiln will automatically:
-- ✅ Fetch your inscription from Bitcoin
-- ✅ Calculate the SHA-256 hash of the media
-- ✅ Verify everything matches
+- ✅ Build the burn transaction with memo
+- ✅ Simulate the transaction (dry run)
+- ✅ Show you exactly what will happen
 
-If verification passes, you'll see a green checkmark. If not, double-check your inscription ID.
-
-### Step 4: Preview the Transaction
-
-Before burning, Kiln simulates the transaction to show you:
+You'll see:
 - 💰 **Estimated fees** (usually ~0.00001 SOL)
 - 📝 **What will happen** (burn NFT + record proof)
 - ⚠️ **Any warnings** (if something looks wrong)
 
 Review everything carefully. Once you proceed, **this cannot be undone**.
 
-### Step 5: Execute the Teleburn
+### Step 4: Execute the Teleburn
 
 1. Click **Execute Teleburn**
 2. Your wallet will pop up asking you to sign
 3. Review the transaction in your wallet
 4. Click **Approve** to sign and broadcast
 
-### Step 6: Confirmation
+### Step 5: Confirmation
 
 Once confirmed, you'll see:
 - 🔥 **Success animation** with sound effects
@@ -137,7 +139,7 @@ Anyone can verify that an NFT was teleburned using the verification page.
 
 **🔥 TELEBURNED** (Orange banner)
 - The NFT has been burned (supply = 0)
-- An official Kiln memo was found on-chain
+- A teleburn memo was found on-chain (format: `teleburn:<inscription_id>`)
 - The burn is linked to a Bitcoin inscription
 
 **✓ ACTIVE** (Green banner)
@@ -150,11 +152,11 @@ For a teleburned NFT:
 - **Status**: Burned/Teleburned
 - **Burn Tx**: Link to the burn transaction
 - **Inscription**: Link to the Bitcoin inscription
-- **Kiln Memo**: The on-chain proof with all details
+- **Teleburn Memo**: The on-chain proof (format: `teleburn:<inscription_id>`)
 
 You can also:
-- 📥 **Download the Kiln Memo** as JSON for your records
 - 🔗 **View on Helius Orb** to see the full transaction details
+- 🔗 **View on Solscan** to see the burn transaction
 
 ---
 
@@ -189,7 +191,7 @@ Kiln does NOT support:
 - ❌ Semi-fungible tokens (supply > 1)
 
 ### Where is the proof stored?
-The teleburn proof (Kiln memo) is stored **on the Solana blockchain** in the same transaction as the burn. It's permanent and publicly verifiable.
+The teleburn proof (memo: `teleburn:<inscription_id>`) is stored **on the Solana blockchain** in the same transaction as the burn. It's permanent and publicly verifiable. The memo is ~78 bytes and uses a simple string format for easy parsing and indexing.
 
 ---
 
@@ -200,5 +202,6 @@ The teleburn proof (Kiln memo) is stored **on the Solana blockchain** in the sam
 
 ---
 
-*Last updated: December 3, 2025*
+*Last updated: December 5, 2025*  
+*Protocol Version: 1.0*
 

@@ -25,7 +25,6 @@ const burnMemoRequestSchema = z.object({
   mint: z.string(),
   owner: z.string(),
   inscriptionId: z.string(),
-  sha256: z.string(),
   priorityMicrolamports: z.number().optional().default(2_000),
 });
 
@@ -83,7 +82,6 @@ export async function POST(request: NextRequest) {
       validated.mint,
       validated.owner,
       validated.inscriptionId,
-      validated.sha256,
       validated.priorityMicrolamports
     );
 

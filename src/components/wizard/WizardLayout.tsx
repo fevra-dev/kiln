@@ -23,9 +23,8 @@ interface WizardLayoutProps {
 
 const STEPS: { id: WizardStep; label: string; description: string }[] = [
   { id: 'connect', label: '01_CONNECT', description: 'Initialize wallet connection' },
-  { id: 'verify', label: '02_VERIFY', description: 'Validate inscription content' },
-  { id: 'preview', label: '03_PREVIEW', description: 'Simulate transaction flow' },
-  { id: 'execute', label: '04_EXECUTE', description: 'Broadcast to blockchain' },
+  { id: 'preview', label: '02_PREVIEW', description: 'Simulate transaction flow' },
+  { id: 'execute', label: '03_EXECUTE', description: 'Broadcast to blockchain' },
 ];
 
 /**

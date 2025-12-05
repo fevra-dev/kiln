@@ -107,7 +107,6 @@ export interface DryRunParams {
   payer: PublicKey;
   mint: PublicKey;
   inscriptionId: string;
-  sha256: string;
   authority?: PublicKey[];
 
   // Retire params
@@ -239,7 +238,6 @@ export class DryRunService {
           params.mint.toBase58(),
           params.owner.toBase58(),
           params.inscriptionId,
-          params.sha256,
           2_000 // priority microlamports
         );
         
@@ -575,10 +573,7 @@ export class DryRunService {
         errors.push(`Invalid inscription ID format: ${params.inscriptionId}`);
       }
 
-      // Validate SHA-256 format
-      if (!/^[0-9a-f]{64}$/i.test(params.sha256)) {
-        errors.push(`Invalid SHA-256 hash format: ${params.sha256}`);
-      }
+      // SHA-256 validation removed in v1.0 protocol
 
     } catch (error) {
       warnings.push(`Validation check failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -711,9 +706,7 @@ export class DryRunService {
       errors.push('Invalid inscription ID format');
     }
 
-    if (!/^[0-9a-f]{64}$/i.test(params.sha256)) {
-      errors.push('Invalid SHA-256 hash format');
-    }
+    // SHA-256 validation removed in v1.0 protocol
 
     // Basic RPC checks
     try {
