@@ -4,14 +4,16 @@
  * Fetches teleburn history for a given wallet address.
  * Queries transaction history looking for Kiln teleburn memos.
  * 
- * @description Get teleburn history by wallet
- * @version 0.1.1
+ * @description Get teleburn history by wallet (supports v1.0 and legacy formats)
+ * @version 1.0
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { z } from 'zod';
 import { Buffer } from 'buffer';
+import { parseAnyTeleburnMemo } from '@/lib/teleburn';
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 
 // Request validation schema
 const HistoryRequestSchema = z.object({
@@ -106,6 +108,11 @@ export async function POST(request: NextRequest) {
           ?? msgAny['instructions'] 
           ?? [];
         
+        let inscriptionId: string | null = null;
+        let memoFormat: 'v1' | 'legacy-prefix' | 'legacy-json' | null = null;
+        let legacyMemo: KilnMemo | null = null;
+        
+        // First, find the teleburn memo (v1.0 or legacy)
         for (const ix of compiledInstructions as Array<{ programIdIndex: number; data: Uint8Array | string }>) {
           const programIdIndex = ix.programIdIndex;
           if (programIdIndex >= accountKeys.length) continue;
@@ -129,29 +136,108 @@ export async function POST(request: NextRequest) {
             }
             
             const memoData = new TextDecoder().decode(memoBytes);
-            const memo = JSON.parse(memoData) as KilnMemo;
             
-            // Check if it's a Kiln teleburn memo (accepts any version including 0.1.2)
-            if ((memo.standard === 'Kiln' || memo.standard === 'KILN') && 
-                (memo.action === 'teleburn' || 
-                 memo.action === 'teleburn-burn' || 
-                 memo.action === 'teleburn-incinerate' || 
-                 memo.action === 'teleburn-derived' ||
-                 memo.action === 'burn' || 
-                 memo.action === 'incinerate' || 
-                 memo.action === 'retire')) {
-              teleburns.push({
-                signature: sigInfo.signature,
-                mint: memo.solana?.mint || 'unknown',
-                inscriptionId: memo.inscription?.id || 'unknown',
-                timestamp: memo.timestamp || 0,
-                blockTime: tx.blockTime ?? null,
-                memo,
-              });
-              break; // Found a Kiln memo, no need to check other instructions
+            // Try v1.0 format first (teleburn: prefix)
+            try {
+              const parseResult = parseAnyTeleburnMemo(memoData);
+              inscriptionId = parseResult.inscriptionId;
+              memoFormat = parseResult.format;
+              break; // Found teleburn memo
+            } catch {
+              // Not v1.0 format, try legacy JSON
+              try {
+                const memo = JSON.parse(memoData) as KilnMemo;
+                
+                // Check if it's a Kiln teleburn memo (legacy JSON format)
+                if ((memo.standard === 'Kiln' || memo.standard === 'KILN') && 
+                    (memo.action === 'teleburn' || 
+                     memo.action === 'teleburn-burn' || 
+                     memo.action === 'teleburn-incinerate' || 
+                     memo.action === 'teleburn-derived' ||
+                     memo.action === 'burn' || 
+                     memo.action === 'incinerate' || 
+                     memo.action === 'retire')) {
+                  inscriptionId = memo.inscription?.id || null;
+                  memoFormat = 'legacy-json';
+                  legacyMemo = memo;
+                  break; // Found legacy JSON memo
+                }
+              } catch {
+                // Not valid JSON or not a Kiln memo, continue
+              }
             }
           } catch {
-            // Not valid JSON or not a Kiln memo, continue
+            // Skip invalid memo data
+            continue;
+          }
+        }
+        
+        // If we found a teleburn memo, extract mint and create record
+        if (inscriptionId) {
+          // Extract mint address from transaction
+          // Look for burn/transfer instructions or token balances
+          let mintAddress: string | null = null;
+          
+          // Method 1: Extract from pre/post token balances (most reliable)
+          if (tx.meta?.preTokenBalances && tx.meta.preTokenBalances.length > 0) {
+            // Find token balance that was reduced to 0 (burned)
+            const preBalances = tx.meta.preTokenBalances || [];
+            const postBalances = tx.meta.postTokenBalances || [];
+            
+            for (const preBalance of preBalances) {
+              const postBalance = postBalances.find(b => 
+                b.accountIndex === preBalance.accountIndex
+              );
+              
+              // If token balance went from > 0 to 0, it was burned
+              if (preBalance.uiTokenAmount?.uiAmount && 
+                  (!postBalance || !postBalance.uiTokenAmount?.uiAmount || postBalance.uiTokenAmount.uiAmount === 0)) {
+                mintAddress = preBalance.mint || null;
+                break;
+              }
+            }
+          }
+          
+          // Method 2: Extract from account keys by finding token program accounts
+          if (!mintAddress) {
+            // Look for accounts that match mint pattern and are referenced by token instructions
+            for (const ix of compiledInstructions as Array<{ programIdIndex: number; accountKeyIndexes?: number[] }>) {
+              const programIdIndex = ix.programIdIndex;
+              if (programIdIndex >= accountKeys.length) continue;
+              
+              const programId = accountKeys[programIdIndex];
+              
+              // Check if this is a token program instruction
+              if (programId.equals(TOKEN_PROGRAM_ID) || programId.equals(TOKEN_2022_PROGRAM_ID)) {
+                // For burn instructions, the mint is typically the second account
+                if (ix.accountKeyIndexes && ix.accountKeyIndexes.length > 1) {
+                  const potentialMint = accountKeys[ix.accountKeyIndexes[1]];
+                  if (potentialMint) {
+                    // Verify it's actually a mint by checking if it's a valid public key
+                    // and not in the list of known system accounts
+                    mintAddress = potentialMint.toBase58();
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Create teleburn record
+          if (mintAddress) {
+            teleburns.push({
+              signature: sigInfo.signature,
+              mint: mintAddress,
+              inscriptionId,
+              timestamp: legacyMemo?.timestamp || 0,
+              blockTime: tx.blockTime ?? null,
+              memo: legacyMemo || {
+                standard: 'Kiln',
+                version: memoFormat === 'v1' ? '1.0' : '0.1.x',
+                action: 'teleburn',
+                inscription: { id: inscriptionId },
+              } as KilnMemo,
+            });
           }
         }
       } catch {
