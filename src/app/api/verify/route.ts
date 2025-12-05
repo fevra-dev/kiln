@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
                     sha256 = memoJson.media?.sha256;
                     kilnMemo = memoJson;
                     blockTime = tx.blockTime || undefined;
-                    teleburnTimestamp = memoJson.timestamp || tx.blockTime;
+                    teleburnTimestamp = memoJson.timestamp || (tx.blockTime ?? undefined);
                     burnSignature = sigInfo.signature;
                   }
                 }
@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
                   memo: memoData 
                 };
                 blockTime = tx.blockTime || undefined;
-                teleburnTimestamp = tx.blockTime;
+                teleburnTimestamp = tx.blockTime ?? undefined;
                 burnSignature = sigInfo.signature;
               } catch {
                 // Not a v1.0 memo, try legacy JSON format
@@ -284,8 +284,8 @@ export async function POST(request: NextRequest) {
                       blockTime = tx.blockTime || undefined;
                       if (memoJson.timestamp) {
                         teleburnTimestamp = typeof memoJson.timestamp === 'number' ? memoJson.timestamp : parseInt(memoJson.timestamp, 10);
-                      } else if (tx.blockTime) {
-                        teleburnTimestamp = tx.blockTime;
+                      } else {
+                        teleburnTimestamp = tx.blockTime ?? undefined;
                       }
                       burnSignature = sigInfo.signature;
                     }
