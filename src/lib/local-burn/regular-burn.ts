@@ -9,7 +9,7 @@ import {
   burnV1,
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
-import { withComputeBudget, withSplMemo } from './ix-helpers';
+import { withComputeBudget, withSplMemoString } from './ix-helpers';
 import { buildRetireMemo } from './memo';
 import type { LocalBurnArgs } from './types';
 
@@ -49,7 +49,7 @@ export async function buildAndSendRegularBurnWithMemo(
   const memo = buildRetireMemo({
     inscriptionId: args.inscriptionId,
   });
-  tb = withSplMemo(tb, memo);
+  tb = withSplMemoString(tb, memo);
 
   const res = await tb.sendAndConfirm(umi);
   const [sig] = base58.deserialize(res.signature);

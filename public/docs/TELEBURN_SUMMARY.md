@@ -13,17 +13,17 @@ teleburn:6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0
 
 **Minimal:**
 ```json
-{"p":"kiln","op":"teleburn","v":1,"mint":"6ivMgoj..."}
+{"p":"kiln","op":"teleburn","v":1,"mint":"7i3co96..."}
 ```
 
 **Standard (recommended):**
 ```json
-{"p":"kiln","op":"teleburn","v":1,"mint":"6ivMgoj...","name":"DeGod #1234","collection":"DeGods"}
+{"p":"kiln","op":"teleburn","v":1,"mint":"7i3co96...","name":"Little Swag World #1657","collection":"Little Swag World"}
 ```
 
 **Full:**
 ```json
-{"p":"kiln","op":"teleburn","v":1,"mint":"6ivMgoj...","name":"Little Swag World #1234","collection":"Little Swag World","burn_tx":"5Kj2nF...","attributes":[{"trait_type":"Eyes","value":"Laser"}]}
+{"p":"kiln","op":"teleburn","v":1,"mint":"7i3co96...","name":"Little Swag World #1657","collection":"Little Swag World","burn_tx":"5Kj2nF...","attributes":[{"trait_type":"Eyes","value":"Glow"}]}
 ```
 
 ## How It Works
@@ -51,7 +51,7 @@ teleburn:6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0
 
 ```
 Solana → Bitcoin:  teleburn:abc123...i0
-Bitcoin → Solana:  {"p":"kiln","mint":"6ivMgoj..."}
+Bitcoin → Solana:  {"p":"kiln","mint":"7i3co96..."}
 ```
 
 Both chains point to each other. Verify from either direction.
