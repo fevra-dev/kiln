@@ -48,9 +48,6 @@ export async function buildAndSendRegularBurnWithMemo(
   // Build memo with teleburn action (regular NFTs are burned via Metaplex)
   const memo = buildRetireMemo({
     inscriptionId: args.inscriptionId,
-    mint: args.mint,
-    sha256: args.sha256,
-    timestamp: Math.floor(Date.now() / 1000),
   });
   tb = withSplMemo(tb, memo);
 
