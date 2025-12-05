@@ -13,7 +13,6 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { z } from 'zod';
 import { Buffer } from 'buffer';
 import { parseAnyTeleburnMemo } from '@/lib/teleburn';
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 
 // Request validation schema
 const HistoryRequestSchema = z.object({
@@ -178,49 +177,22 @@ export async function POST(request: NextRequest) {
           // Look for burn/transfer instructions or token balances
           let mintAddress: string | null = null;
           
-          // Method 1: Extract from pre/post token balances (most reliable)
+          // Extract mint address from token balances (most reliable method)
+          // When a token is burned, the preTokenBalance shows the mint that was burned
           if (tx.meta?.preTokenBalances && tx.meta.preTokenBalances.length > 0) {
-            // Find token balance that was reduced to 0 (burned)
-            const preBalances = tx.meta.preTokenBalances || [];
-            const postBalances = tx.meta.postTokenBalances || [];
-            
-            for (const preBalance of preBalances) {
-              const postBalance = postBalances.find(b => 
-                b.accountIndex === preBalance.accountIndex
-              );
-              
-              // If token balance went from > 0 to 0, it was burned
-              if (preBalance.uiTokenAmount?.uiAmount && 
-                  (!postBalance || !postBalance.uiTokenAmount?.uiAmount || postBalance.uiTokenAmount.uiAmount === 0)) {
-                mintAddress = preBalance.mint || null;
-                break;
+            // Find any token balance that existed before (indicates a token was involved)
+            // For burns, the token balance will be reduced to 0 or removed
+            for (const preBalance of tx.meta.preTokenBalances) {
+              if (preBalance.mint) {
+                mintAddress = preBalance.mint;
+                break; // Use first mint found (most teleburn transactions only burn one NFT)
               }
             }
           }
           
-          // Method 2: Extract from account keys by finding token program accounts
-          if (!mintAddress) {
-            // Look for accounts that match mint pattern and are referenced by token instructions
-            for (const ix of compiledInstructions as Array<{ programIdIndex: number; accountKeyIndexes?: number[] }>) {
-              const programIdIndex = ix.programIdIndex;
-              if (programIdIndex >= accountKeys.length) continue;
-              
-              const programId = accountKeys[programIdIndex];
-              
-              // Check if this is a token program instruction
-              if (programId.equals(TOKEN_PROGRAM_ID) || programId.equals(TOKEN_2022_PROGRAM_ID)) {
-                // For burn instructions, the mint is typically the second account
-                if (ix.accountKeyIndexes && ix.accountKeyIndexes.length > 1) {
-                  const potentialMint = accountKeys[ix.accountKeyIndexes[1]];
-                  if (potentialMint) {
-                    // Verify it's actually a mint by checking if it's a valid public key
-                    // and not in the list of known system accounts
-                    mintAddress = potentialMint.toBase58();
-                    break;
-                  }
-                }
-              }
-            }
+          // Fallback: Extract from legacy memo if available
+          if (!mintAddress && legacyMemo?.solana?.mint) {
+            mintAddress = legacyMemo.solana.mint;
           }
           
           // Create teleburn record
