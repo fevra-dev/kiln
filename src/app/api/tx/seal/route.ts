@@ -19,7 +19,6 @@ import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
 import type { PriorityFeeConfig } from '@/lib/transaction-utils';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
 import { checkEmergencyShutdown } from '@/lib/emergency-shutdown';
-import { storeInscriptionSnapshot } from '@/lib/inscription-immutability';
 
 /**
  * POST handler: Build seal transaction
@@ -100,11 +99,6 @@ export async function POST(request: NextRequest) {
       requireAllSignatures: false,
       verifySignatures: false,
     });
-
-    // Store inscription snapshot for API consistency validation
-    // NOTE: Bitcoin inscriptions are immutable on-chain. This snapshot is used to verify
-    // that APIs consistently serve correct data, not that Bitcoin changed (which is impossible).
-    storeInscriptionSnapshot(validated.inscriptionId, validated.sha256, 'seal-operation');
 
     // Return transaction + metadata with CORS and rate limit headers
     const corsHeaders = getCorsHeaders(request);
