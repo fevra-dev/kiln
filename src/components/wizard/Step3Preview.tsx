@@ -94,7 +94,7 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [publicKey, formData.mint, formData.inscriptionId, formData.sha256, formData.method]);
+  }, [publicKey, formData.mint, formData.inscriptionId, formData.method]);
 
   // Execute dry run on mount
   useEffect(() => {

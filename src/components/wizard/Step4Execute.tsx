@@ -20,7 +20,6 @@ import { FC, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, Transaction, VersionedTransaction, PublicKey } from '@solana/web3.js';
 import { TeleburnFormData } from '../teleburn/TeleburnForm';
-import { MemoDisplay } from '../teleburn/MemoDisplay';
 import { CopyButton } from '../ui/CopyButton';
 import { BurnCelebration } from '../ui/BurnCelebration';
 import { KilnEventLogger } from '@/lib/event-logger';

@@ -14,7 +14,6 @@ import {
   Connection,
   PublicKey,
   Transaction,
-  TransactionInstruction,
 } from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
@@ -31,7 +30,7 @@ import { buildTeleburnMemo, createMemoInstruction } from './teleburn';
 import { addPriorityFee, addDynamicPriorityFee, PriorityFeeConfig } from './transaction-utils';
 import { validateTransactionSize } from './transaction-size-validator';
 import { checkNFTFrozenStatus } from './frozen-account-detector';
-import type { Sbt01Seal, Sbt01Retire, TeleburnMethod } from './types';
+import type { TeleburnMethod } from './types';
 import { createConnectionWithFailover, withRpcFailover } from './rpc-failover';
 
 // Memo Program ID
@@ -123,15 +122,12 @@ export class TransactionBuilder {
    * @returns Built transaction ready for signing
    */
   async buildSealTransaction(params: SealTransactionParams): Promise<BuiltTransaction> {
-    const { payer, mint, inscriptionId, authority } = params;
+    const { payer, inscriptionId } = params;
 
     // Get current blockchain state for accurate timestamps (with failover)
-    const { blockhash, slot } = await withRpcFailover(async (conn) => {
-      const [blockhashResult, slotResult] = await Promise.all([
-        conn.getLatestBlockhash(),
-        conn.getSlot(),
-      ]);
-      return { blockhash: blockhashResult.blockhash, slot: slotResult };
+    const { blockhash } = await withRpcFailover(async (conn) => {
+      const blockhashResult = await conn.getLatestBlockhash();
+      return { blockhash: blockhashResult.blockhash };
     });
     // Build v1.0 memo format: teleburn:<inscription_id>
     const memo = buildTeleburnMemo(inscriptionId);
@@ -236,14 +232,10 @@ export class TransactionBuilder {
     }
 
     // Get current blockchain state for accurate timestamps (with failover)
-    const { blockhash, slot } = await withRpcFailover(async (conn) => {
-      const [blockhashResult, slotResult] = await Promise.all([
-        conn.getLatestBlockhash(),
-        conn.getSlot(),
-      ]);
-      return { blockhash: blockhashResult.blockhash, slot: slotResult };
+    const { blockhash } = await withRpcFailover(async (conn) => {
+      const blockhashResult = await conn.getLatestBlockhash();
+      return { blockhash: blockhashResult.blockhash };
     });
-    const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
     // Get token program (support both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID)
     console.log(`🚀 Building RETIRE transaction for mint: ${mint.toBase58()}`);

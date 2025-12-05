@@ -158,7 +158,7 @@ export default function TeleburnPage() {
       currentStep={currentStep}
       onStepChange={(step) => {
         // Only allow navigation to previous steps
-        const steps: WizardStep[] = ['connect', 'verify', 'preview', 'execute'];
+        const steps: WizardStep[] = ['connect', 'preview', 'execute'];
         const currentIndex = steps.indexOf(currentStep);
         const targetIndex = steps.indexOf(step);
         
@@ -169,15 +169,6 @@ export default function TeleburnPage() {
     >
       {currentStep === 'connect' && (
         <Step1Connect onComplete={handleConnectComplete} />
-      )}
-
-      {currentStep === 'verify' && formData && (
-        <Step2Verify
-          inscriptionId={formData.inscriptionId}
-          expectedSha256={formData.sha256}
-          onComplete={handleVerifyComplete}
-          onBack={() => setShowForm(true)}
-        />
       )}
 
       {currentStep === 'preview' && formData && (

@@ -23,7 +23,7 @@ teleburn:6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0
 
 **Full:**
 ```json
-{"p":"kiln","op":"teleburn","v":1,"mint":"6ivMgoj...","name":"DeGod #1234","collection":"DeGods","burn_tx":"5Kj2nF...","attributes":[{"trait_type":"Eyes","value":"Laser"}]}
+{"p":"kiln","op":"teleburn","v":1,"mint":"6ivMgoj...","name":"Little Swag World #1234","collection":"Little Swag World","burn_tx":"5Kj2nF...","attributes":[{"trait_type":"Eyes","value":"Laser"}]}
 ```
 
 ## How It Works

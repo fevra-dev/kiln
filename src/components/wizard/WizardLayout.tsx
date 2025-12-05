@@ -13,7 +13,7 @@
 
 import { FC, ReactNode } from 'react';
 
-export type WizardStep = 'connect' | 'verify' | 'preview' | 'execute';
+export type WizardStep = 'connect' | 'preview' | 'execute';
 
 interface WizardLayoutProps {
   currentStep: WizardStep;

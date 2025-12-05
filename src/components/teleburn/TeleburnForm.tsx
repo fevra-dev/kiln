@@ -12,7 +12,7 @@
  * @version 1.0
  */
 
-import { FC, useState, useEffect } from 'react';
+import { FC, useState } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { TeleburnMethod } from '@/lib/transaction-builder';
 import { isValidInscriptionId, isValidPublicKey } from '@/lib/schemas';
