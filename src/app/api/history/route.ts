@@ -20,11 +20,15 @@ const HistoryRequestSchema = z.object({
   limit: z.number().min(1).max(100).optional().default(20),
 });
 
-// Kiln memo structure for detection
+// Kiln memo structure for detection.
+// v1.0 records populate { standard, version, action, inscription, format } only;
+// legacy JSON records may additionally include method, solana, media, timestamp.
 interface KilnMemo {
   standard: string;
   version: string;
   action: string;
+  format?: 'v1' | 'legacy-prefix' | 'legacy-json';
+  memo?: string;
   method?: string;
   inscription?: { id: string };
   solana?: { mint: string };
@@ -110,6 +114,7 @@ export async function POST(request: NextRequest) {
         let inscriptionId: string | null = null;
         let memoFormat: 'v1' | 'legacy-prefix' | 'legacy-json' | null = null;
         let legacyMemo: KilnMemo | null = null;
+        let rawMemo: string | null = null;
         
         // First, find the teleburn memo (v1.0 or legacy)
         for (const ix of compiledInstructions as Array<{ programIdIndex: number; data: Uint8Array | string }>) {
@@ -141,6 +146,7 @@ export async function POST(request: NextRequest) {
               const parseResult = parseAnyTeleburnMemo(memoData);
               inscriptionId = parseResult.inscriptionId;
               memoFormat = parseResult.format;
+              rawMemo = memoData;
               break; // Found teleburn memo
             } catch {
               // Not v1.0 format, try legacy JSON
@@ -177,15 +183,29 @@ export async function POST(request: NextRequest) {
           // Look for burn/transfer instructions or token balances
           let mintAddress: string | null = null;
           
-          // Extract mint address from token balances (most reliable method)
-          // When a token is burned, the preTokenBalance shows the mint that was burned
+          // Identify the burned mint: a token whose pre-balance > 0 and post-balance == 0
+          // (or whose token account was closed, i.e. no matching postTokenBalance entry).
+          // This is robust against multi-token transactions where unrelated balances are present.
           if (tx.meta?.preTokenBalances && tx.meta.preTokenBalances.length > 0) {
-            // Find any token balance that existed before (indicates a token was involved)
-            // For burns, the token balance will be reduced to 0 or removed
+            const postBalances = tx.meta.postTokenBalances ?? [];
             for (const preBalance of tx.meta.preTokenBalances) {
-              if (preBalance.mint) {
+              if (!preBalance.mint) continue;
+              if (preBalance.uiTokenAmount.uiAmount === 0) continue;
+
+              const post = postBalances.find(p => p.accountIndex === preBalance.accountIndex);
+              const wentToZero = !post || post.uiTokenAmount.uiAmount === 0 || post.uiTokenAmount.amount === '0';
+              if (wentToZero) {
                 mintAddress = preBalance.mint;
-                break; // Use first mint found (most teleburn transactions only burn one NFT)
+                break;
+              }
+            }
+            // Fallback: if no pre→0 transition found (defensive), take the first pre-balance
+            if (!mintAddress) {
+              for (const preBalance of tx.meta.preTokenBalances) {
+                if (preBalance.mint) {
+                  mintAddress = preBalance.mint;
+                  break;
+                }
               }
             }
           }
@@ -197,18 +217,27 @@ export async function POST(request: NextRequest) {
           
           // Create teleburn record
           if (mintAddress) {
+            const versionFor = (f: typeof memoFormat) =>
+              f === 'v1' ? '1.0' : f === 'legacy-prefix' ? '0.2.x' : '0.1.x';
+
+            const memo: KilnMemo = legacyMemo
+              ? { ...legacyMemo, format: memoFormat ?? 'legacy-json' }
+              : {
+                  standard: 'Kiln',
+                  version: versionFor(memoFormat),
+                  action: 'teleburn',
+                  inscription: { id: inscriptionId },
+                  format: memoFormat ?? undefined,
+                  memo: rawMemo ?? undefined,
+                };
+
             teleburns.push({
               signature: sigInfo.signature,
               mint: mintAddress,
               inscriptionId,
               timestamp: legacyMemo?.timestamp || 0,
               blockTime: tx.blockTime ?? null,
-              memo: legacyMemo || {
-                standard: 'Kiln',
-                version: memoFormat === 'v1' ? '1.0' : '0.1.x',
-                action: 'teleburn',
-                inscription: { id: inscriptionId },
-              } as KilnMemo,
+              memo,
             });
           }
         }
