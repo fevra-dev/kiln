@@ -1,76 +1,24 @@
 // src/lib/transaction-builder.ts
 /**
- * KILN.1 Transaction Builder
- * 
- * Builds Solana transactions for the teleburn protocol:
- * - Seal: Record inscription proof on-chain via SPL Memo
- * - Retire: Burn/Incinerate/Transfer to derived owner
- * - Update URI: Optional metadata pointer update
- * 
- * All transactions include timestamp and block_height for temporal anchoring.
+ * Transaction Builder
+ *
+ * Builds auxiliary Solana transactions used by the dry-run/simulate path.
+ * The primary v1.0 burn+memo transaction is built in
+ * `src/lib/local-burn/build-burn-memo-tx.ts`; this file only retains the
+ * URI-update placeholder and a confirmed-tx timestamp helper.
  */
 
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-} from '@solana/web3.js';
-import {
-  TOKEN_PROGRAM_ID,
-  TOKEN_2022_PROGRAM_ID,
-  createBurnInstruction,
-  createCloseAccountInstruction,
-  createThawAccountInstruction,
-  createTransferInstruction,
-  getAssociatedTokenAddressSync,
-  createAssociatedTokenAccountIdempotentInstruction,
-} from '@solana/spl-token';
-import { isPNFT } from './metaplex-burn';
-import { buildTeleburnMemo, createMemoInstruction } from './teleburn';
-import { addPriorityFee, addDynamicPriorityFee, PriorityFeeConfig } from './transaction-utils';
-import { validateTransactionSize } from './transaction-size-validator';
-import { checkNFTFrozenStatus } from './frozen-account-detector';
+import { PublicKey, Transaction } from '@solana/web3.js';
 import type { TeleburnMethod } from './types';
-import { createConnectionWithFailover, withRpcFailover } from './rpc-failover';
+import { withRpcFailover } from './rpc-failover';
 
 // Memo Program ID
 export const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
 
-// Incinerator address (provably unspendable)
-export const INCINERATOR_ADDRESS = new PublicKey('1nc1nerator11111111111111111111111111111111');
-
 /**
- * Teleburn method options
- * Re-export from types for backward compatibility
+ * Teleburn method options — re-exported for callers that import from this module.
  */
 export type { TeleburnMethod };
-
-/**
- * Transaction builder parameters for seal
- */
-export interface SealTransactionParams {
-  payer: PublicKey;
-  mint: PublicKey;
-  inscriptionId: string;
-  authority?: PublicKey[]; // Optional multi-sig authorities
-  rpcUrl?: string;
-  priorityFee?: PriorityFeeConfig; // Optional priority fee configuration
-}
-
-/**
- * Transaction builder parameters for retire
- */
-export interface RetireTransactionParams {
-  payer: PublicKey;
-  owner: PublicKey;
-  mint: PublicKey;
-  inscriptionId: string;
-  method: TeleburnMethod;
-  amount?: bigint; // Amount to retire (default: 1 for NFTs)
-  rpcUrl?: string;
-  forceTokenProgram?: 'TOKEN_PROGRAM_ID' | 'TOKEN_2022_PROGRAM_ID'; // Force specific token program
-  priorityFee?: PriorityFeeConfig; // Optional priority fee configuration
-}
 
 /**
  * Transaction builder parameters for URI update
@@ -92,338 +40,22 @@ export interface BuiltTransaction {
   estimatedFee: number; // in lamports
 }
 
-/**
- * Transaction Builder Service
- * 
- * Handles construction of all KILN.1 protocol transactions
- */
 export class TransactionBuilder {
-  private connection: Connection;
-
-  constructor(rpcUrl: string) {
-    // rpcUrl parameter kept for API compatibility but not stored
-    // Connection is created via failover system
-    // Use failover connection if available, otherwise create standard connection
-    try {
-      this.connection = createConnectionWithFailover();
-    } catch {
-      this.connection = new Connection(rpcUrl, 'confirmed');
-    }
+  constructor(_rpcUrl: string) {
+    // rpcUrl is accepted for signature compatibility; connections are obtained
+    // per-call via withRpcFailover.
   }
 
   /**
-   * Build SEAL transaction
-   * 
-   * Creates a transaction with:
-   * 1. SPL Memo instruction with KILN.1 seal payload
-   * 2. Timestamp and block height anchoring
-   * 
-   * @param params - Seal transaction parameters
-   * @returns Built transaction ready for signing
-   */
-  async buildSealTransaction(params: SealTransactionParams): Promise<BuiltTransaction> {
-    const { payer, inscriptionId } = params;
-
-    // Get current blockchain state for accurate timestamps (with failover)
-    const { blockhash } = await withRpcFailover(async (conn) => {
-      const blockhashResult = await conn.getLatestBlockhash();
-      return { blockhash: blockhashResult.blockhash };
-    });
-    // Build v1.0 memo format: teleburn:<inscription_id>
-    const memo = buildTeleburnMemo(inscriptionId);
-
-    // Create transaction
-    const transaction = new Transaction();
-
-    // Add memo instruction
-    transaction.add(createMemoInstruction(memo));
-
-    // Set fee payer and blockhash
-    transaction.feePayer = payer;
-    transaction.recentBlockhash = blockhash;
-
-    // Add priority fees if configured, otherwise use dynamic fees
-    if (params.priorityFee) {
-      addPriorityFee(transaction, params.priorityFee);
-    } else {
-      // Use dynamic priority fee based on network conditions
-      await addDynamicPriorityFee(transaction, this.connection, 'medium');
-    }
-
-    // Validate transaction size
-    const sizeValidation = validateTransactionSize(transaction);
-    if (!sizeValidation.valid) {
-      throw new Error(
-        `Transaction size validation failed: ${sizeValidation.recommendation || 'Transaction too large'}`
-      );
-    }
-    if (sizeValidation.warning) {
-      console.warn(`⚠️ TRANSACTION BUILDER: ${sizeValidation.warning}`);
-    }
-
-    // Estimate fee
-    const estimatedFee = await this.estimateTransactionFee(transaction);
-
-    return {
-      transaction,
-      description: `SEAL: Record inscription ${inscriptionId.slice(0, 8)}...${inscriptionId.slice(-4)} proof on Solana`,
-      estimatedFee,
-    };
-  }
-
-  /**
-   * Build RETIRE transaction
-   * 
-   * Creates a transaction to permanently retire the Solana token:
-   * - burn: Reduce total supply to 0
-   * - incinerate: Send to provably unspendable address
-   * - teleburn-derived: Send to deterministic off-curve address
-   * 
-   * Includes retire memo with timestamp and block height.
-   * 
-   * @param params - Retire transaction parameters
-   * @returns Built transaction ready for signing
-   */
-  async buildRetireTransaction(params: RetireTransactionParams): Promise<BuiltTransaction> {
-    const { payer, owner, mint, inscriptionId, method, amount = 1n } = params;
-
-    // Check if this is a pNFT first (with failover)
-    console.log(`🔍 TRANSACTION BUILDER: Checking if mint is a pNFT...`);
-    const isPNFTMint = await withRpcFailover(async (conn) => {
-      return await isPNFT(mint, conn);
-    });
-    console.log(`🔍 TRANSACTION BUILDER: Is pNFT: ${isPNFTMint}`);
-    
-    if (isPNFTMint) {
-      console.log(`🔥 TRANSACTION BUILDER: Detected pNFT - Metaplex burn required`);
-      console.log(`⚠️ TRANSACTION BUILDER: Cannot build SPL Token transaction for pNFT`);
-      console.log(`💡 TRANSACTION BUILDER: Use burnPNFTWithMetaplex() instead`);
-      
-      // For pNFTs, we can't build a traditional transaction
-      // The Metaplex burn must be handled separately
-      throw new Error('pNFT detected - use Metaplex burn instead of SPL Token burn');
-    }
-
-    // Check if token account is frozen (for regular NFTs)
-    console.log(`🔍 TRANSACTION BUILDER: Checking if token account is frozen...`);
-    const frozenCheck = await withRpcFailover(async (conn) => {
-      // Get token program first
-      let tokenProgram = TOKEN_PROGRAM_ID;
-      if (params.forceTokenProgram) {
-        tokenProgram = params.forceTokenProgram === 'TOKEN_PROGRAM_ID' ? TOKEN_PROGRAM_ID : TOKEN_2022_PROGRAM_ID;
-      } else {
-        tokenProgram = await this.detectTokenProgram(mint);
-      }
-      return await checkNFTFrozenStatus(conn, mint, owner, tokenProgram);
-    });
-    
-    if (frozenCheck.frozen) {
-      throw new Error(
-        `Token account is frozen. Cannot burn frozen tokens. ` +
-        `Freeze authority: ${frozenCheck.freezeAuthority?.toBase58() || 'Unknown'}. ` +
-        `Contact the freeze authority to unfreeze the account before burning.`
-      );
-    }
-    
-    if (frozenCheck.error) {
-      console.warn(`⚠️ TRANSACTION BUILDER: Frozen status check warning: ${frozenCheck.error}`);
-    } else {
-      console.log(`✅ TRANSACTION BUILDER: Token account is not frozen`);
-    }
-
-    // Get current blockchain state for accurate timestamps (with failover)
-    const { blockhash } = await withRpcFailover(async (conn) => {
-      const blockhashResult = await conn.getLatestBlockhash();
-      return { blockhash: blockhashResult.blockhash };
-    });
-
-    // Get token program (support both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID)
-    console.log(`🚀 Building RETIRE transaction for mint: ${mint.toBase58()}`);
-    let tokenProgram: PublicKey;
-    
-    if (params.forceTokenProgram) {
-      // Use forced token program
-      tokenProgram = params.forceTokenProgram === 'TOKEN_PROGRAM_ID' ? TOKEN_PROGRAM_ID : TOKEN_2022_PROGRAM_ID;
-      console.log(`🔧 Forced token program: ${tokenProgram.toBase58()}`);
-    } else {
-      // Auto-detect token program
-      tokenProgram = await this.detectTokenProgram(mint);
-      console.log(`🎯 Auto-detected token program: ${tokenProgram.toBase58()}`);
-    }
-
-    // Get owner's ATA
-    const ownerAta = getAssociatedTokenAddressSync(
-      mint,
-      owner,
-      false,
-      tokenProgram
-    );
-
-    // Create transaction
-    const transaction = new Transaction();
-
-    // Build v1.0 memo format: teleburn:<inscription_id>
-    const memo = buildTeleburnMemo(inscriptionId);
-
-    // Add method-specific instructions
-    let description = '';
-
-    switch (method) {
-      case 'teleburn-burn':
-      case 'burn': { // Support old 'burn' for backward compatibility
-        // CRITICAL: Thaw frozen account first
-        // This resolves "Account is frozen" errors for pNFTs
-        
-        console.log(`🔧 TRANSACTION BUILDER: Adding ThawAccount instruction...`);
-        console.log(`🔧 TRANSACTION BUILDER: Token account:`, ownerAta.toBase58());
-        console.log(`🔧 TRANSACTION BUILDER: Mint:`, mint.toBase58());
-        console.log(`🔧 TRANSACTION BUILDER: Owner (as freeze authority):`, owner.toBase58());
-        
-        try {
-          // Try to add ThawAccount instruction
-          const thawInstruction = createThawAccountInstruction(
-            ownerAta,           // token account to thaw
-            mint,              // mint
-            owner,             // freeze authority (user's wallet)
-            [],                // additional signers
-            tokenProgram       // SPL Token program
-          );
-          
-          console.log(`🔧 TRANSACTION BUILDER: ThawAccount instruction created successfully`);
-          transaction.add(thawInstruction);
-          console.log(`🔧 TRANSACTION BUILDER: ThawAccount instruction added to transaction`);
-        } catch (error) {
-          console.log(`❌ TRANSACTION BUILDER: Failed to create ThawAccount instruction:`, error);
-          // Continue without thaw - this will likely fail but we'll see the error
-        }
-        
-        // Burn instruction (reduces supply)
-        transaction.add(
-          createBurnInstruction(
-            ownerAta,
-            mint,
-            owner,
-            amount,
-            [],
-            tokenProgram
-          )
-        );
-        
-        // Close token account (reclaim SOL rent)
-        transaction.add(
-          createCloseAccountInstruction(
-            ownerAta,
-            owner, // destination for reclaimed SOL
-            owner, // owner of the token account
-            [],
-            tokenProgram
-          )
-        );
-        
-        description = `THAW + BURN: Unfreeze account, burn token (supply → 0) + close account`;
-        break;
-      }
-
-      case 'teleburn-incinerate':
-      case 'incinerate': { // Support old 'incinerate' for backward compatibility
-        // Transfer to incinerator (provably unspendable)
-        const incineratorAta = getAssociatedTokenAddressSync(
-          mint,
-          INCINERATOR_ADDRESS,
-          true, // allowOwnerOffCurve
-          tokenProgram
-        );
-
-        // Create ATA if it doesn't exist (idempotent - won't fail if exists)
-        transaction.add(
-          createAssociatedTokenAccountIdempotentInstruction(
-            payer, // payer
-            incineratorAta, // associatedToken
-            INCINERATOR_ADDRESS, // owner
-            mint, // mint
-            tokenProgram // programId
-          )
-        );
-
-        // Add transfer instruction
-        transaction.add(
-          createTransferInstruction(
-            ownerAta,
-            incineratorAta,
-            owner,
-            amount,
-            [],
-            tokenProgram
-          )
-        );
-        description = `INCINERATE: Send to provably unspendable address`;
-        break;
-      }
-
-      case 'teleburn-derived': {
-        // v1.0: Simplified - just burn the token
-        // Derived address calculation removed in v1.0 protocol
-        transaction.add(
-          createBurnInstruction(
-            ownerAta,
-            mint,
-            owner,
-            amount,
-            [],
-            tokenProgram
-          )
-        );
-
-        description = `TELEBURN: Burn token linked to inscription`;
-        break;
-      }
-    }
-
-    // Add retire memo instruction (v1.0 format: teleburn:<inscription_id>)
-    transaction.add(createMemoInstruction(memo));
-
-    // Set fee payer and blockhash
-    transaction.feePayer = payer;
-    transaction.recentBlockhash = blockhash;
-
-    // Add priority fees if configured, otherwise use dynamic fees
-    if (params.priorityFee) {
-      addPriorityFee(transaction, params.priorityFee);
-    } else {
-      // Use dynamic priority fee based on network conditions
-      await addDynamicPriorityFee(transaction, this.connection, 'medium');
-    }
-
-    // Estimate fee
-    const estimatedFee = await this.estimateTransactionFee(transaction);
-
-    return {
-      transaction,
-      description,
-      estimatedFee,
-    };
-  }
-
-  /**
-   * Build metadata URI update transaction
-   * 
-   * Updates the token metadata URI to point to the pointer JSON
-   * (only for mutable metadata)
-   * 
-   * @param params - URI update parameters
-   * @returns Built transaction ready for signing
+   * Build URI update transaction (placeholder — Metaplex update_metadata not yet wired up here;
+   * the live update path is `/api/tx/update-metadata`).
    */
   async buildUpdateUriTransaction(params: UpdateUriParams): Promise<BuiltTransaction> {
     const { payer, newUri } = params;
 
-    // TODO: Implement Metaplex metadata update instruction
-    // This requires @metaplex-foundation/mpl-token-metadata
-    // For now, return a placeholder
-
     const transaction = new Transaction();
     transaction.feePayer = payer;
 
-    // Get blockhash with failover
     const { blockhash } = await withRpcFailover(async (conn) => {
       return await conn.getLatestBlockhash();
     });
@@ -438,146 +70,44 @@ export class TransactionBuilder {
     };
   }
 
-  /**
-   * Detect which token program a mint uses and check freeze state
-   * 
-   * @param mint - Mint address
-   * @returns Token program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
-   */
-  private async detectTokenProgram(mint: PublicKey): Promise<PublicKey> {
-    try {
-      console.log(`🔍 Detecting token program for mint: ${mint.toBase58()}`);
-      const accountInfo = await withRpcFailover(async (conn) => {
-        return await conn.getAccountInfo(mint);
-      });
-      if (!accountInfo) {
-        throw new Error(`Mint account ${mint.toBase58()} not found`);
-      }
-
-      console.log(`📋 Mint account owner: ${accountInfo.owner.toBase58()}`);
-      console.log(`📋 TOKEN_2022_PROGRAM_ID: ${TOKEN_2022_PROGRAM_ID.toBase58()}`);
-      console.log(`📋 TOKEN_PROGRAM_ID: ${TOKEN_PROGRAM_ID.toBase58()}`);
-
-      // Check if owner is TOKEN_2022_PROGRAM_ID
-      if (accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
-        console.log(`🎯 Detected Token-2022 mint ${mint.toBase58()}`);
-        
-        // ALWAYS use SPL Token program for Token-2022 mints
-        // This bypasses freeze restrictions that prevent burning with Token-2022 program
-        console.log(`🔧 FORCING SPL Token program for Token-2022 mint`);
-        console.log(`🔧 This bypasses freeze restrictions for burnable pNFTs`);
-        return TOKEN_PROGRAM_ID;
-      }
-
-      console.log(`✅ Using SPL Token program for standard mint: ${mint.toBase58()}`);
-      return TOKEN_PROGRAM_ID;
-    } catch (error) {
-      // Default to TOKEN_PROGRAM_ID
-      console.warn(`⚠️ Failed to detect token program for ${mint.toBase58()}, defaulting to TOKEN_PROGRAM_ID:`, error);
-      return TOKEN_PROGRAM_ID;
-    }
-  }
-
-  /**
-   * Estimate transaction fee
-   * 
-   * @param transaction - Transaction to estimate
-   * @returns Estimated fee in lamports
-   */
   private async estimateTransactionFee(transaction: Transaction): Promise<number> {
     try {
       const message = transaction.compileMessage();
       const fee = await withRpcFailover(async (conn) => {
         return await conn.getFeeForMessage(message);
       });
-      return fee.value ?? 5000; // Default to 5000 lamports if estimation fails
+      return fee.value ?? 5000;
     } catch (error) {
       console.warn('Failed to estimate transaction fee:', error);
-      return 5000; // Default fee
+      return 5000;
     }
   }
 
   /**
-   * Get actual transaction timestamp and block height after confirmation
-   * 
-   * This method should be called after a transaction is confirmed to get
-   * the accurate timestamp and block height for the memo.
-   * 
-   * @param signature - Transaction signature
-   * @returns Actual timestamp and block height from the confirmed transaction
+   * Get actual timestamp + slot for a confirmed transaction.
    */
   async getTransactionTimestamp(signature: string): Promise<{ timestamp: number; block_height: number }> {
-    try {
-      const tx = await withRpcFailover(async (conn) => {
-        return await conn.getTransaction(signature, {
-          commitment: 'confirmed',
-          maxSupportedTransactionVersion: 0,
-        });
+    const tx = await withRpcFailover(async (conn) => {
+      return await conn.getTransaction(signature, {
+        commitment: 'confirmed',
+        maxSupportedTransactionVersion: 0,
       });
+    });
 
-      if (!tx) {
-        throw new Error('Transaction not found');
-      }
-
-      if (!tx.blockTime) {
-        throw new Error('Block time not available for transaction');
-      }
-
-      return {
-        timestamp: tx.blockTime,
-        block_height: tx.slot
-      };
-    } catch (error) {
-      throw new Error(
-        `Failed to get transaction timestamp: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
+    if (!tx) {
+      throw new Error('Transaction not found');
     }
-  }
-
-  /**
-   * Build complete teleburn flow (seal + retire)
-   * 
-   * Returns all transactions needed for a full teleburn:
-   * 1. Seal transaction
-   * 2. Optional URI update transaction
-   * 3. Retire transaction
-   * 
-   * @param sealParams - Seal parameters
-   * @param retireParams - Retire parameters
-   * @param uriParams - Optional URI update parameters
-   * @returns Array of built transactions in execution order
-   */
-  async buildTeleburnFlow(
-    sealParams: SealTransactionParams,
-    retireParams: RetireTransactionParams,
-    uriParams?: UpdateUriParams
-  ): Promise<BuiltTransaction[]> {
-    const transactions: BuiltTransaction[] = [];
-
-    // 1. Seal transaction
-    transactions.push(await this.buildSealTransaction(sealParams));
-
-    // 2. Optional URI update
-    if (uriParams) {
-      transactions.push(await this.buildUpdateUriTransaction(uriParams));
+    if (!tx.blockTime) {
+      throw new Error('Block time not available for transaction');
     }
 
-    // 3. Retire transaction
-    transactions.push(await this.buildRetireTransaction(retireParams));
-
-    return transactions;
+    return {
+      timestamp: tx.blockTime,
+      block_height: tx.slot,
+    };
   }
 }
 
-/**
- * Helper function to create a transaction builder instance
- * 
- * @param rpcUrl - Solana RPC URL
- * @returns TransactionBuilder instance
- */
 export function createTransactionBuilder(rpcUrl: string): TransactionBuilder {
   return new TransactionBuilder(rpcUrl);
 }
-

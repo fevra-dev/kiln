@@ -29,6 +29,7 @@ import {
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
 import { Connection, PublicKey, VersionedTransaction, TransactionMessage } from '@solana/web3.js';
 import { buildRetireMemo } from './memo';
+import { withSplMemoString } from './ix-helpers';
 
 /**
  * Build a burn+memo transaction without sending it.
@@ -178,17 +179,7 @@ export async function buildBurnMemoTransaction(
   });
 
   // Add memo instruction (v1.0 format: simple string, not JSON)
-  const MEMO_PROGRAM_ID = publicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
-  const memoData = new TextEncoder().encode(memo); // memo is already a string (teleburn:...)
-  tb = tb.add({
-    instruction: {
-      programId: MEMO_PROGRAM_ID,
-      keys: [],
-      data: memoData,
-    },
-    signers: [],
-    bytesCreatedOnChain: 0,
-  });
+  tb = withSplMemoString(tb, memo);
 
   // Build the transaction using web3.js directly to avoid Umi's signing requirements
   // This extracts the instructions from Umi and builds a versioned transaction manually

@@ -9,16 +9,8 @@
  * Added: Simple teleburn: prefix format, legacy support
  */
 
-import { PublicKey, Transaction, TransactionInstruction, Connection } from '@solana/web3.js';
-import {
-  TOKEN_PROGRAM_ID, 
-  TOKEN_2022_PROGRAM_ID,
-  getAssociatedTokenAddress,
-  createAssociatedTokenAccountIdempotentInstruction,
-  createTransferInstruction,
-  createCloseAccountInstruction,
-  createBurnInstruction
-} from '@solana/spl-token';
+import { PublicKey, TransactionInstruction, Connection } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 
 // ============================================================================
 // CONSTANTS
@@ -368,110 +360,3 @@ export function createMemoInstruction(memo: string): TransactionInstruction {
   });
 }
 
-// ============================================================================
-// TRANSACTION BUILDERS
-// ============================================================================
-
-/**
- * Build transaction to burn SPL token (reduce supply)
- * 
- * This permanently destroys the token by reducing total supply.
- * 
- * @param connection - Solana connection
- * @param payer - Transaction signer and fee payer
- * @param mint - Mint to burn from
- * @param inscriptionId - Bitcoin inscription ID for memo
- * @returns Unsigned transaction
- */
-export async function buildBurnTx(
-  connection: Connection,
-  payer: PublicKey,
-  mint: PublicKey,
-  inscriptionId: string
-): Promise<Transaction> {
-  // Validate inscription ID
-  if (!isValidInscriptionId(inscriptionId)) {
-    throw new Error(`Invalid inscription ID: ${inscriptionId}`);
-  }
-
-  // Detect token program (TOKEN or TOKEN_2022)
-  const tokenProgram = await getTokenProgramId(connection, mint);
-  
-  // Get owner's ATA
-  const fromAta = await getAssociatedTokenAddress(mint, payer, false, tokenProgram);
-  
-  // Build memo (v1.0 format)
-  const memo = buildTeleburnMemo(inscriptionId);
-  
-  // Build instructions
-  const ixs = [
-    createMemoInstruction(memo),
-    createBurnInstruction(fromAta, mint, payer, 1, [], tokenProgram),
-    createCloseAccountInstruction(fromAta, payer, payer, [], tokenProgram)
-  ];
-  
-  // Build transaction
-  const tx = new Transaction().add(...ixs);
-  tx.feePayer = payer;
-  
-  const { blockhash } = await connection.getLatestBlockhash();
-  tx.recentBlockhash = blockhash;
-  
-  return tx;
-}
-
-/**
- * Build transaction to incinerate SPL token (send to dead address)
- * 
- * Transfers token to canonical incinerator address (no known private key).
- * 
- * @param connection - Solana connection
- * @param payer - Transaction signer and fee payer
- * @param mint - Mint to incinerate
- * @param inscriptionId - Bitcoin inscription ID for memo
- * @returns Unsigned transaction
- */
-export async function buildIncinerateTx(
-  connection: Connection,
-  payer: PublicKey,
-  mint: PublicKey,
-  inscriptionId: string
-): Promise<Transaction> {
-  // Validate inscription ID
-  if (!isValidInscriptionId(inscriptionId)) {
-    throw new Error(`Invalid inscription ID: ${inscriptionId}`);
-  }
-
-  // Detect token program
-  const tokenProgram = await getTokenProgramId(connection, mint);
-  
-  // Get ATAs
-  const fromAta = await getAssociatedTokenAddress(mint, payer, false, tokenProgram);
-  const toAta = await getAssociatedTokenAddress(mint, INCINERATOR, true, tokenProgram);
-  
-  // Build memo (v1.0 format)
-  const memo = buildTeleburnMemo(inscriptionId);
-  
-  // Build instructions
-  const ixs = [
-    createMemoInstruction(memo),
-    createAssociatedTokenAccountIdempotentInstruction(
-      payer,
-      toAta,
-      INCINERATOR,
-      mint,
-      tokenProgram
-    ),
-    createTransferInstruction(fromAta, toAta, payer, 1, [], tokenProgram),
-    createCloseAccountInstruction(fromAta, payer, payer, [], tokenProgram)
-  ];
-  
-  // Build transaction
-  const tx = new Transaction().add(...ixs);
-  tx.feePayer = payer;
-  
-  const { blockhash } = await connection.getLatestBlockhash();
-  tx.recentBlockhash = blockhash;
-  
-  return tx;
-}

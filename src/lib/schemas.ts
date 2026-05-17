@@ -179,18 +179,6 @@ export const SealTransactionRequestSchema = z.object({
 });
 
 /**
- * Validates seal API request (route handler)
- */
-export const sealRequestSchema = z.object({
-  payer: PublicKeySchema,
-  mint: PublicKeySchema,
-  inscriptionId: InscriptionIdSchema,
-  authority: z.array(PublicKeySchema).optional(),
-  priorityMicrolamports: z.number().int().min(0).optional(), // Optional priority fee
-  computeUnits: z.number().int().min(1_000).max(1_400_000).optional() // Optional compute unit limit
-});
-
-/**
  * Validates retire transaction build request
  */
 export const RetireTransactionRequestSchema = z.object({
@@ -213,20 +201,6 @@ export const RetireTransactionRequestSchema = z.object({
     path: ['bump']
   }
 );
-
-/**
- * Validates retire API request (route handler)
- */
-export const retireRequestSchema = z.object({
-  payer: PublicKeySchema,
-  owner: PublicKeySchema,
-  mint: PublicKeySchema,
-  inscriptionId: InscriptionIdSchema,
-  method: TeleburnMethodSchema,
-  amount: z.string().optional(),
-  priorityMicrolamports: z.number().int().min(0).optional(), // Optional priority fee
-  computeUnits: z.number().int().min(1_000).max(1_400_000).optional() // Optional compute unit limit
-});
 
 /**
  * Validates update metadata URI request
