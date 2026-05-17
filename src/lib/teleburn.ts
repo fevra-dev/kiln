@@ -39,6 +39,9 @@ const LEGACY_PREFIX = 'kiln:';
 /** Inscription ID regex: 64 hex chars + 'i' + numeric index */
 const INSCRIPTION_REGEX = /^[a-f0-9]{64}i[0-9]+$/;
 
+/** Max memo length per spec §3.1.2 */
+const MAX_MEMO_BYTES = 100;
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -118,7 +121,12 @@ export function buildTeleburnMemo(inscriptionId: string): string {
   if (!isValidInscriptionId(inscriptionId)) {
     throw new Error(`Invalid inscription ID: ${inscriptionId}`);
   }
-  return `${PREFIX}${inscriptionId}`;
+  const memo = `${PREFIX}${inscriptionId}`;
+  const byteLength = new TextEncoder().encode(memo).length;
+  if (byteLength > MAX_MEMO_BYTES) {
+    throw new Error(`Memo exceeds ${MAX_MEMO_BYTES}-byte limit (got ${byteLength})`);
+  }
+  return memo;
 }
 
 // ============================================================================
