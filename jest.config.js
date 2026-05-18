@@ -2,6 +2,9 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'require', 'default'],
+  },
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
   moduleNameMapper: {
@@ -9,7 +12,7 @@ module.exports = {
     '^next/server$': '<rootDir>/tests/__mocks__/next-server.js',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(uuid|@noble|@solana|jayson)/)',
+    'node_modules/(?!(\\.pnpm/)?(uuid|@noble|@solana|jayson)(@[^/]+)?/)',
   ],
   collectCoverageFrom: [
     'src/lib/**/*.{ts,tsx}',
