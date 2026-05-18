@@ -1,4 +1,4 @@
-import { fetchFromOrdinals, fetchFromHiro } from '@/lib/inscription-preflight/indexers';
+import { fetchFromOrdinals, fetchFromOrdinalsWallet } from '@/lib/inscription-preflight/indexers';
 
 const VALID_ID = '6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0';
 
@@ -24,18 +24,14 @@ const ORDINALS_OK_BODY = {
   address: 'bc1pxxx',
 };
 
-// Hiro.so v1 API is HTTP 410 Gone (deprecated as of 2026).
-// We keep the URL in the implementation so mock tests still validate
-// the parsing logic against the documented (now-deprecated) JSON shape.
-const HIRO_OK_BODY = {
+const ORDINALSWALLET_OK_BODY = {
   id: VALID_ID,
-  sat_ordinal: '425639728',
-  sat_rarity: 'uncommon',
-  genesis_block_height: 875432,
-  genesis_timestamp: 1764732009000, // hiro used unix-ms
+  content_length: 793,
   content_type: 'image/png',
-  content_length: 87234,
-  curse_type: null,
+  created: 1671049920,
+  genesis_height: 767430,
+  sat: 425639728,
+  charms: ['uncommon'], // exercises rarity derivation in fallback path too
 };
 
 const fetchMock = global.fetch as jest.Mock;
@@ -171,24 +167,43 @@ describe('fetchFromOrdinals', () => {
   });
 });
 
-describe('fetchFromHiro', () => {
-  it('returns ok result on 200', async () => {
-    mockFetchSequence(
-      { status: 200, body: HIRO_OK_BODY },
-      { status: 200, body: null, bytes: new Uint8Array([1, 2, 3]) },
-    );
-    const result = await fetchFromHiro(VALID_ID, 875440);
+describe('fetchFromOrdinalsWallet', () => {
+  it('returns ok result on 200 (no content fetch)', async () => {
+    // Only ONE fetch should fire (metadata) — no content fetch for this indexer.
+    mockFetchSequence({ status: 200, body: ORDINALSWALLET_OK_BODY });
+    const result = await fetchFromOrdinalsWallet(VALID_ID, 875440);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.source).toBe('hiro.so');
-      expect(result.data.confirmations).toBe(875440 - 875432 + 1);
+      expect(result.source).toBe('ordinalswallet');
+      expect(result.data.confirmations).toBe(875440 - 767430 + 1);
+      expect(result.data.contentSha256).toBeNull(); // skipped intentionally
+      expect(result.data.satRarity).toBe('uncommon');
+      expect(result.data.cursed).toBe(false);
     }
+    expect(fetchMock.mock.calls.length).toBe(1); // metadata only — no content fetch
   });
 
   it('returns not_found on 404', async () => {
     mockFetchSequence({ status: 404, body: { error: 'not found' } });
-    const result = await fetchFromHiro(VALID_ID, 875440);
+    const result = await fetchFromOrdinalsWallet(VALID_ID, 875440);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.status).toBe('not_found');
+  });
+
+  it('handles null sat (ordinalswallet sometimes returns null)', async () => {
+    mockFetchSequence({ status: 200, body: { ...ORDINALSWALLET_OK_BODY, sat: null } });
+    const result = await fetchFromOrdinalsWallet(VALID_ID, 875440);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.sat).toBe(0);
+  });
+
+  it('derives cursed from charms array', async () => {
+    mockFetchSequence({ status: 200, body: { ...ORDINALSWALLET_OK_BODY, charms: ['cursed'] } });
+    const result = await fetchFromOrdinalsWallet(VALID_ID, 875440);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.cursed).toBe(true);
+      expect(result.data.satRarity).toBe('common'); // no rarity charm
+    }
   });
 });

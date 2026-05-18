@@ -7,7 +7,7 @@ export type SatRarity =
   | 'common' | 'uncommon' | 'rare'
   | 'epic' | 'legendary' | 'mythic';
 
-export type IndexerName = 'ordinals.com' | 'hiro.so';
+export type IndexerName = 'ordinals.com' | 'ordinalswallet';
 
 export type IndexerCheckStatus =
   | 'not_found'

@@ -1,7 +1,7 @@
 /**
  * Indexer clients for the inscription pre-flight check.
  *
- * Two fetchers (ordinals.com, hiro.so) return a normalized IndexerResponse.
+ * Two fetchers (ordinals.com, ordinalswallet) return a normalized IndexerResponse.
  * Each fetcher does its own metadata fetch + optional content fetch (for SHA-256).
  *
  * Endpoint paths verified against live responses 2026-05-18:
@@ -10,11 +10,10 @@
  *     - field `timestamp`      (unix-s; plan assumed `genesis_block_time`)
  *     - field `charms: string[]` (encodes rarity + "cursed"; no dedicated fields)
  *     - no standalone `rarity` or `cursed` boolean
- *   hiro.so:  GET /ordinals/v1/inscriptions/<id>
- *     - API is HTTP 410 Gone (deprecated) as of 2026-05-18.
- *     - The HiroMetadata interface + parser are based on the last documented shape.
- *     - In practice the fallback will always return an error for live traffic;
- *       mocks exercise the parsing logic in tests.
+ *   ordinalswallet: GET turbo.ordinalswallet.com/inscription/<id>
+ *     - fields: `genesis_height`, `created` (unix-s), `sat`, `charms`, `content_type`, `content_length`
+ *     - `sat` may be null; default to 0
+ *     - no public content endpoint; contentSha256 is always null for this indexer
  */
 
 import { webcrypto } from 'crypto';
@@ -39,7 +38,7 @@ const PER_INDEXER_TIMEOUT_MS = 5_000;
 export const MAX_HASHABLE_BYTES = 5 * 1024 * 1024;
 
 const ORDINALS_BASE = 'https://ordinals.com';
-const HIRO_BASE = 'https://api.hiro.so/ordinals/v1';
+const ORDINALSWALLET_BASE = 'https://turbo.ordinalswallet.com';
 
 function asError(
   source: IndexerName,
@@ -80,19 +79,13 @@ async function sha256OfArrayBuffer(buf: ArrayBuffer): Promise<string> {
 
 const VALID_RARITIES: SatRarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
 
-function normalizeRarity(input: unknown): SatRarity {
-  if (typeof input === 'string' && (VALID_RARITIES as string[]).includes(input)) {
-    return input as SatRarity;
-  }
-  return 'common';
-}
-
 /**
- * Extract rarity from the ordinals.com `charms` array.
+ * Derive sat rarity from a charms array.
  * The charms array contains string entries such as "uncommon", "rare", "cursed", etc.
  * Returns the first entry that matches a known rarity name, or 'common'.
+ * Shared by both fetchFromOrdinals and fetchFromOrdinalsWallet.
  */
-function rarityFromCharms(charms: unknown): SatRarity {
+function deriveRarityFromCharms(charms: unknown): SatRarity {
   if (!Array.isArray(charms)) return 'common';
   for (const charm of charms) {
     if (typeof charm === 'string' && (VALID_RARITIES as string[]).includes(charm)) {
@@ -103,8 +96,9 @@ function rarityFromCharms(charms: unknown): SatRarity {
 }
 
 /**
- * Extract cursed flag from the ordinals.com `charms` array.
+ * Extract cursed flag from a charms array.
  * Pre-jubilee cursed inscriptions have "cursed" as a charm entry.
+ * Shared by both fetchFromOrdinals and fetchFromOrdinalsWallet.
  */
 function cursedFromCharms(charms: unknown): boolean {
   if (!Array.isArray(charms)) return false;
@@ -179,7 +173,7 @@ export async function fetchFromOrdinals(
   const data: IndexerResponse = {
     inscriptionId,
     sat: typeof meta.sat === 'number' ? meta.sat : 0,
-    satRarity: rarityFromCharms(meta.charms),
+    satRarity: deriveRarityFromCharms(meta.charms),
     genesisBlockHeight,
     genesisTimestamp: typeof meta.timestamp === 'number' ? meta.timestamp : null,
     confirmations,
@@ -194,31 +188,31 @@ export async function fetchFromOrdinals(
 }
 
 // ---------------------------------------------------------------------------
-// hiro.so
+// ordinalswallet (turbo.ordinalswallet.com)
 // ---------------------------------------------------------------------------
 
 /**
- * Hiro.so /ordinals/v1/inscriptions/<id> shape (last documented; API is HTTP 410 Gone).
- * Kept to allow mock-based tests to exercise the parsing logic.
+ * turbo.ordinalswallet.com/inscription/<id> response shape (verified live).
+ * Notable: `created` is unix-seconds, `sat` may be null, `charms` same format as ordinals.com.
+ * No public content endpoint exists; contentSha256 is skipped for this indexer.
  */
-interface HiroMetadata {
+interface OrdinalsWalletMetadata {
   id?: string;
-  sat_ordinal?: string;
-  sat_rarity?: string;
-  genesis_block_height?: number | null;
-  genesis_timestamp?: number | null; // hiro used unix-ms
+  sat?: number | null;
+  genesis_height?: number | null;
+  created?: number | null;     // unix-seconds
   content_type?: string;
   content_length?: number;
-  curse_type?: string | null;
+  charms?: string[];
 }
 
-export async function fetchFromHiro(
+export async function fetchFromOrdinalsWallet(
   inscriptionId: string,
   bitcoinTipHeight: number,
 ): Promise<IndexerResult | IndexerError> {
-  const source: IndexerName = 'hiro.so';
+  const source: IndexerName = 'ordinalswallet';
   const signal = AbortSignal.timeout(PER_INDEXER_TIMEOUT_MS);
-  const metaUrl = `${HIRO_BASE}/inscriptions/${inscriptionId}`;
+  const metaUrl = `${ORDINALSWALLET_BASE}/inscription/${inscriptionId}`;
 
   const metaRes = await safeFetch(metaUrl, signal);
   if ('__error' in metaRes) {
@@ -226,46 +220,42 @@ export async function fetchFromHiro(
   }
   if (!metaRes.ok) return asError(source, classifyHttp(metaRes.status), metaRes.status);
 
-  let meta: HiroMetadata;
+  let meta: OrdinalsWalletMetadata;
   try {
-    meta = (await metaRes.json()) as HiroMetadata;
+    meta = (await metaRes.json()) as OrdinalsWalletMetadata;
   } catch {
     return asError(source, 'error', metaRes.status);
   }
 
   const contentLength = typeof meta.content_length === 'number' ? meta.content_length : 0;
   const genesisBlockHeight =
-    typeof meta.genesis_block_height === 'number' ? meta.genesis_block_height : null;
+    typeof meta.genesis_height === 'number' ? meta.genesis_height : null;
   const confirmations =
     genesisBlockHeight === null ? 0 : Math.max(0, bitcoinTipHeight - genesisBlockHeight + 1);
 
-  const contentUrl = `${HIRO_BASE}/inscriptions/${inscriptionId}/content`;
-  const contentSha256 = await fetchContentForHash(contentUrl, contentLength, signal);
-
-  const sat = typeof meta.sat_ordinal === 'string' ? Number(meta.sat_ordinal) : 0;
-  // Hiro returns genesis_timestamp in unix-ms; normalize to unix-s
-  const genesisTsSec =
-    typeof meta.genesis_timestamp === 'number' ? Math.floor(meta.genesis_timestamp / 1000) : null;
+  // ordinalswallet has no public content endpoint — skip content fetch entirely
+  const contentSha256: string | null = null;
 
   const data: IndexerResponse = {
     inscriptionId,
-    sat,
-    satRarity: normalizeRarity(meta.sat_rarity),
+    sat: typeof meta.sat === 'number' ? meta.sat : 0,
+    satRarity: deriveRarityFromCharms(meta.charms),
     genesisBlockHeight,
-    genesisTimestamp: genesisTsSec,
+    genesisTimestamp: typeof meta.created === 'number' ? meta.created : null, // already unix-seconds
     confirmations,
     contentType:
       typeof meta.content_type === 'string' ? meta.content_type : 'application/octet-stream',
     contentLength,
     contentSha256,
-    cursed: meta.curse_type !== null && meta.curse_type !== undefined,
-    burned: false, // hiro does not surface burned status; orchestration defaults to false
+    cursed: cursedFromCharms(meta.charms),
+    burned: false, // ordinalswallet does not surface burned status
   };
 
   return { ok: true, data, source };
 }
 
-export function contentUrlFor(source: IndexerName, inscriptionId: string): string {
-  if (source === 'ordinals.com') return `${ORDINALS_BASE}/content/${inscriptionId}`;
-  return `${HIRO_BASE}/inscriptions/${inscriptionId}/content`;
+export function contentUrlFor(_source: IndexerName, inscriptionId: string): string {
+  // Content is always served from ordinals.com regardless of which indexer
+  // served the metadata. ordinalswallet has no public content endpoint.
+  return `${ORDINALS_BASE}/content/${inscriptionId}`;
 }
