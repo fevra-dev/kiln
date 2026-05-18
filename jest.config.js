@@ -2,6 +2,12 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
+  // jsdom defaults to customExportConditions: ['browser'], which selects
+  // uuid's ESM browser build (dist/esm-browser/index.js) under pnpm.
+  // ts-jest only transforms *.tsx?, not raw .js ESM — so the load fails
+  // before any transform pattern can help. Forcing Node-style resolution
+  // ['node','require','default'] picks uuid's CJS build instead, which
+  // Node can require natively without transformation.
   testEnvironmentOptions: {
     customExportConditions: ['node', 'require', 'default'],
   },
@@ -12,7 +18,7 @@ module.exports = {
     '^next/server$': '<rootDir>/tests/__mocks__/next-server.js',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(\\.pnpm/)?(uuid|@noble|@solana|jayson)(@[^/]+)?/)',
+    'node_modules/(?!(uuid|@noble|@solana|jayson)/)',
   ],
   collectCoverageFrom: [
     'src/lib/**/*.{ts,tsx}',
