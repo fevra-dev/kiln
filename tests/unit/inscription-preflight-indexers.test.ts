@@ -165,6 +165,44 @@ describe('fetchFromOrdinals', () => {
       expect(result.data.satRarity).toBe('uncommon');
     }
   });
+
+  it('returns timeout on AbortSignal.timeout (TimeoutError)', async () => {
+    fetchMock.mockRejectedValueOnce(
+      Object.assign(new DOMException('timed out', 'TimeoutError'), {}),
+    );
+    const result = await fetchFromOrdinals(VALID_ID, 875440);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe('timeout');
+      expect(result.source).toBe('ordinals.com');
+    }
+  });
+
+  it('returns timeout on legacy AbortError (manual abort path)', async () => {
+    fetchMock.mockRejectedValueOnce(
+      new DOMException('aborted', 'AbortError'),
+    );
+    const result = await fetchFromOrdinals(VALID_ID, 875440);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.status).toBe('timeout');
+  });
+
+  it('returns error (network) on TypeError fetch failure', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('fetch failed'));
+    const result = await fetchFromOrdinals(VALID_ID, 875440);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.status).toBe('error');
+  });
+
+  it('decodes charms: ["burned"] to burned=true', async () => {
+    mockFetchSequence(
+      { status: 200, body: { ...ORDINALS_OK_BODY, charms: ['burned'] } },
+      { status: 200, body: null, bytes: new Uint8Array([1, 2, 3]) },
+    );
+    const result = await fetchFromOrdinals(VALID_ID, 875440);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.burned).toBe(true);
+  });
 });
 
 describe('fetchFromOrdinalsWallet', () => {
@@ -205,5 +243,12 @@ describe('fetchFromOrdinalsWallet', () => {
       expect(result.data.cursed).toBe(true);
       expect(result.data.satRarity).toBe('common'); // no rarity charm
     }
+  });
+
+  it('decodes charms: ["burned"] to burned=true', async () => {
+    mockFetchSequence({ status: 200, body: { ...ORDINALSWALLET_OK_BODY, charms: ['burned'] } });
+    const result = await fetchFromOrdinalsWallet(VALID_ID, 875440);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.burned).toBe(true);
   });
 });

@@ -62,7 +62,7 @@ async function safeFetch(
     const res = await fetch(url, { signal });
     return res;
   } catch (e) {
-    if (e instanceof DOMException && e.name === 'AbortError') return { __error: 'timeout' };
+    if (e instanceof DOMException && (e.name === 'AbortError' || e.name === 'TimeoutError')) return { __error: 'timeout' };
     return { __error: 'network' };
   }
 }
@@ -80,10 +80,9 @@ async function sha256OfArrayBuffer(buf: ArrayBuffer): Promise<string> {
 const VALID_RARITIES: SatRarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
 
 /**
- * Derive sat rarity from a charms array.
- * The charms array contains string entries such as "uncommon", "rare", "cursed", etc.
- * Returns the first entry that matches a known rarity name, or 'common'.
- * Shared by both fetchFromOrdinals and fetchFromOrdinalsWallet.
+ * Returns the first valid rarity string in `charms`, or 'common' if none.
+ * Ord guarantees at most one rarity charm per inscription, but the helper
+ * is robust to unexpected duplicates by taking the first match.
  */
 function deriveRarityFromCharms(charms: unknown): SatRarity {
   if (!Array.isArray(charms)) return 'common';
@@ -103,6 +102,16 @@ function deriveRarityFromCharms(charms: unknown): SatRarity {
 function cursedFromCharms(charms: unknown): boolean {
   if (!Array.isArray(charms)) return false;
   return charms.includes('cursed');
+}
+
+/**
+ * Extract burned flag from a charms array.
+ * Ord sets "burned" as a charm for inscriptions on sats in OP_RETURN outputs.
+ * Shared by both fetchFromOrdinals and fetchFromOrdinalsWallet.
+ */
+function burnedFromCharms(charms: unknown): boolean {
+  if (!Array.isArray(charms)) return false;
+  return charms.includes('burned');
 }
 
 async function fetchContentForHash(
@@ -136,9 +145,8 @@ interface OrdinalsMetadata {
   timestamp?: number | null;    // unix-seconds
   content_type?: string;
   content_length?: number;
-  charms?: unknown[];           // string entries: rarity names, "cursed", etc.
+  charms?: unknown[];           // string entries: rarity names, "cursed", "burned", etc.
   delegate?: string | null;
-  // burned status is not surfaced by ordinals.com; treat as false
 }
 
 export async function fetchFromOrdinals(
@@ -181,7 +189,7 @@ export async function fetchFromOrdinals(
     contentLength,
     contentSha256,
     cursed: cursedFromCharms(meta.charms),
-    burned: false, // ordinals.com does not surface burned status
+    burned: burnedFromCharms(meta.charms),
   };
 
   return { ok: true, data, source };
@@ -248,7 +256,7 @@ export async function fetchFromOrdinalsWallet(
     contentLength,
     contentSha256,
     cursed: cursedFromCharms(meta.charms),
-    burned: false, // ordinalswallet does not surface burned status
+    burned: burnedFromCharms(meta.charms),
   };
 
   return { ok: true, data, source };
