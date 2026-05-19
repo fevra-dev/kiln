@@ -1,59 +1,82 @@
 /**
- * Local regular NFT burn assembly with inline SPL Memo (single transaction).
+ * Regular (non-programmable) NFT burn path. Uses Metaplex Token Metadata
+ * burnV1 with TokenStandard.NonFungible.
+ *
+ * Refactored to accept a pre-fetched DasAsset from the dispatcher in
+ * build-burn-memo-tx.ts. PDAs are derived from the mint pubkey;
+ * collection metadata comes from DasAsset.grouping if present.
  */
-import { publicKey, transactionBuilder, base58, type Umi } from '@metaplex-foundation/umi';
+
+import type { Umi, TransactionBuilder } from '@metaplex-foundation/umi';
+import type { PublicKey } from '@solana/web3.js';
+import type { DasAsset, NftKind } from './types';
+import { publicKey, transactionBuilder, createNoopSigner } from '@metaplex-foundation/umi';
 import {
-  fetchDigitalAssetWithAssociatedToken,
-  findMetadataPda,
-  findMasterEditionPda,
   burnV1,
   TokenStandard,
+  findMetadataPda,
+  findMasterEditionPda,
 } from '@metaplex-foundation/mpl-token-metadata';
-import { withComputeBudget, withSplMemoString } from './ix-helpers';
+import {
+  setComputeUnitLimit,
+  setComputeUnitPrice,
+  findAssociatedTokenPda,
+} from '@metaplex-foundation/mpl-toolbox';
+import { withSplMemoString } from './ix-helpers';
 import { buildRetireMemo } from './memo';
-import type { LocalBurnArgs } from './types';
 
-/**
- * Assemble and send a regular NFT burn that includes a KILN memo inline.
- */
-export async function buildAndSendRegularBurnWithMemo(
-  umi: Umi,
-  args: LocalBurnArgs
-): Promise<{ signature: string }> {
-  const mintPk = publicKey(args.mint);
-  const ownerPk = publicKey(args.owner);
+const REGULAR_BURN_COMPUTE_UNITS = 400_000;
 
-  const asset = await fetchDigitalAssetWithAssociatedToken(umi, mintPk, ownerPk);
+export async function buildRegularBurn(args: {
+  umi: Umi;
+  asset: DasAsset;
+  kindInfo: Extract<NftKind, { kind: 'regular' }>;
+  inscriptionId: string;
+  ownerPubkey: PublicKey;
+  priorityMicrolamports: number;
+  rpcUrl: string;
+}): Promise<TransactionBuilder> {
+  const mintPk = publicKey(args.kindInfo.mint.toBase58());
+  const ownerPk = publicKey(args.ownerPubkey.toBase58());
+  const ownerSigner = createNoopSigner(ownerPk);
 
-  const metadataPda = findMetadataPda(umi, { mint: mintPk })[0];
-  const masterEditionPda = findMasterEditionPda(umi, { mint: mintPk })[0];
+  // PDAs from mint
+  const metadataPda = findMetadataPda(args.umi, { mint: mintPk })[0];
+  const masterEditionPda = findMasterEditionPda(args.umi, { mint: mintPk })[0];
+  const ownerAta = findAssociatedTokenPda(args.umi, { mint: mintPk, owner: ownerPk })[0];
 
-  const collection = asset.metadata.collection.__option === 'Some' ? asset.metadata.collection.value : null;
-  const collectionMetadata = collection ? findMetadataPda(umi, { mint: collection.key })[0] : undefined;
+  // Optional collection metadata (from DAS grouping)
+  let collectionMetadata: ReturnType<typeof findMetadataPda>[0] | undefined;
+  const grouping = (args.asset as DasAsset & {
+    grouping?: Array<{ group_key: string; group_value: string }>;
+  }).grouping;
+  if (grouping && grouping.length > 0) {
+    const collKey = grouping.find(g => g.group_key === 'collection')?.group_value;
+    if (collKey) {
+      collectionMetadata = findMetadataPda(args.umi, { mint: publicKey(collKey) })[0];
+    }
+  }
 
+  // Build tx
   let tb = transactionBuilder();
-  tb = withComputeBudget(umi, tb, { microLamports: args.priorityMicrolamports });
+  tb = tb.add(setComputeUnitLimit(args.umi, { units: REGULAR_BURN_COMPUTE_UNITS }));
+  tb = tb.add(setComputeUnitPrice(args.umi, { microLamports: args.priorityMicrolamports }));
 
   tb = tb.add(
-    burnV1(umi, {
+    burnV1(args.umi, {
       mint: mintPk,
-      token: asset.token.publicKey,
+      authority: ownerSigner,
+      token: ownerAta,
       metadata: metadataPda,
       edition: masterEditionPda,
       collectionMetadata,
       tokenStandard: TokenStandard.NonFungible,
-    })
+    }),
   );
 
-  // Build memo with teleburn action (regular NFTs are burned via Metaplex)
-  const memo = buildRetireMemo({
-    inscriptionId: args.inscriptionId,
-  });
+  // Memo
+  const memo = buildRetireMemo({ inscriptionId: args.inscriptionId });
   tb = withSplMemoString(tb, memo);
 
-  const res = await tb.sendAndConfirm(umi);
-  const [sig] = base58.deserialize(res.signature);
-  return { signature: sig };
+  return tb;
 }
-
-
