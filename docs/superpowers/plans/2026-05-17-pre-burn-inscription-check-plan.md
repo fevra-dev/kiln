@@ -4,7 +4,9 @@
 
 **Goal:** Add a Bitcoin-side inscription pre-flight check that gates the KILN burn flow — eliminate the silent, irreversible failure mode where a user with a typo'd or non-existent inscription ID can permanently burn their Solana NFT into nothing.
 
-**Architecture:** New Next.js route `/api/inscription/preflight` proxies a two-indexer fallback chain (ordinals.com → api.hiro.so) with an in-memory LRU cache keyed by inscription ID. A `useInscriptionPreflight` client hook drives a compact status row in the entry form (debounced as the user types) and a full rich-content preview panel in Step 3. Three escalating override mechanics (no-override / checkbox / typed-word) gate the burn based on confirmation count and indexer state. Reuses existing Web Crypto API for SHA-256; reuses existing `jest` + `tests/setup.ts` infra.
+> **Updated 2026-05-18 (in-flight):** During implementation, Hiro's public Ordinals API (`api.hiro.so/ordinals/v1`) was found to be deprecated (HTTP 410 Gone). The fallback indexer was swapped to `turbo.ordinalswallet.com` (commit `511e2d6`). All references to `hiro.so`, `fetchFromHiro`, and `HIRO_BASE` in this plan reflect the as-built `ordinalswallet` equivalents. Task 3 fixture field names are updated to match the real live response shapes (ordinals.com uses `height`/`timestamp`/`charms[]`; ordinalswallet uses `genesis_height`/`created`/`charms[]` with no content endpoint).
+
+**Architecture:** New Next.js route `/api/inscription/preflight` proxies a two-indexer fallback chain (ordinals.com → ordinalswallet) with an in-memory LRU cache keyed by inscription ID. A `useInscriptionPreflight` client hook drives a compact status row in the entry form (debounced as the user types) and a full rich-content preview panel in Step 3. Three escalating override mechanics (no-override / checkbox / typed-word) gate the burn based on confirmation count and indexer state. Reuses existing Web Crypto API for SHA-256; reuses existing `jest` + `tests/setup.ts` infra.
 
 **Tech Stack:** Next.js App Router, TypeScript, React, Web Crypto API (`crypto.subtle.digest`), Jest with `ts-jest`, jsdom test env. No new runtime dependencies.
 
@@ -20,7 +22,7 @@
 |---|---|
 | `src/lib/inscription-preflight/types.ts` | `PreflightSuccess`, `PreflightNotFound`, `PreflightResponse` discriminated union; indexer status enum |
 | `src/lib/inscription-preflight/cache.ts` | In-memory `Map`-based LRU with per-entry TTL; `get` / `set` / `__resetCache` |
-| `src/lib/inscription-preflight/indexers.ts` | Two fetcher functions (`fetchFromOrdinals`, `fetchFromHiro`) returning a shared normalized `IndexerResponse` shape; per-fetch 5s timeout via `AbortSignal.timeout`; content fetch + SHA-256 over fetched bytes |
+| `src/lib/inscription-preflight/indexers.ts` | Two fetcher functions (`fetchFromOrdinals`, `fetchFromOrdinalsWallet`) returning a shared normalized `IndexerResponse` shape; per-fetch 5s timeout via `AbortSignal.timeout`; content fetch + SHA-256 over fetched bytes (ordinalswallet has no content endpoint; always returns `contentSha256: null`) |
 | `src/lib/inscription-preflight/index.ts` | `preflight(inscriptionId)` orchestration: validate → cache lookup → primary → fallback → cache write → return |
 | `src/app/api/inscription/preflight/route.ts` | `GET` handler; reads `id` query param; calls `preflight()`; returns JSON |
 | `src/lib/hooks/useInscriptionPreflight.ts` | Client hook: 500ms debounce + AbortController + stale-while-revalidate |
@@ -146,7 +148,7 @@ export type SatRarity =
   | 'common' | 'uncommon' | 'rare'
   | 'epic' | 'legendary' | 'mythic';
 
-export type IndexerName = 'ordinals.com' | 'hiro.so';
+export type IndexerName = 'ordinals.com' | 'ordinalswallet';
 
 export type IndexerCheckStatus =
   | 'not_found'
@@ -416,9 +418,9 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 - Create: `src/lib/inscription-preflight/indexers.ts`
 - Create: `tests/unit/inscription-preflight-indexers.test.ts`
 
-This task builds the two fetchers (ordinals.com, hiro.so) that translate raw indexer responses into the normalized `IndexerResult | IndexerError` shape.
+This task builds the two fetchers (ordinals.com, ordinalswallet) that translate raw indexer responses into the normalized `IndexerResult | IndexerError` shape.
 
-**Note on endpoint paths:** the URLs below are the spec's best estimate based on the docs at `docs.ordinals.com/guides/api.html` and `docs.hiro.so/ordinals/api/v1`. **As your first step, fetch one known inscription from each indexer with `curl` and verify the JSON field names match what the code expects.** If a field is named differently (e.g. `genesis_height` vs `genesis_block_height`), update the code AND the test mocks together.
+**Note on endpoint paths (as-built):** The URLs below reflect the live shapes verified on 2026-05-18. ordinals.com uses `height`/`timestamp`/`charms[]` (not `genesis_height`/`genesis_block_time`/`rarity`). ordinalswallet uses `genesis_height`/`created`/`charms[]` and has no public content endpoint. **As your first step, fetch one known inscription from each indexer with `curl` and confirm the field names still match.**
 
 Known-good inscription for verification: `6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0`.
 
@@ -428,41 +430,40 @@ Run:
 
 ```bash
 curl -s -H "Accept: application/json" "https://ordinals.com/r/inscription/6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0" | head -50
-curl -s "https://api.hiro.so/ordinals/v1/inscriptions/6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0" | head -50
+curl -s "https://turbo.ordinalswallet.com/inscription/6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0" | head -50
 ```
 
-Expected: JSON with fields like `id`, `content_type`, `content_length`, `genesis_height`, `genesis_block_height`, `sat`, `rarity`, etc. Note the actual field names — they may differ from the placeholders in the code below. Update both the indexer client and the test mocks if so.
+Expected (as-built): ordinals.com returns `id`, `sat`, `height`, `timestamp`, `content_type`, `content_length`, `charms: string[]`. ordinalswallet returns `id`, `sat`, `genesis_height`, `created`, `content_type`, `content_length`, `charms: string[]`. Note the actual field names — update both the indexer client and the test mocks if they differ.
 
 - [ ] **Step 3.2: Write the failing test**
 
 Create `tests/unit/inscription-preflight-indexers.test.ts`:
 
 ```ts
-import { fetchFromOrdinals, fetchFromHiro } from '@/lib/inscription-preflight/indexers';
+import { fetchFromOrdinals, fetchFromOrdinalsWallet } from '@/lib/inscription-preflight/indexers';
 
 const VALID_ID = '6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0';
 
-// Replace these with the ACTUAL JSON shape you observe from step 3.1.
+// Real field shapes verified against live indexers 2026-05-18.
 const ORDINALS_OK_BODY = {
   id: VALID_ID,
   sat: 425639728,
-  rarity: 'uncommon',
-  genesis_height: 875432,
-  genesis_block_time: 1764732009,
+  height: 875432,          // ordinals.com uses `height`, not `genesis_height`
+  timestamp: 1764732009,   // ordinals.com uses `timestamp` (unix-s), not `genesis_block_time`
   content_type: 'image/png',
   content_length: 87234,
-  cursed: false,
+  charms: ['uncommon'],    // rarity + cursed/burned are entries in `charms[]`, not standalone fields
 };
 
-const HIRO_OK_BODY = {
+const ORDINALSWALLET_OK_BODY = {
   id: VALID_ID,
-  sat_ordinal: '425639728',
-  sat_rarity: 'uncommon',
-  genesis_block_height: 875432,
-  genesis_timestamp: 1764732009000, // hiro is unix-ms
+  sat: 425639728,
+  genesis_height: 875432,  // ordinalswallet uses `genesis_height`
+  created: 1764732009,     // ordinalswallet uses `created` (unix-s)
   content_type: 'image/png',
   content_length: 87234,
-  curse_type: null,
+  charms: ['uncommon'],
+  // no content endpoint — contentSha256 will be null for this indexer
 };
 
 const fetchMock = global.fetch as jest.Mock;
@@ -550,9 +551,9 @@ describe('fetchFromOrdinals', () => {
     }
   });
 
-  it('marks confirmations=0 for mempool (genesis_height null)', async () => {
+  it('marks confirmations=0 for mempool (height null)', async () => {
     mockFetchSequence(
-      { status: 200, body: { ...ORDINALS_OK_BODY, genesis_height: null } },
+      { status: 200, body: { ...ORDINALS_OK_BODY, height: null } },
       { status: 200, body: null, bytes: new Uint8Array([1, 2, 3]) },
     );
     const result = await fetchFromOrdinals(VALID_ID, 875440);
@@ -564,23 +565,24 @@ describe('fetchFromOrdinals', () => {
   });
 });
 
-describe('fetchFromHiro', () => {
-  it('returns ok result on 200', async () => {
+describe('fetchFromOrdinalsWallet', () => {
+  it('returns ok result on 200 (contentSha256 always null — no content endpoint)', async () => {
     mockFetchSequence(
-      { status: 200, body: HIRO_OK_BODY },
-      { status: 200, body: null, bytes: new Uint8Array([1, 2, 3]) },
+      { status: 200, body: ORDINALSWALLET_OK_BODY },
+      // no second fetch — ordinalswallet has no content endpoint
     );
-    const result = await fetchFromHiro(VALID_ID, 875440);
+    const result = await fetchFromOrdinalsWallet(VALID_ID, 875440);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.source).toBe('hiro.so');
+      expect(result.source).toBe('ordinalswallet');
       expect(result.data.confirmations).toBe(875440 - 875432 + 1);
+      expect(result.data.contentSha256).toBeNull();
     }
   });
 
   it('returns not_found on 404', async () => {
     mockFetchSequence({ status: 404, body: { error: 'not found' } });
-    const result = await fetchFromHiro(VALID_ID, 875440);
+    const result = await fetchFromOrdinalsWallet(VALID_ID, 875440);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.status).toBe('not_found');
   });
@@ -601,11 +603,12 @@ Create `src/lib/inscription-preflight/indexers.ts`:
 /**
  * Indexer clients for the inscription pre-flight check.
  *
- * Two fetchers (ordinals.com, hiro.so) return a normalized IndexerResponse.
+ * Two fetchers (ordinals.com, ordinalswallet) return a normalized IndexerResponse.
  * Each fetcher does its own metadata fetch + optional content fetch (for SHA-256).
- * Endpoint paths verified against:
- *   https://docs.ordinals.com/guides/api.html
- *   https://docs.hiro.so/ordinals/api/v1
+ * Endpoint paths verified against live responses 2026-05-18:
+ *   ordinals.com: GET /r/inscription/<id>  (fields: height, timestamp, charms[])
+ *   ordinalswallet: GET turbo.ordinalswallet.com/inscription/<id>  (fields: genesis_height, created, charms[])
+ *   Note: ordinalswallet has no public content endpoint; contentSha256 is always null for that path.
  */
 
 import type {
@@ -620,7 +623,7 @@ const PER_INDEXER_TIMEOUT_MS = 5_000;
 export const MAX_HASHABLE_BYTES = 5 * 1024 * 1024;
 
 const ORDINALS_BASE = 'https://ordinals.com';
-const HIRO_BASE = 'https://api.hiro.so/ordinals/v1';
+const ORDINALSWALLET_BASE = 'https://turbo.ordinalswallet.com';
 
 function asError(source: IndexerName, status: IndexerError['status'], httpStatus?: number): IndexerError {
   return { ok: false, source, status, httpStatus };
@@ -652,10 +655,27 @@ async function sha256OfArrayBuffer(buf: ArrayBuffer): Promise<string> {
   return hex;
 }
 
-function normalizeRarity(input: unknown): SatRarity {
-  const valid: SatRarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
-  if (typeof input === 'string' && (valid as string[]).includes(input)) return input as SatRarity;
+const VALID_RARITIES: SatRarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
+
+/** Returns the first valid rarity string in `charms`, or 'common' if none. */
+function deriveRarityFromCharms(charms: unknown): SatRarity {
+  if (!Array.isArray(charms)) return 'common';
+  for (const charm of charms) {
+    if (typeof charm === 'string' && (VALID_RARITIES as string[]).includes(charm)) return charm as SatRarity;
+  }
   return 'common';
+}
+
+/** Pre-jubilee cursed inscriptions have "cursed" as a charm entry. */
+function cursedFromCharms(charms: unknown): boolean {
+  if (!Array.isArray(charms)) return false;
+  return charms.includes('cursed');
+}
+
+/** Inscriptions on OP_RETURN outputs have "burned" as a charm entry. */
+function burnedFromCharms(charms: unknown): boolean {
+  if (!Array.isArray(charms)) return false;
+  return charms.includes('burned');
 }
 
 async function fetchContentForHash(
@@ -678,15 +698,12 @@ async function fetchContentForHash(
 interface OrdinalsMetadata {
   id?: string;
   sat?: number;
-  rarity?: string;
-  genesis_height?: number | null;
-  genesis_block_time?: number | null;
+  height?: number | null;          // genesis block height (real field name, not genesis_height)
+  timestamp?: number | null;       // unix-seconds (real field name, not genesis_block_time)
   content_type?: string;
   content_length?: number;
-  cursed?: boolean;
-  // burned status often surfaced as a separate field; ordinals.com docs vary.
-  // Treat absence as false.
-  burned?: boolean;
+  charms?: unknown[];              // string entries: rarity names ('uncommon' etc), 'cursed', 'burned'
+  delegate?: string | null;
 }
 
 export async function fetchFromOrdinals(
@@ -711,7 +728,7 @@ export async function fetchFromOrdinals(
   }
 
   const contentLength = typeof meta.content_length === 'number' ? meta.content_length : 0;
-  const genesisBlockHeight = typeof meta.genesis_height === 'number' ? meta.genesis_height : null;
+  const genesisBlockHeight = typeof meta.height === 'number' ? meta.height : null; // real field: `height`
   const confirmations = genesisBlockHeight === null ? 0 : Math.max(0, bitcoinTipHeight - genesisBlockHeight + 1);
 
   const contentUrl = `${ORDINALS_BASE}/content/${inscriptionId}`;
@@ -720,42 +737,41 @@ export async function fetchFromOrdinals(
   const data: IndexerResponse = {
     inscriptionId,
     sat: typeof meta.sat === 'number' ? meta.sat : 0,
-    satRarity: normalizeRarity(meta.rarity),
+    satRarity: deriveRarityFromCharms(meta.charms),    // rarity derived from charms[]
     genesisBlockHeight,
-    genesisTimestamp: typeof meta.genesis_block_time === 'number' ? meta.genesis_block_time : null,
+    genesisTimestamp: typeof meta.timestamp === 'number' ? meta.timestamp : null, // real field: `timestamp` (unix-s)
     confirmations,
     contentType: typeof meta.content_type === 'string' ? meta.content_type : 'application/octet-stream',
     contentLength,
     contentSha256,
-    cursed: meta.cursed === true,
-    burned: meta.burned === true,
+    cursed: cursedFromCharms(meta.charms),             // derived from charms[]
+    burned: burnedFromCharms(meta.charms),             // derived from charms[]
   };
 
   return { ok: true, data, source };
 }
 
 // ---------------------------------------------------------------------------
-// hiro.so
+// ordinalswallet (turbo.ordinalswallet.com)
 // ---------------------------------------------------------------------------
 
-interface HiroMetadata {
+interface OrdinalsWalletMetadata {
   id?: string;
-  sat_ordinal?: string;
-  sat_rarity?: string;
-  genesis_block_height?: number | null;
-  genesis_timestamp?: number | null; // hiro uses unix-ms
+  sat?: number | null;
+  genesis_height?: number | null;  // ordinalswallet uses genesis_height (unlike ordinals.com which uses height)
+  created?: number | null;         // unix-seconds (ordinalswallet-specific field)
   content_type?: string;
   content_length?: number;
-  curse_type?: string | null;
+  charms?: string[];
 }
 
-export async function fetchFromHiro(
+export async function fetchFromOrdinalsWallet(
   inscriptionId: string,
   bitcoinTipHeight: number,
 ): Promise<IndexerResult | IndexerError> {
-  const source: IndexerName = 'hiro.so';
+  const source: IndexerName = 'ordinalswallet';
   const signal = AbortSignal.timeout(PER_INDEXER_TIMEOUT_MS);
-  const metaUrl = `${HIRO_BASE}/inscriptions/${inscriptionId}`;
+  const metaUrl = `${ORDINALSWALLET_BASE}/inscription/${inscriptionId}`;
 
   const metaRes = await safeFetch(metaUrl, signal);
   if ('__error' in metaRes) {
@@ -763,45 +779,41 @@ export async function fetchFromHiro(
   }
   if (!metaRes.ok) return asError(source, classifyHttp(metaRes.status), metaRes.status);
 
-  let meta: HiroMetadata;
+  let meta: OrdinalsWalletMetadata;
   try {
-    meta = (await metaRes.json()) as HiroMetadata;
+    meta = (await metaRes.json()) as OrdinalsWalletMetadata;
   } catch {
     return asError(source, 'error', metaRes.status);
   }
 
   const contentLength = typeof meta.content_length === 'number' ? meta.content_length : 0;
-  const genesisBlockHeight = typeof meta.genesis_block_height === 'number' ? meta.genesis_block_height : null;
+  const genesisBlockHeight = typeof meta.genesis_height === 'number' ? meta.genesis_height : null;
   const confirmations = genesisBlockHeight === null ? 0 : Math.max(0, bitcoinTipHeight - genesisBlockHeight + 1);
 
-  const contentUrl = `${HIRO_BASE}/inscriptions/${inscriptionId}/content`;
-  const contentSha256 = await fetchContentForHash(contentUrl, contentLength, signal);
-
-  const sat = typeof meta.sat_ordinal === 'string' ? Number(meta.sat_ordinal) : 0;
-  const genesisTsSec = typeof meta.genesis_timestamp === 'number'
-    ? Math.floor(meta.genesis_timestamp / 1000)
-    : null;
+  // ordinalswallet has no public content endpoint — skip content fetch entirely
+  const contentSha256: string | null = null;
 
   const data: IndexerResponse = {
     inscriptionId,
-    sat,
-    satRarity: normalizeRarity(meta.sat_rarity),
+    sat: typeof meta.sat === 'number' ? meta.sat : 0,
+    satRarity: deriveRarityFromCharms(meta.charms),
     genesisBlockHeight,
-    genesisTimestamp: genesisTsSec,
+    genesisTimestamp: typeof meta.created === 'number' ? meta.created : null, // already unix-seconds
     confirmations,
     contentType: typeof meta.content_type === 'string' ? meta.content_type : 'application/octet-stream',
     contentLength,
     contentSha256,
-    cursed: meta.curse_type !== null && meta.curse_type !== undefined,
-    burned: false, // hiro doesn't surface this; orchestration treats missing as false
+    cursed: cursedFromCharms(meta.charms),
+    burned: burnedFromCharms(meta.charms),
   };
 
   return { ok: true, data, source };
 }
 
-export function contentUrlFor(source: IndexerName, inscriptionId: string): string {
-  if (source === 'ordinals.com') return `${ORDINALS_BASE}/content/${inscriptionId}`;
-  return `${HIRO_BASE}/inscriptions/${inscriptionId}/content`;
+export function contentUrlFor(_source: IndexerName, inscriptionId: string): string {
+  // Content is always served from ordinals.com regardless of which indexer
+  // served the metadata. ordinalswallet has no public content endpoint.
+  return `${ORDINALS_BASE}/content/${inscriptionId}`;
 }
 ```
 
@@ -815,10 +827,11 @@ Expected: `Tests: 9 passed, 9 total`. If any fail, the actual response shape fro
 
 ```bash
 git add src/lib/inscription-preflight/indexers.ts tests/unit/inscription-preflight-indexers.test.ts
-git commit -m "feat(preflight): ordinals.com + hiro.so indexer clients
+git commit -m "feat(preflight): ordinals.com + ordinalswallet indexer clients
 
 5s per-request timeout, normalized IndexerResponse shape, content SHA-256
-computation gated by MAX_HASHABLE_BYTES (5 MB).
+computation gated by MAX_HASHABLE_BYTES (5 MB). ordinalswallet has no
+content endpoint; contentSha256 is always null for that indexer path.
 
 Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 ```
@@ -854,12 +867,11 @@ function setupOrdinalsOk(opts: { genesisHeight?: number | null; bytes?: Uint8Arr
         json: async () => ({
           id: VALID_ID,
           sat: 425639728,
-          rarity: 'uncommon',
-          genesis_height: opts.genesisHeight === undefined ? 875432 : opts.genesisHeight,
-          genesis_block_time: 1764732009,
+          height: opts.genesisHeight === undefined ? 875432 : opts.genesisHeight, // real field: height
+          timestamp: 1764732009,  // real field: timestamp (unix-s)
           content_type: 'image/png',
           content_length: opts.contentLength ?? 3,
-          cursed: false,
+          charms: ['uncommon'],   // rarity + cursed/burned encoded in charms[]
         }),
       };
     }
@@ -885,34 +897,29 @@ function setupOrdinals404() {
   }));
 }
 
-function setupHiroOk() {
+function setupOrdinalsWalletOk() {
   fetchMock.mockImplementationOnce(async (url: string) => {
-    if (url.includes('hiro.so')) {
+    if (url.includes('ordinalswallet.com')) {
       return {
         ok: true, status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           id: VALID_ID,
-          sat_ordinal: '425639728',
-          sat_rarity: 'uncommon',
-          genesis_block_height: 875432,
-          genesis_timestamp: 1764732009000,
+          sat: 425639728,
+          genesis_height: 875432,  // ordinalswallet uses genesis_height
+          created: 1764732009,     // ordinalswallet uses created (unix-s)
           content_type: 'image/png',
           content_length: 3,
-          curse_type: null,
+          charms: ['uncommon'],
         }),
       };
     }
     throw new Error(`Unexpected URL: ${url}`);
   });
-  fetchMock.mockImplementationOnce(async () => ({
-    ok: true, status: 200,
-    headers: new Headers({ 'content-type': 'image/png', 'content-length': '3' }),
-    arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
-  }));
+  // ordinalswallet has no content endpoint — no second fetch mock needed
 }
 
-function setupHiro404() {
+function setupOrdinalsWallet404() {
   fetchMock.mockImplementationOnce(async () => ({
     ok: false, status: 404, headers: new Headers(),
     json: async () => ({ error: 'not found' }),
@@ -958,19 +965,19 @@ describe('preflight()', () => {
     }
   });
 
-  it('falls back to hiro on ordinals 404', async () => {
+  it('falls back to ordinalswallet on ordinals 404', async () => {
     setupTipHeightFetch();
     setupOrdinals404();
-    setupHiroOk();
+    setupOrdinalsWalletOk();
     const result = await preflight(VALID_ID);
     expect(result.exists).toBe(true);
-    if (result.exists) expect(result.indexerUsed).toBe('hiro.so');
+    if (result.exists) expect(result.indexerUsed).toBe('ordinalswallet');
   });
 
   it('returns not_found when both indexers 404', async () => {
     setupTipHeightFetch();
     setupOrdinals404();
-    setupHiro404();
+    setupOrdinalsWallet404();
     const result = await preflight(VALID_ID);
     expect(result.exists).toBe(false);
     if (!result.exists) {
@@ -1021,7 +1028,7 @@ describe('preflight()', () => {
     jest.useFakeTimers();
     setupTipHeightFetch();
     setupOrdinals404();
-    setupHiro404();
+    setupOrdinalsWallet404();
     await preflight(VALID_ID);
 
     // Within 30s, second call hits cache (no fetch).
@@ -1033,7 +1040,7 @@ describe('preflight()', () => {
     jest.advanceTimersByTime(35_000);
     setupTipHeightFetch();
     setupOrdinals404();
-    setupHiro404();
+    setupOrdinalsWallet404();
     await preflight(VALID_ID);
     expect(fetchMock.mock.calls.length).toBeGreaterThan(before);
     jest.useRealTimers();
@@ -1077,7 +1084,7 @@ Create `src/lib/inscription-preflight/index.ts`:
  *  1. Validate inscription ID format (regex, lowercase normalization)
  *  2. Cache lookup → return immediately if hit (mark cached: true)
  *  3. Fetch current BTC tip height (small public endpoint)
- *  4. Try ordinals.com first; on failure (404/timeout/error/rate-limit), try hiro.so
+ *  4. Try ordinals.com first; on failure (404/timeout/error/rate-limit), try ordinalswallet
  *  5. Normalize → cache with appropriate TTL → return
  */
 
@@ -1085,7 +1092,7 @@ import {
   preflightCache,
   PreflightCache,
 } from './cache';
-import { fetchFromOrdinals, fetchFromHiro, contentUrlFor } from './indexers';
+import { fetchFromOrdinals, fetchFromOrdinalsWallet, contentUrlFor } from './indexers';
 import type {
   IndexerCheck,
   IndexerError,
@@ -1126,7 +1133,7 @@ export async function preflight(rawId: string): Promise<PreflightResponse> {
       reason: 'all_unreachable',
       indexersChecked: [
         { name: 'ordinals.com', status: 'error' },
-        { name: 'hiro.so', status: 'error' },
+        { name: 'ordinalswallet', status: 'error' },
       ],
       checkedAt: Date.now(),
     };
@@ -1145,13 +1152,13 @@ export async function preflight(rawId: string): Promise<PreflightResponse> {
     indexersChecked.push(toIndexerCheck(ordRes));
   }
 
-  // Fall back to hiro.so if needed.
+  // Fall back to ordinalswallet if needed.
   if (!final) {
-    const hiroRes = await fetchFromHiro(inscriptionId, tipHeight);
-    if (hiroRes.ok) {
-      final = hiroRes;
+    const walletRes = await fetchFromOrdinalsWallet(inscriptionId, tipHeight);
+    if (walletRes.ok) {
+      final = walletRes;
     } else {
-      indexersChecked.push(toIndexerCheck(hiroRes));
+      indexersChecked.push(toIndexerCheck(walletRes));
     }
   }
 
@@ -1247,7 +1254,7 @@ Expected: `Tests: 10 passed, 10 total`. If the tip-height fetch test fails, the 
 git add src/lib/inscription-preflight/index.ts tests/unit/inscription-preflight-orchestration.test.ts
 git commit -m "feat(preflight): orchestration with fallback chain + TTL-aware caching
 
-Ordinals.com primary, hiro.so fallback. BTC tip height fetched from
+Ordinals.com primary, ordinalswallet fallback. BTC tip height fetched from
 mempool.space for confirmation math. Cache TTLs:
   - >=6 conf: Infinity
   - 0..5 conf: 30s
@@ -1991,7 +1998,7 @@ export const InscriptionPanel: FC<InscriptionPanelProps> = ({
           ⚠️ Couldn&apos;t reach Bitcoin indexers
         </div>
         <div style={{ fontSize: 13, marginBottom: 12 }}>
-          {error ?? 'Both ordinals.com and api.hiro.so were unreachable. The inscription may still be valid; we just can\'t verify right now.'}
+          {error ?? 'Both ordinals.com and ordinalswallet were unreachable. The inscription may still be valid; we just can\'t verify right now.'}
         </div>
         <button onClick={onRetry} style={buttonStyle}>Retry</button>
         <div style={{ marginTop: 12 }}>
@@ -2015,7 +2022,7 @@ export const InscriptionPanel: FC<InscriptionPanelProps> = ({
           ⛔ Inscription not found on Bitcoin
         </div>
         <div style={{ fontSize: 13 }}>
-          Both ordinals.com and api.hiro.so returned 404. Check the ID for typos
+          Both ordinals.com and ordinalswallet returned 404. Check the ID for typos
           or wrong index (most commonly <code>i0</code> vs <code>i1</code>).
         </div>
         <div style={{ fontSize: 12, marginTop: 8, opacity: 0.7 }}>
@@ -2455,7 +2462,7 @@ Push and watch the Vercel deployment status. Smoke-test the production `/api/ins
 ## Notes for the executor
 
 - **Worktrees**: The user's established workflow is committing directly to `main` (see recent commits). If you prefer a worktree, create one with `git worktree add ../kiln-preflight -b feat/inscription-preflight`. Otherwise, working on `main` is fine — split into the three PRs the spec calls out (Phase 0 / Phases 1-5 / Phases 6-14) by pushing intermediate branches if PR review is wanted.
-- **Endpoint paths**: Task 3.1 has you verify the live ordinals.com / hiro.so JSON field names. **Do this first.** The test fixtures are best-effort; field names sometimes differ from the published docs.
+- **Endpoint paths**: Task 3.1 has you verify the live ordinals.com / ordinalswallet JSON field names. **Do this first.** The test fixtures are best-effort; field names sometimes differ from what the live API returns.
 - **The `burned` flag** is best-effort. If neither indexer reliably surfaces it, leave the `burned: boolean` field in the type but document that it's always `false` in MVP. The spec's gate matrix treats `burned: true` as info-only anyway.
 - **No new runtime dependencies** are introduced. If you find yourself reaching for an HTTP client, just use `fetch`. If you find yourself reaching for an LRU cache library, just use the `Map`-based one in this plan.
 - **Don't refactor `inscription-verifier.ts` or `inscription-resilience.ts`** in this plan. The v0.x verifier and the new preflight have different shapes; consolidating them is a future cleanup spec.

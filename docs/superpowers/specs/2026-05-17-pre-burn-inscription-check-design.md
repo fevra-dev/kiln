@@ -9,6 +9,8 @@
 | Status | Draft, pending implementation plan |
 | Estimated effort | 2 days (1 PR for route + tests, 1 PR for wizard integration) |
 
+> **Updated 2026-05-18 (in-flight):** Hiro's public Ordinals API (`api.hiro.so/ordinals/v1`) was discovered to be deprecated (HTTP 410 Gone) mid-implementation. The fallback indexer was swapped to `turbo.ordinalswallet.com`. Note that ordinalswallet has no public content endpoint, so the fallback path returns `contentSha256: null`; content URLs still point to ordinals.com for client rendering. See commit `511e2d6` on `feat/inscription-preflight`.
+
 ---
 
 ## 1. Problem statement
@@ -17,7 +19,7 @@ Today the KILN wizard accepts any 64-hex + `i` + digit string as an inscription 
 
 ## 2. Decision summary
 
-- **Indexer source**: public-only — `ordinals.com` primary, `api.hiro.so` fallback. No self-hosted ord dependency.
+- **Indexer source**: public-only — `ordinals.com` primary, `ordinalswallet` fallback. No self-hosted ord dependency.
 - **Gate posture**: balanced — hard block on confirmed-404 (both indexers), soft override on `<6` confirmations, hard green at `≥6` confirmations.
 - **Surface depth**: rich preview — content render (image/text/HTML via sandbox), metadata, content SHA-256, sat number, content URL.
 - **Architecture**: server-proxied Next.js route `/api/inscription/preflight` with in-memory LRU cache; client `useInscriptionPreflight` hook; preview component reused in Step 2 (compact status row) and Step 3 (full panel).
@@ -39,7 +41,7 @@ Today the KILN wizard accepts any 64-hex + `i` + digit string as an inscription 
 │   2. Cache lookup (in-memory Map, LRU)      │
 │   3. Indexer chain:                         │
 │        ordinals.com  → 200 / 404 / timeout  │
-│        hiro.so       → 200 / 404 / timeout  │
+│        ordinalswallet → 200 / 404 / timeout │
 │   4. Fetch /content/<id> for SHA-256        │
 │   5. Normalize → cache → respond            │
 └─────────────────────────────────────────────┘
@@ -82,7 +84,7 @@ type PreflightResponse =
         | 'epic' | 'legendary' | 'mythic';
       cursed: boolean;                    // ord pre-jubilee curse flag
       burned: boolean;                    // inscription is on a Bitcoin-burned output
-      indexerUsed: 'ordinals.com' | 'hiro.so';
+      indexerUsed: 'ordinals.com' | 'ordinalswallet';
       cached: boolean;
       checkedAt: number;                  // unix-ms
     }
@@ -91,7 +93,7 @@ type PreflightResponse =
       inscriptionId: string;
       reason: 'not_found' | 'all_unreachable';
       indexersChecked: Array<{
-        name: 'ordinals.com' | 'hiro.so';
+        name: 'ordinals.com' | 'ordinalswallet';
         status: 'not_found' | 'timeout' | 'error' | 'rate_limited';
         httpStatus?: number;
       }>;
@@ -123,18 +125,18 @@ Exported `__resetCache()` for tests.
 |---|---|---|---|
 | 1 | `GET https://ordinals.com/r/inscription/<id>` | Metadata (JSON) | 5s |
 | 2 | `GET https://ordinals.com/content/<id>` | Content body for SHA-256 | 5s |
-| 3 (fallback) | `GET https://api.hiro.so/ordinals/v1/inscriptions/<id>` | Metadata (JSON) | 5s |
-| 4 (fallback) | `GET https://api.hiro.so/ordinals/v1/inscriptions/<id>/content` | Content body for SHA-256 | 5s |
+| 3 (fallback) | `GET https://turbo.ordinalswallet.com/inscription/<id>` | Metadata (JSON) | 5s |
+| 4 (fallback) | *(no content endpoint)* | ordinalswallet has no public content endpoint; `contentSha256: null` for this path | — |
 
 **Fallback triggers** (for the metadata fetch): HTTP 404, HTTP 5xx, network error, timeout, malformed JSON. If primary returns 200, skip fallback.
 
 **Content fetch**: only attempted if metadata fetch succeeded. Uses the same indexer that served the metadata (no cross-indexer mix). Content fetch failure does *not* fail the whole preflight — the response is returned with `contentSha256: null` and a server log line noting the partial result.
 
-**Total time budget**: worst case ~15s when both indexers time out in sequence (ordinals metadata 5s + hiro metadata 5s + hiro content 5s — content fetches only run after a successful metadata fetch, so worst-case path doesn't run content twice). In practice well under 1s for cached results and 1–3s for cache misses with healthy indexers. Set the Next.js route handler's `maxDuration` to `20` to give margin above the timeout-cascade worst case.
+**Total time budget**: worst case ~10s when both indexers time out in sequence (ordinals metadata 5s + ordinals content 5s + ordinalswallet metadata 5s — ordinalswallet has no content endpoint so no third timeout). In practice well under 1s for cached results and 1–3s for cache misses with healthy indexers. Set the Next.js route handler's `maxDuration` to `20` to give margin above the timeout-cascade worst case.
 
 **Exact endpoint paths to verify during implementation against:**
 - `docs.ordinals.com/guides/api.html`
-- `docs.hiro.so/ordinals/api/v1`
+- `turbo.ordinalswallet.com/inscription/<id>` (live endpoint, no published docs)
 - `github.com/ordinals/ord`
 
 The abstract contract above is what the spec commits to; specific URL fragments above are best-effort and the implementation step verifies them against current indexer docs.
@@ -253,11 +255,11 @@ Preflight code itself does *not* import Solana — it's pure Bitcoin indexer log
 Mock `fetch` via `jest.fn()` or `msw`. Tests:
 
 1. Valid ID, ordinals.com 200 → response with `exists:true, indexerUsed:'ordinals.com'`
-2. Valid ID, ordinals.com 404, hiro.so 200 → response with `indexerUsed:'hiro.so'`
+2. Valid ID, ordinals.com 404, ordinalswallet 200 → response with `indexerUsed:'ordinalswallet'`
 3. Valid ID, both 404 → `exists:false, reason:'not_found'`
-4. Valid ID, ordinals.com timeout, hiro.so 200 → response with `indexerUsed:'hiro.so'`
+4. Valid ID, ordinals.com timeout, ordinalswallet 200 → response with `indexerUsed:'ordinalswallet'`
 5. Valid ID, both timeout → `exists:false, reason:'all_unreachable'`
-6. Valid ID, ordinals.com 429, hiro.so 200 → response with `indexerUsed:'hiro.so'`
+6. Valid ID, ordinals.com 429, ordinalswallet 200 → response with `indexerUsed:'ordinalswallet'`
 7. Valid ID, malformed JSON from primary, secondary 200 → fallback succeeds
 8. Invalid ID format → 400
 9. Mixed-case ID input → normalized lowercase in response and cache key
@@ -303,7 +305,7 @@ Requires React Testing Library; if jest infra blocks this for the same reason as
   3. **PR 3**: Wizard integration (hook + Step 2 status row + Step 3 panel + override mechanics).
 - **Monitoring** (informal, post-launch grep on Vercel logs):
   - Preflight call volume
-  - Fallback rate (ordinals.com → hiro.so)
+  - Fallback rate (ordinals.com → ordinalswallet)
   - 404 rate (typo prevalence — interesting product signal)
   - Override usage rate (if very high, warnings are noise; if very low, they're load-bearing)
 
@@ -338,7 +340,7 @@ No cross-spec helpers are pre-built. YAGNI for shared abstractions until two spe
 - Parent proposal: `public/docs/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.1
 - KILN spec: `public/docs/TELEBURN_SPEC_v1.0.md`
 - Ordinals API: https://docs.ordinals.com/guides/api.html
-- Hiro Ordinals API: https://docs.hiro.so/ordinals
+- Ordinals Wallet API: https://turbo.ordinalswallet.com (live endpoint; no published docs)
 - Inscription pointer feature: https://docs.ordinals.com/inscriptions/pointer.html
 - Inscription burning: https://docs.ordinals.com/inscriptions/burning.html
 - ord source: https://github.com/ordinals/ord
