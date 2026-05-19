@@ -16,6 +16,8 @@ import { FC, useState } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { TeleburnMethod } from '@/lib/transaction-builder';
 import { isValidInscriptionId, isValidPublicKey } from '@/lib/schemas';
+import { useInscriptionPreflight } from '@/lib/hooks/useInscriptionPreflight';
+import { InscriptionStatusRow } from '@/components/preflight/InscriptionStatusRow';
 
 export interface TeleburnFormData {
   mint: string;
@@ -47,6 +49,13 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
 
   const [errors, setErrors] = useState<Partial<Record<keyof TeleburnFormData, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof TeleburnFormData, boolean>>>({});
+
+  const preflight = useInscriptionPreflight(formData.inscriptionId || null);
+  const preflightBlocksSubmit =
+    preflight.state === 'success' &&
+    preflight.result !== null &&
+    !preflight.result.exists &&
+    preflight.result.reason === 'not_found';
 
   const handleChange = (field: keyof TeleburnFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -162,6 +171,13 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
           {touched.inscriptionId && errors.inscriptionId && (
             <div className="form-error">🚨 {errors.inscriptionId}</div>
           )}
+          {touched.inscriptionId && !errors.inscriptionId && (
+            <InscriptionStatusRow
+              state={preflight.state}
+              result={preflight.result}
+              error={preflight.error}
+            />
+          )}
           <div className="form-hint">
             Format: {'<64-hex-txid>i<index>'} (from ordinals.com)
           </div>
@@ -214,9 +230,15 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
         <button
           type="submit"
           className="terminal-button px-8 py-3 ml-auto"
+          disabled={preflightBlocksSubmit}
         >
           CONTINUE TO VERIFICATION
         </button>
+        {preflightBlocksSubmit && (
+          <div style={{ fontSize: 12, color: '#c0392b', marginTop: 4 }}>
+            Inscription not found on Bitcoin — fix the ID before continuing.
+          </div>
+        )}
       </div>
 
       <style jsx>{`
