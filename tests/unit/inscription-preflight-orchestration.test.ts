@@ -201,8 +201,9 @@ describe('preflight()', () => {
 
     // Within 30s, second call hits cache (no fetch).
     const before = fetchMock.mock.calls.length;
-    await preflight(VALID_ID);
+    const cachedResult = await preflight(VALID_ID);
     expect(fetchMock.mock.calls.length).toBe(before);
+    expect(cachedResult.cached).toBe(true);
 
     // After 35s, cache expired, retries.
     jest.advanceTimersByTime(35_000);
@@ -223,8 +224,9 @@ describe('preflight()', () => {
 
     // Within 5s, cache hit (no new fetches).
     const before = fetchMock.mock.calls.length;
-    await preflight(VALID_ID);
+    const cachedResult = await preflight(VALID_ID);
     expect(fetchMock.mock.calls.length).toBe(before);
+    expect(cachedResult.cached).toBe(true);
 
     // After 6s, cache should be expired.
     jest.advanceTimersByTime(6_000);
@@ -234,5 +236,16 @@ describe('preflight()', () => {
     await preflight(VALID_ID);
     expect(fetchMock.mock.calls.length).toBeGreaterThan(before);
     jest.useRealTimers();
+  });
+
+  it('returns all_unreachable with empty indexersChecked when tip-height fetch fails', async () => {
+    // Tip-height fetch rejects; no indexer mocks set up — they should never be called.
+    fetchMock.mockRejectedValueOnce(new TypeError('mempool unreachable'));
+    const result = await preflight(VALID_ID);
+    expect(result.exists).toBe(false);
+    if (!result.exists) {
+      expect(result.reason).toBe('all_unreachable');
+      expect(result.indexersChecked).toEqual([]);  // empty, not fake
+    }
   });
 });

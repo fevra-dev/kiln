@@ -45,6 +45,7 @@ export interface PreflightNotFound {
   inscriptionId: string;
   reason: 'not_found' | 'all_unreachable';
   indexersChecked: IndexerCheck[];
+  cached: boolean;          // present on both union arms so spread { ...cached, cached: true } is always valid
   checkedAt: number;
 }
 
