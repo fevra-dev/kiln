@@ -9,10 +9,6 @@ interface ContentRendererProps {
   inscriptionId: string;
 }
 
-// Reserved for future client-side fetch-and-truncate implementation.
-// @ts-expect-error intentionally unused — hook for fetch-and-truncate text preview
-const MAX_TEXT_PREVIEW_BYTES = 4 * 1024;
-
 /**
  * Renders inscription content by content-type.
  * - image/*: <img>
