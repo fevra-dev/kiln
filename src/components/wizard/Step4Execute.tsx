@@ -115,7 +115,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       }
       
       const burnMemoData = await burnMemoResponse.json();
-      console.log(`✅ EXECUTION: Burn+memo transaction built: ${burnMemoData.nftType}`);
+      console.log(`✅ EXECUTION: Burn+memo transaction built: ${burnMemoData.nftKind}`);
       
       // Parse the transaction (handles both versioned and legacy)
       let burnMemoTx: Transaction | VersionedTransaction;

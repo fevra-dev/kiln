@@ -229,19 +229,19 @@ export class DryRunService {
       let burnMemoDecoded: DecodedTransaction;
       let burnMemoSimulation: SimulationResult;
       let burnMemoEstimatedFee = 5000; // Default estimate
-      let nftType: 'PNFT' | 'REGULAR' = 'REGULAR';
-      
+      let nftKind: string = 'regular';
+
       try {
         // Build the burn+memo transaction using Metaplex
-        const burnMemoResult = await buildBurnMemoTransaction(
-          params.rpcUrl,
-          params.mint.toBase58(),
-          params.owner.toBase58(),
-          params.inscriptionId,
-          2_000 // priority microlamports
-        );
-        
-        nftType = burnMemoResult.nftType;
+        const burnMemoResult = await buildBurnMemoTransaction({
+          rpcUrl: params.rpcUrl,
+          mint: params.mint.toBase58(),
+          owner: params.owner.toBase58(),
+          inscriptionId: params.inscriptionId,
+          priorityMicrolamports: 2_000,
+        });
+
+        nftKind = burnMemoResult.nftKind;
         
         // Parse the transaction
         const txBuffer = Buffer.from(burnMemoResult.transaction, 'base64');
@@ -375,7 +375,7 @@ export class DryRunService {
 
       steps.push({
         name: 'burn-memo',
-        description: `BURN + MEMO: Burn ${nftType} and record teleburn proof in single transaction`,
+        description: `BURN + MEMO: Burn ${nftKind} and record teleburn proof in single transaction`,
         transaction: burnMemoTx instanceof VersionedTransaction ? new Transaction() : burnMemoTx, // Convert for compatibility
         decoded: burnMemoDecoded,
         simulation: burnMemoSimulation,
@@ -426,7 +426,7 @@ export class DryRunService {
 
       // Check frozen account status (if not pNFT)
       // Note: pNFTs have a different freeze mechanism handled by Metaplex, skip for them
-      if (nftType === 'REGULAR') {
+      if (nftKind === 'regular') {
         try {
           const frozenCheck = await checkNFTFrozenStatus(
             this.connection,

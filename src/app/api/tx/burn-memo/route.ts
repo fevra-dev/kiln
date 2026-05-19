@@ -77,13 +77,13 @@ export async function POST(request: NextRequest) {
     const rpcUrl = process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
 
     // Build the burn+memo transaction
-    const result = await buildBurnMemoTransaction(
+    const result = await buildBurnMemoTransaction({
       rpcUrl,
-      validated.mint,
-      validated.owner,
-      validated.inscriptionId,
-      validated.priorityMicrolamports
-    );
+      mint: validated.mint,
+      owner: validated.owner,
+      inscriptionId: validated.inscriptionId,
+      priorityMicrolamports: validated.priorityMicrolamports,
+    });
 
     // Return transaction + metadata with CORS and rate limit headers
     const corsHeaders = getCorsHeaders(request);
@@ -92,13 +92,13 @@ export async function POST(request: NextRequest) {
         success: true,
         transaction: result.transaction, // base64 serialized transaction
         isVersioned: result.isVersioned,
-        nftType: result.nftType,
-        description: `BURN + MEMO: Burn ${result.nftType} and record teleburn proof in single transaction`,
+        nftKind: result.nftKind,
+        description: `BURN + MEMO: Burn ${result.nftKind} and record teleburn proof in single transaction`,
         metadata: {
           action: 'burn-memo',
           mint: validated.mint,
           inscriptionId: validated.inscriptionId,
-          nftType: result.nftType,
+          nftKind: result.nftKind,
           timestamp: new Date().toISOString(),
         },
       },
