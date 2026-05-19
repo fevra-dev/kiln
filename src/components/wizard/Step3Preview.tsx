@@ -17,6 +17,8 @@ import { TeleburnFormData } from '../teleburn/TeleburnForm';
 import { DryRunPreview } from '../teleburn/DryRunPreview';
 import { DryRunReport } from '@/lib/dry-run';
 import { SimulationSkeleton } from '../ui/Skeleton';
+import { useInscriptionPreflight } from '@/lib/hooks/useInscriptionPreflight';
+import { InscriptionPanel } from '@/components/preflight/InscriptionPanel';
 
 interface Step3PreviewProps {
   formData: TeleburnFormData;
@@ -38,6 +40,8 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<DryRunReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const preflight = useInscriptionPreflight(formData.inscriptionId);
+  const [inscriptionAcknowledged, setInscriptionAcknowledged] = useState(false);
 
   const executeDryRun = useCallback(async () => {
     if (!publicKey) {
@@ -188,7 +192,15 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       {/* Success State - Show Report */}
       {report && (
         <>
-          <DryRunPreview 
+          <InscriptionPanel
+            state={preflight.state}
+            result={preflight.result}
+            error={preflight.error}
+            onAcknowledgedChange={setInscriptionAcknowledged}
+            onRetry={preflight.refetch}
+          />
+
+          <DryRunPreview
             report={report}
             onDownloadReceipt={handleDownloadReceipt}
           />
@@ -205,7 +217,13 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
             {report.success ? (
               <button
                 onClick={onComplete}
+                disabled={!inscriptionAcknowledged}
                 className="terminal-button px-8 py-3"
+                style={{
+                  opacity: inscriptionAcknowledged ? 1 : 0.5,
+                  cursor: inscriptionAcknowledged ? 'pointer' : 'not-allowed',
+                }}
+                title={inscriptionAcknowledged ? '' : 'Complete the inscription pre-flight before proceeding'}
               >
                 ⚡ PROCEED TO EXECUTION →
               </button>
