@@ -21,9 +21,10 @@ import type {
 } from './types';
 
 const INSCRIPTION_REGEX = /^[a-f0-9]{64}i[0-9]+$/;
-// Tighter timeout for mempool.space (small endpoint, ~50-byte text response)
-// vs. PER_INDEXER_TIMEOUT_MS for indexer queries (larger JSON payloads).
-const TIP_HEIGHT_TIMEOUT_MS = 3_000;
+// Tighter timeout (2s) for mempool.space — small endpoint, ~50-byte text
+// response. Per-indexer timeout (3s) is longer to allow for JSON payloads
+// and content fetch. Combined worst case fits in route handler maxDuration.
+const TIP_HEIGHT_TIMEOUT_MS = 2_000;
 const BITCOIN_TIP_URL = 'https://mempool.space/api/blocks/tip/height';
 
 const TTL_CONFIRMED_DEEP = Infinity;

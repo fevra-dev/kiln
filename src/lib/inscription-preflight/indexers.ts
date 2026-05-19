@@ -34,7 +34,7 @@ const subtleCrypto: SubtleCrypto =
     ? crypto.subtle
     : (webcrypto as unknown as Crypto).subtle;
 
-const PER_INDEXER_TIMEOUT_MS = 5_000;
+const PER_INDEXER_TIMEOUT_MS = 3_000; // fits within route maxDuration even in Hobby plan worst-case
 export const MAX_HASHABLE_BYTES = 5 * 1024 * 1024;
 
 const ORDINALS_BASE = 'https://ordinals.com';
