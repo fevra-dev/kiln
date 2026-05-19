@@ -17,6 +17,7 @@ export const ErrorCode = {
   CNFT_TOO_DEEP: 'CNFT_TOO_DEEP',
   CNFT_OWNERSHIP_MISMATCH: 'CNFT_OWNERSHIP_MISMATCH',
   CNFT_DELEGATED: 'CNFT_DELEGATED',
+  MALFORMED_DAS_RESPONSE: 'MALFORMED_DAS_RESPONSE',
 } as const;
 
 export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
@@ -74,5 +75,12 @@ export class CnftDelegatedError extends Error {
   readonly code: ErrorCode = ErrorCode.CNFT_DELEGATED;
   constructor(public delegate: string) {
     super(`cNFT has an active non-owner delegate: ${delegate}`);
+  }
+}
+
+export class MalformedDasResponseError extends Error {
+  readonly code: ErrorCode = ErrorCode.MALFORMED_DAS_RESPONSE;
+  constructor(public reason: string) {
+    super(`DAS returned malformed response: ${reason}`);
   }
 }

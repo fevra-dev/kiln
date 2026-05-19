@@ -1,5 +1,8 @@
 import { detectAssetKind } from '@/lib/local-burn/detect';
-import { NotAnNftError } from '@/lib/local-burn/errors';
+import {
+  MalformedDasResponseError,
+  NotAnNftError,
+} from '@/lib/local-burn/errors';
 import dasRegular from '../fixtures/das-regular-nft.json';
 import dasPnft from '../fixtures/das-pnft.json';
 import dasCnft from '../fixtures/das-cnft.json';
@@ -81,5 +84,42 @@ describe('detectAssetKind', () => {
   it('throws AssetNotFoundError when DAS returns null result', async () => {
     mockDasResponse(null);
     await expect(detectAssetKind('missing-mint', RPC_URL)).rejects.toThrow(/not found/i);
+  });
+});
+
+describe('detectAssetKind error paths', () => {
+  beforeEach(() => fetchMock.mockReset());
+
+  it('throws on JSON-RPC error envelope', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({ jsonrpc: '2.0', id: '1', error: { code: -32602, message: 'Invalid params' } }),
+    });
+    await expect(detectAssetKind('test-id', RPC_URL)).rejects.toThrow(/RPC error -32602/);
+  });
+
+  it('throws MalformedDasResponseError when compressed=true but fields missing', async () => {
+    mockDasResponse({
+      id: 'x',
+      interface: 'V1_NFT',
+      ownership: { owner: 'o', delegate: null, ownership_model: 'single' },
+      content: { metadata: {} },
+      compression: { compressed: true }, // missing tree/leaf_id/data_hash/creator_hash
+    });
+    await expect(detectAssetKind('test-id', RPC_URL)).rejects.toBeInstanceOf(MalformedDasResponseError);
+  });
+
+  it('throws on fetch timeout', async () => {
+    fetchMock.mockImplementationOnce(() =>
+      Promise.reject(Object.assign(new DOMException('timed out', 'TimeoutError'), {})),
+    );
+    await expect(detectAssetKind('test-id', RPC_URL)).rejects.toThrow(/timed out/i);
+  });
+
+  it('throws on generic fetch failure', async () => {
+    fetchMock.mockImplementationOnce(() => Promise.reject(new TypeError('network error')));
+    await expect(detectAssetKind('test-id', RPC_URL)).rejects.toThrow(/fetch failed/);
   });
 });
