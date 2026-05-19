@@ -75,6 +75,16 @@ export function useInscriptionPreflight(inscriptionId: string | null): UsePrefli
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inscriptionId]);
 
+  // Unmount cleanup: abort in-flight fetch and clear pending debounce.
+  // Separate from the input-tracking effect above (which fires on every
+  // inscriptionId change) so this only runs once at unmount.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   const refetch = useCallback(() => {
     if (lastIdRef.current) void doFetch(lastIdRef.current);
   }, [doFetch]);
