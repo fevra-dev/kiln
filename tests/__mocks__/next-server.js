@@ -1,9 +1,10 @@
 /**
  * Mock Next.js server modules for testing
+ * Uses CommonJS exports so Jest can load it without ESM transform.
  */
 
 // Mock NextRequest
-export class NextRequest {
+class NextRequest {
   constructor(input, init) {
     this.url = typeof input === 'string' ? input : input.url;
     this.method = init?.method || 'GET';
@@ -18,7 +19,7 @@ export class NextRequest {
 }
 
 // Mock NextResponse
-export class NextResponse {
+class NextResponse {
   constructor(body, init) {
     this.body = body;
     this.status = init?.status || 200;
@@ -49,4 +50,6 @@ export class NextResponse {
     return Promise.resolve(JSON.parse(this.body || '{}'));
   }
 }
+
+module.exports = { NextRequest, NextResponse };
 
