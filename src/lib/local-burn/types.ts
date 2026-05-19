@@ -21,8 +21,11 @@ export type NftKind =
   | { kind: 'cnft';
       assetId: PublicKey;
       tree: PublicKey;
+      /** zero-based leaf index in the Merkle tree, used as both nonce and index in Bubblegum.burn */
       leafIndex: number;
+      /** lowercase hex string, as returned by DAS compression.data_hash */
       dataHash: string;
+      /** lowercase hex string, as returned by DAS compression.creator_hash */
       creatorHash: string;
     }
   | { kind: 'core'; assetId: PublicKey }
@@ -31,8 +34,10 @@ export type NftKind =
   | { kind: 'unknown'; daInterface: string; identifier: string };
 
 /**
- * Normalized DAS asset shape used by burn builders.
- * Only fields we actually need are surfaced.
+ * Normalized DAS asset shape (snake_case fields preserved from JSON-RPC wire format).
+ * Burn builders should consume NftKind (camelCase) rather than DasAsset directly when the
+ * data is available there; DasAsset is the source-of-truth for fields not yet hoisted
+ * into NftKind (e.g., ownership.delegate for cNFT pre-flight checks).
  */
 export interface DasAsset {
   id: string;
@@ -64,6 +69,7 @@ export interface DasAsset {
  */
 export interface BuiltBurnTx {
   transaction: string;          // base64 serialized
+  /** true → client must decode with VersionedTransaction; false → legacy Transaction. */
   isVersioned: boolean;
   nftKind: NftKind['kind'];     // expanded from old nftType
 }
