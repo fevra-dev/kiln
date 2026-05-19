@@ -1,0 +1,27 @@
+{
+  "_synthetic": "true — no mainnet RPC available at record time; shape matches DAS wire format",
+  "id": "FjmEkCXtV9kn8GHbTRY4NpvxeU9M2k5dLwAa3BQnZYpq",
+  "interface": "V1_NFT",
+  "ownership": {
+    "owner": "7hTckgnXBnqgRapXYRxE6gfxrQUFEhNvJZmbM7noCFdY",
+    "delegate": null,
+    "ownership_model": "single"
+  },
+  "content": {
+    "metadata": {
+      "name": "DRiP Drop #9001",
+      "description": "A compressed NFT from DRiP."
+    },
+    "json_uri": "https://arweave.net/drip9001",
+    "files": []
+  },
+  "compression": {
+    "compressed": true,
+    "tree": "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY",
+    "leaf_id": 42,
+    "data_hash": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+    "creator_hash": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "asset_hash": "cafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe",
+    "seq": 1337
+  }
+}

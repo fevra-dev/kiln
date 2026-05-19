@@ -1,0 +1,18 @@
+{
+  "_synthetic": "true — no mainnet RPC available at record time; shape matches DAS wire format",
+  "id": "CoREAsset1111111111111111111111111111111111",
+  "interface": "MplCoreAsset",
+  "ownership": {
+    "owner": "7hTckgnXBnqgRapXYRxE6gfxrQUFEhNvJZmbM7noCFdY",
+    "delegate": null,
+    "ownership_model": "single"
+  },
+  "content": {
+    "metadata": {
+      "name": "Core Asset #42",
+      "description": "A Metaplex Core asset."
+    },
+    "json_uri": "https://arweave.net/core42",
+    "files": []
+  }
+}

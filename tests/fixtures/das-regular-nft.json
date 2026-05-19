@@ -1,0 +1,21 @@
+{
+  "_synthetic": "true — no mainnet RPC available at record time; shape matches DAS wire format",
+  "id": "9XYbqARfjJZTqpgY5EArWBhzFCCqrDFGmf7obrBBCLNX",
+  "interface": "V1_NFT",
+  "ownership": {
+    "owner": "7hTckgnXBnqgRapXYRxE6gfxrQUFEhNvJZmbM7noCFdY",
+    "delegate": null,
+    "ownership_model": "single"
+  },
+  "content": {
+    "metadata": {
+      "name": "Okay Bear #1234",
+      "description": "Okay Bears is a culture shift."
+    },
+    "json_uri": "https://arweave.net/example1234",
+    "files": []
+  },
+  "compression": {
+    "compressed": false
+  }
+}

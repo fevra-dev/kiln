@@ -1,0 +1,18 @@
+{
+  "_synthetic": "true — no mainnet RPC available at record time; shape matches DAS wire format",
+  "id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "interface": "FungibleToken",
+  "ownership": {
+    "owner": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "delegate": null,
+    "ownership_model": "token"
+  },
+  "content": {
+    "metadata": {
+      "name": "USD Coin",
+      "description": "USDC stablecoin by Circle."
+    },
+    "json_uri": "https://centre.io/usdc-metadata.json",
+    "files": []
+  }
+}

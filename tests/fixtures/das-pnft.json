@@ -1,0 +1,21 @@
+{
+  "_synthetic": "true — no mainnet RPC available at record time; shape matches DAS wire format",
+  "id": "3rCgmknE8RkSLB3nFDG9dqPjMcQMJbHrLZHb5Xp4gNoA",
+  "interface": "ProgrammableNFT",
+  "ownership": {
+    "owner": "7hTckgnXBnqgRapXYRxE6gfxrQUFEhNvJZmbM7noCFdY",
+    "delegate": null,
+    "ownership_model": "single"
+  },
+  "content": {
+    "metadata": {
+      "name": "DeGods #5678",
+      "description": "A collection of degenerates."
+    },
+    "json_uri": "https://metadata.degods.com/g/5678.json",
+    "files": []
+  },
+  "compression": {
+    "compressed": false
+  }
+}
