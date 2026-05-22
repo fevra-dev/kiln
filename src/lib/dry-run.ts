@@ -17,6 +17,7 @@ import { Connection, PublicKey, Transaction, VersionedTransaction } from '@solan
 import { TransactionBuilder, TeleburnMethod, type UpdateUriParams } from './transaction-builder';
 import { TransactionDecoder, type DecodedTransaction } from './transaction-decoder';
 import { buildBurnMemoTransaction } from './local-burn/build-burn-memo-tx';
+import type { NftKind } from './local-burn/types';
 import { validateComputeUnits } from './transaction-utils';
 import { validateTransactionSize } from './transaction-size-validator';
 import { checkNFTFrozenStatus } from './frozen-account-detector';
@@ -52,6 +53,7 @@ export interface DryRunReport {
   mint: string;
   inscriptionId: string;
   method: TeleburnMethod;
+  nftKind: NftKind['kind'];
   steps: DryRunStep[];
   totalEstimatedFee: number;
   totalComputeUnits: number;
@@ -210,7 +212,8 @@ export class DryRunService {
     const errors: string[] = [];
     let totalEstimatedFee = 0;
     let totalComputeUnits = 0;
-    
+    let nftKindValue: NftKind['kind'] = 'regular';
+
     // Initialize debug info for troubleshooting
     const debugInfo: DryRunReport['debug'] = {
       rpcUrl: params.rpcUrl,
@@ -229,7 +232,6 @@ export class DryRunService {
       let burnMemoDecoded: DecodedTransaction;
       let burnMemoSimulation: SimulationResult;
       let burnMemoEstimatedFee = 5000; // Default estimate
-      let nftKind: string = 'regular';
 
       try {
         // Build the burn+memo transaction using Metaplex
@@ -241,7 +243,7 @@ export class DryRunService {
           priorityMicrolamports: 2_000,
         });
 
-        nftKind = burnMemoResult.nftKind;
+        nftKindValue = burnMemoResult.nftKind as NftKind['kind'];
         
         // Parse the transaction
         const txBuffer = Buffer.from(burnMemoResult.transaction, 'base64');
@@ -375,7 +377,7 @@ export class DryRunService {
 
       steps.push({
         name: 'burn-memo',
-        description: `BURN + MEMO: Burn ${nftKind} and record teleburn proof in single transaction`,
+        description: `BURN + MEMO: Burn ${nftKindValue} and record teleburn proof in single transaction`,
         transaction: burnMemoTx instanceof VersionedTransaction ? new Transaction() : burnMemoTx, // Convert for compatibility
         decoded: burnMemoDecoded,
         simulation: burnMemoSimulation,
@@ -426,7 +428,7 @@ export class DryRunService {
 
       // Check frozen account status (if not pNFT)
       // Note: pNFTs have a different freeze mechanism handled by Metaplex, skip for them
-      if (nftKind === 'regular') {
+      if (nftKindValue === 'regular') {
         try {
           const frozenCheck = await checkNFTFrozenStatus(
             this.connection,
@@ -467,6 +469,7 @@ export class DryRunService {
       mint: params.mint.toBase58(),
       inscriptionId: params.inscriptionId,
       method: params.method,
+      nftKind: nftKindValue,
       steps,
       totalEstimatedFee,
       totalComputeUnits,
