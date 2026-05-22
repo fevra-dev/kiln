@@ -9,9 +9,11 @@ import { Connection, PublicKey, VersionedTransaction, TransactionMessage } from 
 import { toWeb3JsInstruction } from '@metaplex-foundation/umi-web3js-adapters';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Buffer } from 'buffer';
+import { mplBubblegum } from '@metaplex-foundation/mpl-bubblegum';
 import { detectAssetKind } from './detect';
 import { buildPnftBurn } from './pnft-burn';
 import { buildRegularBurn } from './regular-burn';
+import { buildCnftBurn } from './cnft-burn';
 import { NotYetImplementedError, UnsupportedStandardError } from './errors';
 import type { BuiltBurnTx } from './types';
 
@@ -73,6 +75,7 @@ export async function buildBurnMemoTransaction(args: BuildBurnMemoArgs): Promise
     getErrorFromName: () => null,
     isOnCluster: () => true,
   } as unknown as Parameters<typeof umi.programs.add>[0]);
+  umi.use(mplBubblegum());
 
   const ownerPubkey = new PublicKey(args.owner);
   const ownerSigner = createNoopSigner(publicKey(ownerPubkey.toBase58()));
@@ -97,6 +100,8 @@ export async function buildBurnMemoTransaction(args: BuildBurnMemoArgs): Promise
       tb = await buildRegularBurn({ ...common, kindInfo: kind });
       break;
     case 'cnft':
+      tb = await buildCnftBurn({ ...common, kindInfo: kind });
+      break;
     case 'core':
     case 'mpl-inscription':
     case 'libreplex-inscription':

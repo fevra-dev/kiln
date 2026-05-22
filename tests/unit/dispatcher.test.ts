@@ -37,9 +37,16 @@ describe('buildBurnMemoTransaction dispatcher', () => {
     fetchMock.mockReset();
   });
 
-  it('throws NotYetImplementedError for cnft (until Task 11)', async () => {
-    mockGetSlot();
+  it('routes cnft to buildCnftBurn (no longer NotYetImplementedError)', async () => {
+    // Mock the getSlot call (for getWorkingRpcUrl) + the getAsset call
+    fetchMock.mockResolvedValueOnce({
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => ({ jsonrpc: '2.0', id: '1', result: 12345 }),
+    });
     mockDasResponse(dasCnft);
+    // Don't mock the proof fetch — the cnft builder will fail to fetch proof or canopy.
+    // The point is just that it ROUTES to the cnft builder, not throws NotYetImplementedError.
+
     await expect(
       buildBurnMemoTransaction({
         rpcUrl: RPC_URL,
@@ -48,7 +55,7 @@ describe('buildBurnMemoTransaction dispatcher', () => {
         inscriptionId: INSCRIPTION,
         priorityMicrolamports: 2000,
       })
-    ).rejects.toBeInstanceOf(NotYetImplementedError);
+    ).rejects.not.toBeInstanceOf(NotYetImplementedError);
   });
 
   it('throws NotYetImplementedError for core', async () => {
