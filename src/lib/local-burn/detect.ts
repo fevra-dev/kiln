@@ -42,6 +42,11 @@ export async function detectAssetKind(
   const env = (await res.json()) as { jsonrpc?: string; id?: string; result?: unknown; error?: { code: number; message: string } };
 
   if (env.error) {
+    // DAS returns -32000 "RecordNotFound" when the asset doesn't exist
+    if (env.error.message?.toLowerCase().includes('recordnotfound') ||
+        env.error.message?.toLowerCase().includes('asset not found')) {
+      throw new AssetNotFoundError(mintOrAssetId);
+    }
     throw new Error(`DAS getAsset RPC error ${env.error.code}: ${env.error.message}`);
   }
 

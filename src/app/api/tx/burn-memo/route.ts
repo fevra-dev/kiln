@@ -17,6 +17,17 @@ import { getCorsHeaders, isOriginAllowed } from '@/lib/cors';
 import { buildBurnMemoTransaction } from '@/lib/local-burn/build-burn-memo-tx';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
 import { checkEmergencyShutdown } from '@/lib/emergency-shutdown';
+import {
+  NotAnNftError,
+  NotYetImplementedError,
+  UnsupportedStandardError,
+  AssetNotFoundError,
+  CnftStaleProofError,
+  CnftTooDeepError,
+  CnftOwnershipMismatchError,
+  CnftDelegatedError,
+  MalformedDasResponseError,
+} from '@/lib/local-burn/errors';
 
 /**
  * Request schema for burn+memo transaction
@@ -121,6 +132,35 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // Handle typed errors from build-burn-memo-tx dispatcher
+    if (error instanceof NotAnNftError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 400 });
+    }
+    if (error instanceof NotYetImplementedError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 400 });
+    }
+    if (error instanceof UnsupportedStandardError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 400 });
+    }
+    if (error instanceof AssetNotFoundError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 400 });
+    }
+    if (error instanceof MalformedDasResponseError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 502 });
+    }
+    if (error instanceof CnftOwnershipMismatchError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 400 });
+    }
+    if (error instanceof CnftDelegatedError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 400 });
+    }
+    if (error instanceof CnftTooDeepError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 400 });
+    }
+    if (error instanceof CnftStaleProofError) {
+      return NextResponse.json({ error: error.message, errorCode: error.code }, { status: 409 });
     }
 
     // Handle other errors
