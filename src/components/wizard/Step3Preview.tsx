@@ -200,6 +200,31 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
             onRetry={preflight.refetch}
           />
 
+          {/* NFT identity row — shows compression badge when applicable */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, opacity: 0.7 }}>
+              {report.mint}
+            </span>
+            {report?.nftKind === 'cnft' && (
+              <span
+                title="Stored as a Merkle tree leaf — same teleburn protocol, same on-chain memo, same verification."
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '2px 8px',
+                  marginLeft: 8,
+                  fontSize: 11,
+                  border: '1px solid currentColor',
+                  borderRadius: 12,
+                  opacity: 0.8,
+                }}
+              >
+                🌳 Compressed NFT
+              </span>
+            )}
+          </div>
+
           <DryRunPreview
             report={report}
             onDownloadReceipt={handleDownloadReceipt}
