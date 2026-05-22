@@ -65,6 +65,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
   const [metadataUpdateCompleted, setMetadataUpdateCompleted] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmChecked, setConfirmChecked] = useState(false);
+  const [retryable, setRetryable] = useState(false);
   const [txStates, setTxStates] = useState<TxState[]>([
     { name: 'BURN+MEMO', status: 'pending' },
   ]);
@@ -110,10 +111,50 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       });
 
       if (!burnMemoResponse.ok) {
-        const errorData = await burnMemoResponse.json();
-        throw new Error(`Failed to build burn+memo transaction: ${errorData.error || 'Unknown error'}`);
+        const body = await burnMemoResponse.json();
+        const code = body.errorCode as string | undefined;
+        let userMessage: string;
+        let isRetryable = false;
+
+        switch (code) {
+          case 'NOT_AN_NFT':
+            userMessage = "That mint isn't an NFT — looks like a fungible token. Teleburn only supports NFTs.";
+            break;
+          case 'NOT_YET_IMPLEMENTED':
+            userMessage = "That asset standard isn't supported yet. Coming soon: Core, MPL Inscriptions, LibrePlex.";
+            break;
+          case 'UNSUPPORTED_STANDARD':
+            userMessage = "Unrecognized asset standard. KILN supports regular, programmable, and compressed NFTs.";
+            break;
+          case 'ASSET_NOT_FOUND':
+            userMessage = "Asset not found. Check the mint address.";
+            break;
+          case 'CNFT_DELEGATED':
+            userMessage = "This cNFT has an active delegate. Revoke delegation before burning.";
+            break;
+          case 'CNFT_OWNERSHIP_MISMATCH':
+            userMessage = "Connected wallet doesn't own this cNFT (it may have been transferred).";
+            break;
+          case 'CNFT_TOO_DEEP':
+            userMessage = "This cNFT's tree is unsupported (proof too large for one transaction). Address Lookup Tables planned for a future release.";
+            break;
+          case 'MALFORMED_DAS_RESPONSE':
+            userMessage = "Bitcoin indexer returned unexpected data. Try again or contact support.";
+            break;
+          case 'CNFT_STALE_PROOF':
+            userMessage = "Tree state changed mid-sign. Click Retry to fetch a fresh proof.";
+            isRetryable = true;
+            break;
+          default:
+            userMessage = body.error || `Request failed (${burnMemoResponse.status})`;
+        }
+
+        setRetryable(isRetryable);
+        updateTxStatus(0, { status: 'error', error: userMessage });
+        setExecuting(false);
+        return;
       }
-      
+
       const burnMemoData = await burnMemoResponse.json();
       console.log(`✅ EXECUTION: Burn+memo transaction built: ${burnMemoData.nftKind}`);
       
@@ -544,7 +585,20 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           ← BACK
         </button>
 
-        {!executing && !completed && (
+        {retryable && !executing && !completed && (
+          <button
+            onClick={() => {
+              setRetryable(false);
+              setTxStates([{ name: 'BURN+MEMO', status: 'pending' }]);
+              setShowConfirmModal(true);
+            }}
+            className="terminal-button px-8 py-3"
+          >
+            🔁 RETRY (REFRESH PROOF)
+          </button>
+        )}
+
+        {!retryable && !executing && !completed && (
           <button
             onClick={() => setShowConfirmModal(true)}
             className="terminal-button px-8 py-3"
