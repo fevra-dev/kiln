@@ -1,8 +1,10 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  
+
   // Webpack configuration for Solana and crypto libraries
   webpack: (config) => {
     config.resolve.fallback = {
@@ -12,7 +14,19 @@ const nextConfig = {
       tls: false,
       crypto: false,
     };
-    
+
+    // @solana/spl-account-compression@0.4.1 ships a broken exports field
+    // (./dist/cjs/index.js — file doesn't exist; actual entry is
+    // ./dist/cjs/src/index.js). Webpack respects the exports field strictly,
+    // so we alias around it. Remove this once the package publishes a fix.
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@solana/spl-account-compression': path.resolve(
+        __dirname,
+        'node_modules/@solana/spl-account-compression/dist/cjs/src/index.js'
+      ),
+    };
+
     // Handle Web Workers
     config.module.rules.push({
       test: /\.worker\.(js|ts)$/,
@@ -22,7 +36,7 @@ const nextConfig = {
         publicPath: '/_next/'
       }
     });
-    
+
     return config;
   },
   
