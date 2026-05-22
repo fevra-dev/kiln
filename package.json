@@ -67,5 +67,10 @@
     "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@8.15.1"
+  "packageManager": "pnpm@8.15.1",
+  "pnpm": {
+    "patchedDependencies": {
+      "@solana/spl-account-compression@0.4.1": "patches/@solana__spl-account-compression@0.4.1.patch"
+    }
+  }
 }

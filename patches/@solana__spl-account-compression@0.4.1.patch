@@ -1,0 +1,25 @@
+diff --git a/package.json b/package.json
+index 83675bb322cedcb3527afaa6ab78e423eaeeb127..c285616b175324e5379a8a21bb2927b2a9a1fd5a 100644
+--- a/package.json
++++ b/package.json
+@@ -21,14 +21,14 @@
+   "publishConfig": {
+     "access": "public"
+   },
+-  "main": "./dist/cjs/index.js",
+-  "module": "./dist/cjs/index.js",
+-  "types": "./dist/types/index.d.ts",
++  "main": "./dist/cjs/src/index.js",
++  "module": "./dist/cjs/src/index.js",
++  "types": "./dist/types/src/index.d.ts",
+   "exports": {
+     ".": {
+-      "types": "./dist/types/index.d.ts",
+-      "require": "./dist/cjs/index.js",
+-      "import": "./dist/cjs/index.js"
++      "types": "./dist/types/src/index.d.ts",
++      "require": "./dist/cjs/src/index.js",
++      "import": "./dist/cjs/src/index.js"
+     },
+     "./idl/spl_account_compression.json": "./idl/spl_account_compression.json"
+   },

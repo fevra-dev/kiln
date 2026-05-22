@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@solana/spl-account-compression@0.4.1':
+    hash: gczrpsijwxpl2bd6ay34oo2q7e
+    path: patches/@solana__spl-account-compression@0.4.1.patch
+
 dependencies:
   '@jsquash/avif':
     specifier: ^2.1.1
@@ -37,7 +42,7 @@ dependencies:
     version: 1.8.0
   '@solana/spl-account-compression':
     specifier: ^0.4.1
-    version: 0.4.1(@solana/web3.js@1.98.4)(typescript@5.9.3)
+    version: 0.4.1(patch_hash=gczrpsijwxpl2bd6ay34oo2q7e)(@solana/web3.js@1.98.4)(typescript@5.9.3)
   '@solana/spl-token':
     specifier: ^0.3.11
     version: 0.3.11(@solana/web3.js@1.98.4)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)
@@ -2948,7 +2953,7 @@ packages:
       - fastestsmallesttextencoderdecoder
     dev: false
 
-  /@solana/spl-account-compression@0.4.1(@solana/web3.js@1.98.4)(typescript@5.9.3):
+  /@solana/spl-account-compression@0.4.1(patch_hash=gczrpsijwxpl2bd6ay34oo2q7e)(@solana/web3.js@1.98.4)(typescript@5.9.3):
     resolution: {integrity: sha512-5qEkV1mwOzNXe4NMmdsHi6J7aCf16zd0OsVcf1EV6aeynqv0js5AOBRIrf0/VBpV5fSjN8U6I2bV9Q3+dW3lgg==}
     engines: {node: '>=16'}
     peerDependencies:
@@ -2967,6 +2972,7 @@ packages:
       - typescript
       - utf-8-validate
     dev: false
+    patched: true
 
   /@solana/spl-token-metadata@0.1.6(@solana/web3.js@1.98.4)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3):
     resolution: {integrity: sha512-7sMt1rsm/zQOQcUWllQX9mD2O6KhSAtY1hFR2hfFwgqfFWzSY9E9GDvFVNYUI1F0iQKcm6HmePU9QbKRXTEBiA==}
