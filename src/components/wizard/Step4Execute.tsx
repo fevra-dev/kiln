@@ -139,7 +139,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
             userMessage = "This cNFT's tree is unsupported (proof too large for one transaction). Address Lookup Tables planned for a future release.";
             break;
           case 'MALFORMED_DAS_RESPONSE':
-            userMessage = "Bitcoin indexer returned unexpected data. Try again or contact support.";
+            userMessage = "Solana asset RPC returned unexpected data. Try again or contact support.";
             break;
           case 'CNFT_STALE_PROOF':
             userMessage = "Tree state changed mid-sign. Click Retry to fetch a fresh proof.";
