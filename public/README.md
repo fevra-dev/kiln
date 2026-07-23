@@ -1,315 +1,185 @@
-# Kiln Teleburn Standard
+# Kiln ঌ Teleburn Protocol
 
-**Solana → Bitcoin Ordinals Migration Protocol with Cryptographic Proof**
+**Solana → Bitcoin Ordinals Migration with Cryptographic Proof**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-14.1-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black)](https://nextjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](./LICENSE)
-[![Test Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)](./tests)
 
-## 🎯 Overview
+## 🔥 What is Kiln?
 
-Kiln is a **production-grade teleburn protocol** for permanently migrating Solana NFTs to Bitcoin Ordinals with full cryptographic verification and irreversible proof. This implementation follows safety-first principles with mandatory verification gates and comprehensive dry-run simulation.
+Kiln is a **teleburn protocol** for permanently migrating Solana NFTs to Bitcoin Ordinals. When you teleburn an NFT:
 
-**✅ Status: Production Ready** - Complete implementation with standardized teleburn algorithm
+1. **Your Solana NFT is burned** (supply = 0)
+2. **A cryptographic proof** is recorded on-chain linking to your Bitcoin inscription
+3. **The burn is irreversible** - provably permanent migration
 
 ### Key Features
 
-✅ **Standardized Teleburn Algorithm** - SHA-256 based derivation matching Ethereum pattern  
-✅ **Inscription Verification Gate** - Prevents sealing to wrong/corrupted inscriptions  
-✅ **Temporal Anchoring** - Timestamps + block heights in all on-chain memos  
-✅ **Hardened Derived Owner** - Deterministic off-curve addresses (no private key exists)  
-✅ **Domain Separation** - Cross-chain safety with kiln.teleburn.solana.v1 salt  
-✅ **Dry Run Mode** - Full simulation before any on-chain action  
-✅ **Multi-RPC Verification** - Confidence-scored teleburn status checks  
-✅ **Token-2022 Compatible** - Detects and handles extension limitations  
-✅ **Comprehensive Testing** - 78 unit tests with 100% coverage  
+- **Single Transaction Burn** - Burn + memo in one atomic transaction
+- **On-Chain Proof** - Simple `teleburn:<inscription_id>` memo format
+- **Minimal Protocol** - ~78 bytes on-chain (vs 250+ bytes for JSON)
+- **Multi-Standard Support** - Regular NFTs, programmable NFTs (pNFT), and compressed NFTs (cNFT)
+- **Public Verification** - Anyone can verify a teleburn at `/verify`
+- **Bidirectional Linkage** - Solana memo ↔ Bitcoin metadata
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Live Site
 
-- Node.js ≥ 20.0.0
-- pnpm ≥ 8.0.0
-- Solana wallet (Phantom, Solflare, or Backpack)
+Visit **[kiln.hot](https://kiln.hot)** to use the teleburn protocol.
 
-### Installation
+### Local Development
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone <repo-url>
 cd kiln
 
 # Install dependencies
 pnpm install
 
-# Set up environment
+# Configure environment
 cp .env.example .env.local
-# Edit .env.local with your RPC endpoints
+# Add your Helius/RPC API key
 
 # Run development server
 pnpm dev
 ```
 
-Visit `http://localhost:3000` to see the application.
+Visit `http://localhost:3000`
 
-### Running Tests
+## 📋 How It Works
 
-```bash
-# Run all tests
-pnpm test
+### The Teleburn Flow
 
-# Run unit tests only
-pnpm test:unit
+1. **Connect Wallet** - Connect your Solana wallet
+2. **Enter Details** - NFT mint address and Bitcoin inscription ID
+3. **Preview** - Dry-run the transaction
+4. **Execute** - Sign and broadcast the burn
 
-# Run with coverage
-pnpm test:coverage
+### Kiln Memo Format (v1.0)
 
-# Run E2E tests
-pnpm test:e2e
+Every teleburn records a simple on-chain memo:
+
+```
+teleburn:6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799i0
 ```
 
-## 📋 Architecture
+**Size:** ~78 bytes (vs ~250+ bytes for JSON format)
 
-### Tech Stack
+The Bitcoin inscription includes metadata linking back:
+
+```json
+{
+  "p": "kiln",
+  "op": "teleburn",
+  "v": 1,
+  "mint": "6ivMgojHapfvDKS7pFSwgCPzPvPPCT2y8Pv1zHfLqTBL"
+}
+```
+
+### Verification
+
+Anyone can verify a teleburn at `/verify`:
+
+- ✅ Check if NFT is burned (supply = 0)
+- ✅ Find Kiln memo on-chain
+- ✅ View linked Bitcoin inscription
+- ✅ Download proof as JSON
+
+### Supported NFT Standards
+
+Kiln detects the asset standard automatically (via Helius DAS) and routes to the correct burn path.
+All standards produce the **same** `teleburn:` memo and are verified identically.
+
+| Standard | Status | Burn mechanism |
+|----------|--------|----------------|
+| Regular NFT | ✅ Supported | Metaplex Token Metadata `burnV1` |
+| Programmable NFT (pNFT) | ✅ Supported | Metaplex Token Metadata `burnV1` |
+| Compressed NFT (cNFT) | ✅ Supported | Bubblegum `burn` + Merkle proof (owner-only) |
+| Metaplex Core | 🔜 Planned | — |
+| MPL / LibrePlex Inscriptions | 🔜 Planned | — |
+
+## 🏗 Project Structure
+
+```
+/src
+  /app
+    /api              # API routes
+      /tx/simulate    # Transaction simulation
+      /tx/update-metadata  # Metadata updates
+      /verify         # Teleburn verification
+    /teleburn         # Teleburn wizard UI
+    /verify           # Public verification page
+    /docs             # Documentation viewer
+    
+  /components
+    /wizard           # Step-by-step wizard
+    /teleburn         # Teleburn-specific components
+    /ui               # Reusable UI components
+    
+  /lib
+    /local-burn       # Multi-standard burn dispatcher
+      build-burn-memo-tx.ts  # Dispatcher: detect kind → route to builder
+      detect.ts              # Helius DAS asset-kind detection
+      regular-burn.ts        # Regular NFT burn (Token Metadata)
+      pnft-burn.ts           # Programmable NFT burn
+      cnft-burn.ts           # Compressed NFT burn (Bubblegum)
+      cnft-proof.ts          # cNFT Merkle proof + canopy slicing
+      memo.ts                # v1.0 teleburn: memo
+    teleburn.ts       # Memo build/parse + inscription-id validation
+    inscription-verifier.ts  # Bitcoin inscription content verification
+    dry-run.ts        # Transaction simulation
+```
+
+## 🔐 Security
+
+### Safety Philosophy
+
+- **Decode** - Show human-readable transaction details
+- **Simulate** - Test on-chain before broadcasting
+- **Disclose** - Full transparency before signature
+- **Confirm** - Explicit user consent required
+
+### What We NEVER Do
+
+- Store or handle private keys
+- Auto-sign transactions
+- Skip verification steps
+- Hide transaction details
+
+## 🧪 Tech Stack
 
 **Frontend:**
 - Next.js 14 (App Router)
-- React 18
-- TypeScript 5.3 (strict mode)
+- React 18 + TypeScript
 - Tailwind CSS
 - @solana/wallet-adapter-react
 
 **Backend:**
 - Next.js API Routes
 - @solana/web3.js
-- @solana/spl-token
+- @metaplex-foundation/umi
 - @metaplex-foundation/mpl-token-metadata
-
-**Testing:**
-- Jest + ts-jest (unit & integration)
-- Playwright (E2E)
-
-### Project Structure
-
-```
-/src
-  /lib                      # Core business logic
-    types.ts               # TypeScript type definitions
-    schemas.ts             # Zod validation schemas
-    inscription-verifier.ts # Inscription content verification
-    teleburn.ts            # Standardized teleburn algorithm (CANONICAL)
-    derived-owner.ts       # Legacy derivation (DEPRECATED)
-    solana-timestamp.ts    # Temporal anchoring service
-    transaction-builder.ts # Transaction construction
-    transaction-decoder.ts # Transaction decoding
-    dry-run.ts            # Dry run simulation
-    
-  /components
-    /wizard                # Teleburn wizard UI components
-    /ui                    # Reusable UI components
-    
-  /app
-    /api                   # Next.js API routes
-      /tx                  # Transaction builders
-      /verify              # Verification endpoints
-    /verify                # Public verification UI
-    /docs                  # Documentation pages
-    
-/tests
-  /unit                    # Unit tests (95%+ coverage)
-  /integration             # Integration tests
-  /e2e                     # End-to-end tests
-```
-
-## 🔐 Safety Philosophy
-
-**Every transaction is:**
-1. **Decoded** - Show human-readable instruction details
-2. **Simulated** - Test on-chain before broadcasting
-3. **Disclosed** - Full transparency to user before signature
-4. **Confirmed** - Explicit user consent required
-
-**NEVER:**
-- Handle or store private keys
-- Auto-sign transactions
-- Proceed without verification gate
-- Expose sensitive data in logs
-
-## 🧪 Implementation Status
-
-### ✅ Completed Features
-
-1. **Standardized Teleburn Algorithm** - SHA-256 based derivation with domain separation
-2. **Project Structure** - Complete Next.js 14 setup with TypeScript
-3. **Types & Schemas** - Full Zod validation for all inputs
-4. **Inscription Verifier** - SHA-256 verification with ordinals.com
-5. **React UI Components** - Complete teleburn wizard interface
-6. **Transaction Builder** - Seal, retire, and update URI transactions
-7. **Transaction Decoder** - Human-readable transaction analysis
-8. **Dry Run System** - Full simulation before execution
-9. **Comprehensive Testing** - 78 unit tests with 100% coverage
-10. **Documentation** - Complete algorithm specification and guides
-
-### 🎯 Production Ready
-
-- ✅ **Core Algorithm** - Standardized teleburn derivation
-- ✅ **Safety Features** - Verification gates and dry-run simulation
-- ✅ **User Interface** - Complete wizard for teleburn operations
-- ✅ **API Endpoints** - All transaction and verification routes
-- ✅ **Testing** - Comprehensive test suite
-- ✅ **Documentation** - Algorithm specs and migration guides
+- @metaplex-foundation/mpl-bubblegum (compressed NFTs)
 
 ## 📚 Documentation
 
-### Core Concepts
+- [Teleburn Protocol Spec v1.0](./public/docs/TELEBURN_SPEC_v1.0.md) - Technical specification
+- [API Reference](./public/docs/API_REFERENCE.md) - API endpoints
+- [Integration Guide](./public/docs/INTEGRATION_GUIDE.md) - Developer integration
 
-#### Seal Memo
-On-chain JSON written to SPL Memo program when NFT is linked to inscription:
-
-```json
-{
-  "standard": "KILN",
-  "version": "0.1.1",
-  "action": "seal",
-  "timestamp": 1739904000,
-  "block_height": 268123456,
-  "inscription": { "id": "<txid>i0" },
-  "solana": { "mint": "<mint_address>" },
-  "media": { "sha256": "<hex_sha256>" }
-}
-```
-
-#### Retire Memo
-On-chain proof of permanent token destruction/lock:
-
-```json
-{
-  "standard": "KILN",
-  "version": "0.1.1",
-  "action": "teleburn-derived",
-  "timestamp": 1739905123,
-  "block_height": 268124001,
-  "inscription": { "id": "<txid>i0" },
-  "solana": { "mint": "<mint_address>" },
-  "media": { "sha256": "<hex_sha256>" },
-  "derived": { "bump": 37 }
-}
-```
-
-#### Teleburn Address Derivation
-Standardized algorithm matching Ethereum pattern:
-
-```typescript
-deriveTeleburnAddress(inscriptionId) → PublicKey
-```
-
-**Algorithm:**
-```
-Input:  txid (32 bytes) || index (4 bytes, big-endian) || salt ("kiln.teleburn.solana.v1")
-Hash:   SHA-256
-Output: 32-byte off-curve Solana PublicKey
-```
-
-- **Domain separation:** `"kiln.teleburn.solana.v1"` prevents cross-chain collisions
-- **Off-curve guarantee:** No private key exists (assets permanently locked)
-- **Deterministic:** Same inscription ID → same address (always)
-- **Ethereum compatible:** Follows same pattern as Ordinals teleburn
-
-### API Endpoints
-
-#### POST /api/inscription/verify
-Verify inscription content matches expected hash
-
-**Request:**
-```json
-{
-  "inscriptionId": "abc...i0",
-  "expectedSha256": "a1b2c3..."
-}
-```
-
-**Response:**
-```json
-{
-  "valid": true,
-  "inscriptionId": "abc...i0",
-  "fetchedHash": "a1b2c3...",
-  "expectedHash": "a1b2c3...",
-  "contentType": "image/avif",
-  "byteLength": 123456
-}
-```
-
-See [enhanced_system_prompt.md](./enhanced_system_prompt.md) for complete API specifications.
-
-## 🧑‍💻 Development
-
-### Environment Variables
+## 🌐 Environment Variables
 
 ```bash
-# Required
-NEXT_PUBLIC_SOLANA_RPC=https://api.mainnet-beta.solana.com
+# Required - Solana RPC (Helius recommended)
+NEXT_PUBLIC_SOLANA_RPC=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 
-# Optional
-SOLANA_FALLBACK_RPC=https://rpc.ankr.com/solana
-ORDINALS_API_URL=https://ordinals.com
-WEB3_STORAGE_TOKEN=your_token
+# Optional fallbacks
+SOLANA_FALLBACK_RPC=https://solana-rpc.publicnode.com
 ```
-
-### Code Quality
-
-```bash
-# Type checking
-pnpm type-check
-
-# Linting
-pnpm lint
-
-# Format code
-pnpm format
-```
-
-### Git Workflow
-
-```bash
-# Create feature branch
-git checkout -b feature/inscription-verify
-
-# Make changes and test
-pnpm test
-
-# Commit with conventional commits
-git commit -m "feat: add inscription verification gate"
-
-# Push and create PR
-git push origin feature/inscription-verify
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Write tests for new functionality
-4. Ensure all tests pass (`pnpm test`)
-5. Ensure type checking passes (`pnpm type-check`)
-6. Submit a pull request
-
-### Code Standards
-
-- **TypeScript strict mode** - No `any` in exports
-- **95%+ test coverage** - On all library code
-- **JSDoc comments** - All exported functions
-- **Zod validation** - All external inputs
-- **Safety first** - Decode + simulate before sign
-
-## 📖 Documentation
-
-### Core Documentation
-- [Teleburn Algorithm Specification](./docs/TELEBURN_ALGORITHM.md) - Complete algorithm specification
-- [API Reference](./docs/API_REFERENCE.md) - API documentation
-- [Integration Guide](./docs/INTEGRATION_GUIDE.md) - How to integrate Kiln
-- [Security Audit Report](./docs/SECURITY_AUDIT_REPORT.md) - Security review
 
 ## 🔒 Security
 
@@ -319,28 +189,20 @@ If you discover a security vulnerability, please email: **fev.dev@proton.me**
 
 **DO NOT** open a public GitHub issue.
 
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- Solana Foundation
-- Ordinals Community
-- Casey Rodarmor (Ordinals creator)
-- Metaplex Foundation
-
 ## 📞 Support
 
 - **Documentation**: [/docs](./docs)
 - **Issues**: [GitHub Issues](https://github.com/fevra-dev/kiln/issues)
 - **Twitter**: [@fevra_](https://twitter.com/fevra_)
 
+## 📄 License
+
+MIT License - See [LICENSE](./LICENSE)
+
 ---
 
 **Built for the Solana and Bitcoin communities**
 
-*Last updated: December 3, 2025*  
-*Version: 0.1.1*  
+*Last updated: July 23, 2026*  
+*Version: 1.0*  
 *Status: Production Ready*
-
