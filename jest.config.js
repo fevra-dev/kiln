@@ -18,11 +18,10 @@ module.exports = {
     '^next/server$': '<rootDir>/tests/__mocks__/next-server.js',
     // @solana/spl-account-compression package.json exports point to
     // ./dist/cjs/index.js but the actual built file is at ./dist/cjs/src/index.js
-    '^@solana/spl-account-compression$': '<rootDir>/node_modules/@solana/spl-account-compression/dist/cjs/src/index.js',
+    '^@solana/spl-account-compression$':
+      '<rootDir>/node_modules/@solana/spl-account-compression/dist/cjs/src/index.js',
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(uuid|@noble|@solana|jayson)/)',
-  ],
+  transformIgnorePatterns: ['node_modules/(?!(uuid|@noble|@solana|jayson)/)'],
   collectCoverageFrom: [
     'src/lib/**/*.{ts,tsx}',
     '!src/lib/**/*.d.ts',
@@ -47,4 +46,3 @@ module.exports = {
     },
   },
 };
-

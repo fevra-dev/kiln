@@ -1,12 +1,11 @@
 /**
  * Unit Tests for Solana Timestamp Service
- * 
+ *
  * @description Tests blockchain timestamp fetching and validation
  */
 
 import {
   SolanaTimestampService,
-  getCurrentTimestamp,
   formatTimestamp,
   getTimestampDiff,
   isSlotFinalized,
@@ -197,7 +196,8 @@ describe('SolanaTimestampService', () => {
 
   describe('getTimestampsBatch', () => {
     it('fetches multiple timestamps in parallel', async () => {
-      mockConnection.getBlockTime = jest.fn()
+      mockConnection.getBlockTime = jest
+        .fn()
         .mockResolvedValueOnce(1739900000)
         .mockResolvedValueOnce(1739900400)
         .mockResolvedValueOnce(1739900800);
@@ -214,7 +214,8 @@ describe('SolanaTimestampService', () => {
     });
 
     it('handles partial failures', async () => {
-      mockConnection.getBlockTime = jest.fn()
+      mockConnection.getBlockTime = jest
+        .fn()
         .mockResolvedValueOnce(1739900000)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(1739900800);
@@ -238,7 +239,7 @@ describe('Helper Functions', () => {
       const timestamp = {
         slot: 268123456,
         timestamp: 1739900000,
-        finalized: true
+        finalized: true,
       };
 
       const formatted = formatTimestamp(timestamp);
@@ -252,7 +253,7 @@ describe('Helper Functions', () => {
       const timestamp = {
         slot: 268123456,
         timestamp: 1739900000,
-        finalized: false
+        finalized: false,
       };
 
       const formatted = formatTimestamp(timestamp);
@@ -316,4 +317,3 @@ describe('Helper Functions', () => {
     });
   });
 });
-

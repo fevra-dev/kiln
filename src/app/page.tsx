@@ -1,6 +1,6 @@
 /**
  * KILN-0.1.1 TELEBURN PROTOCOL
- * 
+ *
  * @description Red Matrix Hacker Interface - Cypherpunk Edition
  * @version 0.1.1
  * @classification [UNCLASSIFIED]
@@ -42,31 +42,31 @@ export default function HomePage() {
     <main className="min-h-screen bg-black text-matrix-red font-mono relative overflow-hidden w-full max-w-full">
       {/* Password Entry */}
       {!passwordEntered && (
-        <PasswordEntry 
+        <PasswordEntry
           password={password}
           setPassword={setPassword}
           onSubmit={handlePasswordSubmit}
           error={passwordError}
         />
       )}
-      
+
       {/* Boot Sequence */}
       {passwordEntered && !bootComplete && <BootSequence />}
-      
+
       {/* Main Interface */}
       {bootComplete && (
         <div className="relative z-10 animate-fade-in">
           <div className="animate-slide-up">
-          <Header />
+            <Header />
           </div>
           <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
-          <TerminalInterface />
+            <TerminalInterface />
           </div>
           <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
             <FeaturesSection />
           </div>
           <div className="animate-slide-up" style={{ animationDelay: '300ms' }}>
-          <Footer />
+            <Footer />
           </div>
         </div>
       )}
@@ -77,23 +77,21 @@ export default function HomePage() {
 /**
  * Password Entry Component
  */
-function PasswordEntry({ 
-  password, 
-  setPassword, 
-  onSubmit, 
-  error 
-}: { 
-  password: string; 
-  setPassword: (password: string) => void; 
-  onSubmit: (e: React.FormEvent) => void; 
-  error: boolean; 
+function PasswordEntry({
+  password,
+  setPassword,
+  onSubmit,
+  error,
+}: {
+  password: string;
+  setPassword: (password: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  error: boolean;
 }) {
   return (
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
       <div className="text-matrix-red font-mono text-center space-y-4">
-        <div className="text-6xl mb-8">
-          ঌ
-        </div>
+        <div className="text-6xl mb-8">ঌ</div>
         <form onSubmit={onSubmit} className="space-y-3">
           <div>
             <input
@@ -105,11 +103,7 @@ function PasswordEntry({
               autoFocus
             />
           </div>
-          {error && (
-            <div className="text-red-500 text-xs">
-              denied
-            </div>
-          )}
+          {error && <div className="text-red-500 text-xs">denied</div>}
         </form>
       </div>
     </div>
@@ -122,20 +116,23 @@ function PasswordEntry({
 function BootSequence() {
   const [currentLine, setCurrentLine] = useState(0);
   const [displayText, setDisplayText] = useState('');
-  
-  const messages = useMemo(() => [
-    'INITIALIZING TELEBURN PROTOCOL...',
-    'LOADING CRYPTOGRAPHIC MODULES...',
-    'CONNECTING TO SOLANA MAINNET...',
-    'CONNECTING TO BITCOIN NETWORK...',
-    'SYSTEM READY'
-  ], []);
+
+  const messages = useMemo(
+    () => [
+      'INITIALIZING TELEBURN PROTOCOL...',
+      'LOADING CRYPTOGRAPHIC MODULES...',
+      'CONNECTING TO SOLANA MAINNET...',
+      'CONNECTING TO BITCOIN NETWORK...',
+      'SYSTEM READY',
+    ],
+    [],
+  );
 
   useEffect(() => {
     if (currentLine < messages.length) {
       const targetText = messages[currentLine];
       let charIndex = 0;
-      
+
       const typeInterval = setInterval(() => {
         if (targetText && charIndex < targetText.length) {
           setDisplayText(targetText.substring(0, charIndex + 1));
@@ -143,7 +140,7 @@ function BootSequence() {
         } else {
           clearInterval(typeInterval);
           setTimeout(() => {
-            setCurrentLine(prev => prev + 1);
+            setCurrentLine((prev) => prev + 1);
             setDisplayText('');
           }, 500);
         }
@@ -158,13 +155,15 @@ function BootSequence() {
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
       <div className="text-matrix-red font-mono space-y-2">
         {messages.slice(0, currentLine).map((message, index) => (
-          <div key={index} className="terminal-prompt">{message}</div>
+          <div key={index} className="terminal-prompt">
+            {message}
+          </div>
         ))}
         {currentLine < messages.length && (
-        <div className="terminal-prompt flex items-center gap-2">
+          <div className="terminal-prompt flex items-center gap-2">
             {displayText}
             <span className="cursor animate-pulse"></span>
-        </div>
+          </div>
         )}
       </div>
     </div>
@@ -211,10 +210,10 @@ function TerminalInterface() {
               <div className="text-xl text-matrix-red/80 mb-4 text-left">
                 {'>'} PERMISSIONLESS ◎ TRUSTLESS ◉ PERMANENT
               </div>
-          
+
               {/* Combined ASCII Art - KILN with Integrated Flame Effects */}
               <div className="ascii-art mb-3 text-center leading-tight font-bold flex justify-center ascii-art-container">
-{`
+                {`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
 ║         (::)  ██╗  ██╗ ██╗ ██╗      ███╗   ██╗  (::)      ║
@@ -239,24 +238,24 @@ function TerminalInterface() {
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 `}
-          </div>
-        </div>
+              </div>
+            </div>
 
-        {/* Action Buttons */}
+            {/* Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <a href="/teleburn" className="btn-matrix group">
-            <span className="relative z-10">▶ INITIATE TELEBURN</span>
-          </a>
-          <a href="/batch" className="btn-matrix group">
-            <span className="relative z-10">▶ BATCH TELEBURN</span>
-          </a>
-          <a href="/verify" className="btn-matrix group">
-            <span className="relative z-10">▶ VERIFY STATUS</span>
-          </a>
-          <a href="/history" className="btn-matrix group">
-            <span className="relative z-10">▶ MY TELEBURNS</span>
-          </a>
-        </div>
+              <a href="/teleburn" className="btn-matrix group">
+                <span className="relative z-10">▶ INITIATE TELEBURN</span>
+              </a>
+              <a href="/batch" className="btn-matrix group">
+                <span className="relative z-10">▶ BATCH TELEBURN</span>
+              </a>
+              <a href="/verify" className="btn-matrix group">
+                <span className="relative z-10">▶ VERIFY STATUS</span>
+              </a>
+              <a href="/history" className="btn-matrix group">
+                <span className="relative z-10">▶ MY TELEBURNS</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -269,20 +268,19 @@ function TerminalInterface() {
               <div className="code-block">
                 <div className="text-matrix-red/60 mb-2">PROTOCOL</div>
                 <div className="text-matrix-red">KILN v0.1.1</div>
-          </div>
-          <div className="code-block">
-            <div className="text-matrix-red/60 mb-2">SECURITY</div>
-            <div className="text-matrix-red">SHA-256 VERIFIED</div>
-          </div>
-          <div className="code-block">
-            <div className="text-matrix-red/60 mb-2">STATUS</div>
-            <div className="text-matrix-red">ONLINE</div>
+              </div>
+              <div className="code-block">
+                <div className="text-matrix-red/60 mb-2">SECURITY</div>
+                <div className="text-matrix-red">SHA-256 VERIFIED</div>
+              </div>
+              <div className="code-block">
+                <div className="text-matrix-red/60 mb-2">STATUS</div>
+                <div className="text-matrix-red">ONLINE</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-        </div>
-      </div>
-
     </div>
   );
 }
@@ -351,18 +349,14 @@ function FeatureCard({ icon, title, description, status }: FeatureCardProps) {
       <div className="flex items-start gap-3 mb-3">
         <div className="text-2xl glow-text">{icon}</div>
         <div className="flex-1">
-          <div className="font-bold text-matrix-red mb-1 uppercase tracking-wide">
-            {title}
-          </div>
+          <div className="font-bold text-matrix-red mb-1 uppercase tracking-wide">{title}</div>
           <div className="inline-flex items-center gap-2 px-2 py-1 border border-terminal-green/30 bg-terminal-green/10 text-xs">
             <span className="text-terminal-green">■</span>
             <span className="text-terminal-green">{status}</span>
           </div>
         </div>
       </div>
-      <div className="text-sm text-matrix-red/70 leading-relaxed">
-        {description}
-      </div>
+      <div className="text-sm text-matrix-red/70 leading-relaxed">{description}</div>
     </div>
   );
 }
@@ -378,36 +372,69 @@ function Footer() {
           <div>
             <div className="text-sm font-bold mb-3 text-matrix-red uppercase">Resources</div>
             <div className="space-y-2 text-sm text-matrix-red/60">
-              <a href="/docs" className="block hover:text-matrix-red cursor-pointer">→ Documentation</a>
-              <a href="/docs?doc=/docs/USER_GUIDE.md" className="block hover:text-matrix-red cursor-pointer">→ User Guide (Start Here!)</a>
-              <a href="/docs?doc=/docs/TELEBURN_SUMMARY.md" className="block hover:text-matrix-red cursor-pointer">→ What is Teleburn</a>
-              <a href="/docs?doc=/docs/TELEBURN_ALGORITHM.md" className="block hover:text-matrix-red cursor-pointer">→ Technical Details</a>
+              <a href="/docs" className="block hover:text-matrix-red cursor-pointer">
+                → Documentation
+              </a>
+              <a
+                href="/docs?doc=/docs/USER_GUIDE.md"
+                className="block hover:text-matrix-red cursor-pointer"
+              >
+                → User Guide (Start Here!)
+              </a>
+              <a
+                href="/docs?doc=/docs/TELEBURN_SUMMARY.md"
+                className="block hover:text-matrix-red cursor-pointer"
+              >
+                → What is Teleburn
+              </a>
+              <a
+                href="/docs?doc=/docs/TELEBURN_ALGORITHM.md"
+                className="block hover:text-matrix-red cursor-pointer"
+              >
+                → Technical Details
+              </a>
             </div>
           </div>
           <div>
             <div className="text-sm font-bold mb-3 text-matrix-red uppercase">Quick Start</div>
             <div className="space-y-2 text-sm text-matrix-red/60">
-              <a href="/teleburn" className="block hover:text-matrix-red cursor-pointer">→ Start Teleburn</a>
-              <a href="/verify" className="block hover:text-matrix-red cursor-pointer">→ Verify Status</a>
-              <a href="/history" className="block hover:text-matrix-red cursor-pointer">→ My Teleburns</a>
+              <a href="/teleburn" className="block hover:text-matrix-red cursor-pointer">
+                → Start Teleburn
+              </a>
+              <a href="/verify" className="block hover:text-matrix-red cursor-pointer">
+                → Verify Status
+              </a>
+              <a href="/history" className="block hover:text-matrix-red cursor-pointer">
+                → My Teleburns
+              </a>
             </div>
           </div>
           <div>
             <div className="text-sm font-bold mb-3 text-matrix-red uppercase">Network</div>
             <div className="space-y-2 text-sm text-matrix-red/60">
-              <a href="https://github.com/fevra-dev" target="_blank" rel="noopener noreferrer" className="block hover:text-matrix-red cursor-pointer">→ GitHub</a>
-              <a href="http://twitter.com/fevra_" target="_blank" rel="noopener noreferrer" className="block hover:text-matrix-red cursor-pointer">→ Twitter</a>
+              <a
+                href="https://github.com/fevra-dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:text-matrix-red cursor-pointer"
+              >
+                → GitHub
+              </a>
+              <a
+                href="http://twitter.com/fevra_"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:text-matrix-red cursor-pointer"
+              >
+                → Twitter
+              </a>
             </div>
           </div>
         </div>
-        
+
         <div className="border-t border-matrix-red/20 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-matrix-red/60 font-mono">
-            KILN v0.1.1
-          </div>
-          <div className="text-sm text-matrix-red/60 font-mono">
-            BUILD.DATE: 2025-12-03
-          </div>
+          <div className="text-sm text-matrix-red/60 font-mono">KILN v0.1.1</div>
+          <div className="text-sm text-matrix-red/60 font-mono">BUILD.DATE: 2025-12-03</div>
         </div>
       </div>
     </footer>

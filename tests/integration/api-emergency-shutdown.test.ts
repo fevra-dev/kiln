@@ -1,6 +1,6 @@
 /**
  * Integration Tests: Emergency Shutdown
- * 
+ *
  * Tests emergency shutdown across API routes.
  */
 
@@ -8,7 +8,7 @@
 jest.mock('next/server', () => ({
   NextRequest: class NextRequest {
     headers: Headers;
-    
+
     constructor(init?: { headers?: Headers }) {
       this.headers = init?.headers || new Headers();
     }
@@ -16,12 +16,12 @@ jest.mock('next/server', () => ({
   NextResponse: class NextResponse {
     status: number;
     headers: Headers;
-    
+
     constructor(body: any, init?: { status?: number; headers?: HeadersInit }) {
       this.status = init?.status || 200;
       this.headers = new Headers(init?.headers);
     }
-    
+
     static json(body: any, init?: { status?: number; headers?: HeadersInit }) {
       return new NextResponse(JSON.stringify(body), {
         ...init,
@@ -43,7 +43,7 @@ const originalEnv = process.env;
 function createMockRequest(origin?: string): NextRequest {
   const headers = new Headers();
   if (origin) headers.set('origin', origin);
-  
+
   return {
     headers,
   } as unknown as NextRequest;
@@ -62,7 +62,7 @@ describe('Emergency Shutdown Integration', () => {
   describe('API Route Integration', () => {
     it('should block all API routes when shutdown is active', () => {
       process.env.EMERGENCY_SHUTDOWN = 'true';
-      
+
       const routes = [
         '/api/tx/seal',
         '/api/tx/retire',
@@ -71,7 +71,7 @@ describe('Emergency Shutdown Integration', () => {
         '/api/verify',
       ];
 
-      routes.forEach((path) => {
+      routes.forEach((_path) => {
         const request = createMockRequest('https://example.com');
         const response = checkEmergencyShutdown(request);
 
@@ -91,7 +91,7 @@ describe('Emergency Shutdown Integration', () => {
 
     it('should include CORS headers in shutdown response', () => {
       process.env.EMERGENCY_SHUTDOWN = 'true';
-      
+
       const request = createMockRequest('https://example.com');
       const response = checkEmergencyShutdown(request);
 
@@ -100,4 +100,3 @@ describe('Emergency Shutdown Integration', () => {
     });
   });
 });
-

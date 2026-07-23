@@ -1,6 +1,6 @@
 /**
  * Transaction Utils Tests
- * 
+ *
  * Tests for transaction utilities including dynamic priority fees.
  */
 
@@ -50,7 +50,9 @@ describe('Transaction Utils', () => {
           { prioritizationFee: 500 },
         ];
 
-        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest.fn().mockResolvedValue(mockFees);
+        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest
+          .fn()
+          .mockResolvedValue(mockFees);
 
         const fee = await calculator.getRecommendedFee(mockConnection, 'medium');
 
@@ -69,7 +71,9 @@ describe('Transaction Utils', () => {
           { prioritizationFee: 500 },
         ];
 
-        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest.fn().mockResolvedValue(mockFees);
+        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest
+          .fn()
+          .mockResolvedValue(mockFees);
 
         const fee = await calculator.getRecommendedFee(mockConnection, 'low');
 
@@ -87,7 +91,9 @@ describe('Transaction Utils', () => {
           { prioritizationFee: 500 },
         ];
 
-        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest.fn().mockResolvedValue(mockFees);
+        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest
+          .fn()
+          .mockResolvedValue(mockFees);
 
         const fee = await calculator.getRecommendedFee(mockConnection, 'high');
 
@@ -103,7 +109,9 @@ describe('Transaction Utils', () => {
           { prioritizationFee: 200 },
         ];
 
-        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest.fn().mockResolvedValue(mockFees);
+        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest
+          .fn()
+          .mockResolvedValue(mockFees);
 
         const fee = await calculator.getRecommendedFee(mockConnection, 'medium');
 
@@ -113,7 +121,9 @@ describe('Transaction Utils', () => {
 
       it('should fallback to default on error', async () => {
         const calculator = new DynamicPriorityFeeCalculator();
-        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest.fn().mockRejectedValue(new Error('RPC error'));
+        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest
+          .fn()
+          .mockRejectedValue(new Error('RPC error'));
 
         const fee = await calculator.getRecommendedFee(mockConnection, 'medium');
 
@@ -124,7 +134,9 @@ describe('Transaction Utils', () => {
         const calculator = new DynamicPriorityFeeCalculator();
         const mockFees = [{ prioritizationFee: 1 }]; // Very low fee
 
-        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest.fn().mockResolvedValue(mockFees);
+        (mockConnection.getRecentPrioritizationFees as jest.Mock) = jest
+          .fn()
+          .mockResolvedValue(mockFees);
 
         const fee = await calculator.getRecommendedFee(mockConnection, 'low');
 
@@ -142,7 +154,7 @@ describe('Transaction Utils', () => {
           fromPubkey: PublicKey.default,
           toPubkey: PublicKey.default,
           lamports: 1000,
-        })
+        }),
       );
 
       const result = addPriorityFee(tx, {
@@ -151,10 +163,10 @@ describe('Transaction Utils', () => {
       });
 
       expect(result.instructions.length).toBeGreaterThan(1);
-      
+
       // Check for ComputeBudgetProgram instructions
-      const hasPriorityFee = result.instructions.some(
-        (ix) => ix.programId.equals(ComputeBudgetProgram.programId)
+      const hasPriorityFee = result.instructions.some((ix) =>
+        ix.programId.equals(ComputeBudgetProgram.programId),
       );
       expect(hasPriorityFee).toBe(true);
     });
@@ -187,11 +199,13 @@ describe('Transaction Utils', () => {
     it('should add dynamic priority fee', async () => {
       const tx = new Transaction();
       const mockConnection = {
-        getRecentPrioritizationFees: jest.fn().mockResolvedValue([
-          { prioritizationFee: 1000 },
-          { prioritizationFee: 2000 },
-          { prioritizationFee: 3000 },
-        ]),
+        getRecentPrioritizationFees: jest
+          .fn()
+          .mockResolvedValue([
+            { prioritizationFee: 1000 },
+            { prioritizationFee: 2000 },
+            { prioritizationFee: 3000 },
+          ]),
       } as unknown as Connection;
 
       await addDynamicPriorityFee(tx, mockConnection, 'medium');
@@ -202,9 +216,7 @@ describe('Transaction Utils', () => {
     it('should use custom compute units when provided', async () => {
       const tx = new Transaction();
       const mockConnection = {
-        getRecentPrioritizationFees: jest.fn().mockResolvedValue([
-          { prioritizationFee: 1000 },
-        ]),
+        getRecentPrioritizationFees: jest.fn().mockResolvedValue([{ prioritizationFee: 1000 }]),
       } as unknown as Connection;
 
       await addDynamicPriorityFee(tx, mockConnection, 'medium', 200_000);
@@ -235,4 +247,3 @@ describe('Transaction Utils', () => {
     });
   });
 });
-

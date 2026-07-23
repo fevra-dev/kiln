@@ -10,11 +10,11 @@ const ORDINALS_OK_BODY = {
   id: VALID_ID,
   number: 0,
   sat: 425639728,
-  height: 875432,           // actual field name (plan assumed genesis_height)
-  timestamp: 1764732009,    // actual field name (plan assumed genesis_block_time), unix-s
+  height: 875432, // actual field name (plan assumed genesis_height)
+  timestamp: 1764732009, // actual field name (plan assumed genesis_block_time), unix-s
   content_type: 'image/png',
   content_length: 87234,
-  charms: [],               // rarity encoded here as string entries e.g. ['uncommon']
+  charms: [], // rarity encoded here as string entries e.g. ['uncommon']
   // no separate rarity or cursed boolean fields
   fee: 322,
   delegate: null,
@@ -52,9 +52,7 @@ function mockFetchSequence(
       headers: new Headers({
         'content-type':
           typeof r.body === 'object' ? 'application/json' : 'application/octet-stream',
-        'content-length': String(
-          r.contentLength ?? (r.bytes ? r.bytes.byteLength : 0),
-        ),
+        'content-length': String(r.contentLength ?? (r.bytes ? r.bytes.byteLength : 0)),
       }),
       json: async () => r.body,
       arrayBuffer: async () => (r.bytes ?? new Uint8Array(0)).buffer,
@@ -179,9 +177,7 @@ describe('fetchFromOrdinals', () => {
   });
 
   it('returns timeout on legacy AbortError (manual abort path)', async () => {
-    fetchMock.mockRejectedValueOnce(
-      new DOMException('aborted', 'AbortError'),
-    );
+    fetchMock.mockRejectedValueOnce(new DOMException('aborted', 'AbortError'));
     const result = await fetchFromOrdinals(VALID_ID, 875440);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.status).toBe('timeout');

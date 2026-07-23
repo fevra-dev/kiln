@@ -1,6 +1,6 @@
 /**
  * Jest Test Setup
- * 
+ *
  * @description Global test configuration and mocks
  */
 
@@ -10,7 +10,7 @@ import { webcrypto } from 'crypto';
 if (typeof global.crypto === 'undefined') {
   Object.defineProperty(global, 'crypto', {
     value: webcrypto,
-    writable: true
+    writable: true,
   });
 }
 
@@ -20,14 +20,14 @@ import { TextEncoder, TextDecoder } from 'util';
 if (typeof global.TextEncoder === 'undefined') {
   Object.defineProperty(global, 'TextEncoder', {
     value: TextEncoder,
-    writable: true
+    writable: true,
   });
 }
 
 if (typeof global.TextDecoder === 'undefined') {
   Object.defineProperty(global, 'TextDecoder', {
     value: TextDecoder,
-    writable: true
+    writable: true,
   });
 }
 
@@ -111,4 +111,3 @@ if (typeof global.Request === 'undefined') {
 afterEach(() => {
   jest.clearAllMocks();
 });
-

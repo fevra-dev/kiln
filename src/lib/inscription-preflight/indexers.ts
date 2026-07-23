@@ -18,19 +18,13 @@
 
 import { webcrypto } from 'crypto';
 
-import type {
-  IndexerError,
-  IndexerName,
-  IndexerResponse,
-  IndexerResult,
-  SatRarity,
-} from './types';
+import type { IndexerError, IndexerName, IndexerResponse, IndexerResult, SatRarity } from './types';
 
 // crypto.subtle is available in Node 19+ globals and modern browsers, but
 // jsdom (used in Jest) provides a crypto stub without subtle. Fall back to
 // the Node.js built-in webcrypto so tests work in jsdom test environments.
 const subtleCrypto: SubtleCrypto =
-  (typeof crypto !== 'undefined' && crypto.subtle)
+  typeof crypto !== 'undefined' && crypto.subtle
     ? crypto.subtle
     : (webcrypto as unknown as Crypto).subtle;
 
@@ -62,7 +56,8 @@ async function safeFetch(
     const res = await fetch(url, { signal });
     return res;
   } catch (e) {
-    if (e instanceof DOMException && (e.name === 'AbortError' || e.name === 'TimeoutError')) return { __error: 'timeout' };
+    if (e instanceof DOMException && (e.name === 'AbortError' || e.name === 'TimeoutError'))
+      return { __error: 'timeout' };
     return { __error: 'network' };
   }
 }
@@ -142,10 +137,10 @@ interface OrdinalsMetadata {
   id?: string;
   sat?: number;
   height?: number | null;
-  timestamp?: number | null;    // unix-seconds
+  timestamp?: number | null; // unix-seconds
   content_type?: string;
   content_length?: number;
-  charms?: unknown[];           // string entries: rarity names, "cursed", "burned", etc.
+  charms?: unknown[]; // string entries: rarity names, "cursed", "burned", etc.
   delegate?: string | null;
 }
 
@@ -185,7 +180,8 @@ export async function fetchFromOrdinals(
     genesisBlockHeight,
     genesisTimestamp: typeof meta.timestamp === 'number' ? meta.timestamp : null,
     confirmations,
-    contentType: typeof meta.content_type === 'string' ? meta.content_type : 'application/octet-stream',
+    contentType:
+      typeof meta.content_type === 'string' ? meta.content_type : 'application/octet-stream',
     contentLength,
     contentSha256,
     cursed: cursedFromCharms(meta.charms),
@@ -208,7 +204,7 @@ interface OrdinalsWalletMetadata {
   id?: string;
   sat?: number | null;
   genesis_height?: number | null;
-  created?: number | null;     // unix-seconds
+  created?: number | null; // unix-seconds
   content_type?: string;
   content_length?: number;
   charms?: string[];
@@ -236,8 +232,7 @@ export async function fetchFromOrdinalsWallet(
   }
 
   const contentLength = typeof meta.content_length === 'number' ? meta.content_length : 0;
-  const genesisBlockHeight =
-    typeof meta.genesis_height === 'number' ? meta.genesis_height : null;
+  const genesisBlockHeight = typeof meta.genesis_height === 'number' ? meta.genesis_height : null;
   const confirmations =
     genesisBlockHeight === null ? 0 : Math.max(0, bitcoinTipHeight - genesisBlockHeight + 1);
 

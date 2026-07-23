@@ -1,7 +1,7 @@
 // src/lib/dry-run.ts
 /**
  * KILN.1 Dry Run Service
- * 
+ *
  * Simulates entire teleburn flow without signing or broadcasting:
  * 1. Build single burn+memo transaction (replaces separate seal/retire)
  * 2. Decode transaction to show human-readable details
@@ -9,7 +9,7 @@
  * 4. Calculate total fees
  * 5. Identify any warnings or errors
  * 6. Generate downloadable rehearsal receipt
- * 
+ *
  * CRITICAL: No transactions are signed or sent. Zero risk.
  */
 
@@ -146,11 +146,11 @@ async function getWorkingRpcUrl(rpcUrl: string): Promise<string> {
     return rpcUrl;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    
+
     // Check for auth errors (401, 403, Unauthorized)
     if (errorMsg.includes('401') || errorMsg.includes('403') || errorMsg.includes('Unauthorized')) {
       console.warn(`⚠️ RPC ${rpcUrl} returned auth error, trying fallbacks...`);
-      
+
       // Try fallback endpoints
       for (const fallback of FALLBACK_RPC_ENDPOINTS) {
         try {
@@ -163,7 +163,7 @@ async function getWorkingRpcUrl(rpcUrl: string): Promise<string> {
         }
       }
     }
-    
+
     // Return original URL if no fallback works (let actual error propagate later)
     console.warn(`⚠️ Could not validate RPC, proceeding with original: ${rpcUrl}`);
     return rpcUrl;
@@ -172,7 +172,7 @@ async function getWorkingRpcUrl(rpcUrl: string): Promise<string> {
 
 /**
  * Dry Run Service
- * 
+ *
  * Orchestrates complete teleburn simulation without signing
  */
 export class DryRunService {
@@ -185,7 +185,7 @@ export class DryRunService {
     this.builder = new TransactionBuilder(rpcUrl);
     this.decoder = new TransactionDecoder(rpcUrl);
   }
-  
+
   /**
    * Initialize with RPC validation and fallback
    * Use this instead of constructor for automatic RPC fallback
@@ -194,7 +194,7 @@ export class DryRunService {
     const workingRpcUrl = await getWorkingRpcUrl(rpcUrl);
     return new DryRunService(workingRpcUrl);
   }
-  
+
   /**
    * Reinitialize connection with a working RPC URL
   /**
@@ -221,13 +221,13 @@ export class DryRunService {
       tokenAccountAddresses: undefined,
       mintInfo: undefined,
       fallbackSuccess: undefined,
-      fallbackRpcUrl: undefined
+      fallbackRpcUrl: undefined,
     };
 
     try {
       // Step 1: Build single BURN+MEMO transaction
       console.log(`🔥 DRY RUN: Building single burn+memo transaction...`);
-      
+
       let burnMemoTx: Transaction | VersionedTransaction;
       let burnMemoDecoded: DecodedTransaction;
       let burnMemoSimulation: SimulationResult;
@@ -244,7 +244,7 @@ export class DryRunService {
         });
 
         nftKindValue = burnMemoResult.nftKind as NftKind['kind'];
-        
+
         // Parse the transaction
         const txBuffer = Buffer.from(burnMemoResult.transaction, 'base64');
         if (burnMemoResult.isVersioned) {
@@ -257,7 +257,7 @@ export class DryRunService {
             burnMemoTx.recentBlockhash = blockhash;
           }
         }
-        
+
         // Convert to Transaction for decoding/simulation (if needed)
         let txForSimulation: Transaction;
         if (burnMemoTx instanceof VersionedTransaction) {
@@ -269,7 +269,7 @@ export class DryRunService {
         } else {
           txForSimulation = burnMemoTx;
         }
-        
+
         // Decode and simulate
         if (burnMemoTx instanceof VersionedTransaction) {
           // For versioned transactions, create a mock decoded transaction
@@ -277,17 +277,19 @@ export class DryRunService {
             feePayer: params.payer.toBase58(),
             recentBlockhash: undefined,
             signatures: [],
-            instructions: [{
-              programId: 'Metaplex Token Metadata',
-              programName: 'Metaplex',
-              instructionName: 'Burn V1',
-              accounts: [],
-              data: 'Burn + Memo',
-            }],
+            instructions: [
+              {
+                programId: 'Metaplex Token Metadata',
+                programName: 'Metaplex',
+                instructionName: 'Burn V1',
+                accounts: [],
+                data: 'Burn + Memo',
+              },
+            ],
             estimatedFee: burnMemoEstimatedFee,
             warnings: [],
           };
-          
+
           // Simulate versioned transaction
           // CRITICAL: Versioned transactions require a blockhash for simulation
           // Umi's build() should set it automatically, but if it's missing, we need to handle it
@@ -306,7 +308,9 @@ export class DryRunService {
             // If simulation fails due to missing blockhash, provide helpful error
             const errorMessage = simError instanceof Error ? simError.message : String(simError);
             if (errorMessage.includes('blockhash')) {
-              console.error('❌ DRY RUN: Transaction missing blockhash. Umi build() should set this automatically.');
+              console.error(
+                '❌ DRY RUN: Transaction missing blockhash. Umi build() should set this automatically.',
+              );
               burnMemoSimulation = {
                 success: false,
                 error: `Transaction build failed: Missing blockhash. This indicates Umi's transaction builder did not properly fetch the blockhash. Please check RPC connection.`,
@@ -319,24 +323,29 @@ export class DryRunService {
           burnMemoDecoded = await this.decoder.decodeTransaction(txForSimulation, true);
           burnMemoSimulation = await this.simulateTransaction(txForSimulation);
         }
-        
+
         // Estimate fee from simulation
         if (burnMemoSimulation.unitsConsumed) {
           // Rough estimate: base fee + compute units
-          burnMemoEstimatedFee = 5000 + Math.ceil(burnMemoSimulation.unitsConsumed / 1000000) * 1000;
-          
+          burnMemoEstimatedFee =
+            5000 + Math.ceil(burnMemoSimulation.unitsConsumed / 1000000) * 1000;
+
           // Validate compute units for legacy transactions
           if (burnMemoTx instanceof Transaction) {
             try {
               const cuValidation = await validateComputeUnits(burnMemoTx, this.connection);
               if (!cuValidation.valid) {
-                errors.push(`Compute unit limit exceeded: ${cuValidation.recommendation || 'Transaction uses too many compute units'}`);
+                errors.push(
+                  `Compute unit limit exceeded: ${cuValidation.recommendation || 'Transaction uses too many compute units'}`,
+                );
               } else if (cuValidation.recommendation) {
                 warnings.push(`Compute unit warning: ${cuValidation.recommendation}`);
               }
             } catch (cuError) {
               // CU validation failed, but don't block the dry-run
-              warnings.push(`Could not validate compute units: ${cuError instanceof Error ? cuError.message : String(cuError)}`);
+              warnings.push(
+                `Could not validate compute units: ${cuError instanceof Error ? cuError.message : String(cuError)}`,
+              );
             }
           }
 
@@ -345,20 +354,25 @@ export class DryRunService {
             try {
               const sizeValidation = validateTransactionSize(burnMemoTx);
               if (!sizeValidation.valid) {
-                errors.push(`Transaction size validation failed: ${sizeValidation.recommendation || 'Transaction too large'}`);
+                errors.push(
+                  `Transaction size validation failed: ${sizeValidation.recommendation || 'Transaction too large'}`,
+                );
               } else if (sizeValidation.warning) {
                 warnings.push(`Transaction size warning: ${sizeValidation.warning}`);
               }
             } catch (sizeError) {
-              warnings.push(`Could not validate transaction size: ${sizeError instanceof Error ? sizeError.message : String(sizeError)}`);
+              warnings.push(
+                `Could not validate transaction size: ${sizeError instanceof Error ? sizeError.message : String(sizeError)}`,
+              );
             }
           }
         }
-        
       } catch (error) {
         console.error(`❌ DRY RUN: Failed to build burn+memo transaction:`, error);
-        errors.push(`BURN+MEMO transaction build failed: ${error instanceof Error ? error.message : String(error)}`);
-        
+        errors.push(
+          `BURN+MEMO transaction build failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+
         // Create error state
         burnMemoTx = new Transaction();
         burnMemoDecoded = {
@@ -434,29 +448,30 @@ export class DryRunService {
             this.connection,
             params.mint,
             params.owner, // Use owner (who holds the token), not payer (who pays fees)
-            undefined // Will auto-detect token program
+            undefined, // Will auto-detect token program
           );
-          
+
           if (frozenCheck.frozen) {
             errors.push(
               `Token account is frozen. Cannot burn frozen tokens. ` +
-              `Freeze authority: ${frozenCheck.freezeAuthority?.toBase58() || 'Unknown'}. ` +
-              `Contact the freeze authority to unfreeze the account before burning.`
+                `Freeze authority: ${frozenCheck.freezeAuthority?.toBase58() || 'Unknown'}. ` +
+                `Contact the freeze authority to unfreeze the account before burning.`,
             );
           } else if (frozenCheck.error) {
             warnings.push(`Frozen status check warning: ${frozenCheck.error}`);
           }
         } catch (frozenError) {
-          warnings.push(`Could not check frozen status: ${frozenError instanceof Error ? frozenError.message : String(frozenError)}`);
+          warnings.push(
+            `Could not check frozen status: ${frozenError instanceof Error ? frozenError.message : String(frozenError)}`,
+          );
         }
       }
 
       // Additional validation checks
       await this.validateDryRun(params, warnings, errors);
-      
+
       // Pre-transaction validation
       await this.validatePreTransaction(params, warnings, errors);
-
     } catch (error) {
       errors.push(`Dry run failed: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -474,7 +489,7 @@ export class DryRunService {
       totalEstimatedFee,
       totalComputeUnits,
       warnings: [...new Set(warnings)], // Deduplicate
-      errors: [...new Set(errors)],     // Deduplicate
+      errors: [...new Set(errors)], // Deduplicate
       success,
       debug: debugInfo, // Add debug information
     };
@@ -482,7 +497,7 @@ export class DryRunService {
 
   /**
    * Simulate a transaction on-chain without sending
-   * 
+   *
    * @param transaction - Transaction to simulate
    * @returns Simulation result
    */
@@ -520,7 +535,7 @@ export class DryRunService {
 
   /**
    * Perform additional validation checks
-   * 
+   *
    * @param params - Dry run parameters
    * @param warnings - Array to add warnings to
    * @param errors - Array to add errors to
@@ -528,7 +543,7 @@ export class DryRunService {
   private async validateDryRun(
     params: DryRunParams,
     warnings: string[],
-    errors: string[]
+    errors: string[],
   ): Promise<void> {
     try {
       // Check if payer has sufficient balance
@@ -536,7 +551,9 @@ export class DryRunService {
       const minimumBalance = 10_000_000; // 0.01 SOL
 
       if (payerBalance < minimumBalance) {
-        warnings.push(`Payer balance (${payerBalance / 1e9} SOL) may be insufficient for transaction fees and rent`);
+        warnings.push(
+          `Payer balance (${payerBalance / 1e9} SOL) may be insufficient for transaction fees and rent`,
+        );
       }
 
       // Check if mint exists and validate it's an NFT (not a fungible token)
@@ -549,22 +566,24 @@ export class DryRunService {
         try {
           const { unpackMint } = await import('@solana/spl-token');
           const mintData = unpackMint(params.mint, mintInfo);
-          
+
           if (mintData.decimals > 0) {
             errors.push(
               `This is a fungible token (decimals: ${mintData.decimals}), not an NFT. ` +
-              `Teleburn only supports NFTs (decimals = 0).`
+                `Teleburn only supports NFTs (decimals = 0).`,
             );
           }
-          
+
           if (mintData.supply > 1n) {
             errors.push(
               `This token has supply > 1 (supply: ${mintData.supply}). ` +
-              `Teleburn only supports NFTs with supply = 1.`
+                `Teleburn only supports NFTs with supply = 1.`,
             );
           }
         } catch (parseError) {
-          warnings.push(`Could not validate mint type: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+          warnings.push(
+            `Could not validate mint type: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+          );
         }
       }
 
@@ -577,15 +596,16 @@ export class DryRunService {
       }
 
       // SHA-256 validation removed in v1.0 protocol
-
     } catch (error) {
-      warnings.push(`Validation check failed: ${error instanceof Error ? error.message : String(error)}`);
+      warnings.push(
+        `Validation check failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   /**
    * Pre-transaction validation checks
-   * 
+   *
    * @param params - Dry run parameters
    * @param warnings - Warnings array
    * @param errors - Errors array
@@ -593,46 +613,50 @@ export class DryRunService {
   private async validatePreTransaction(
     params: DryRunParams,
     warnings: string[],
-    errors: string[]
+    errors: string[],
   ): Promise<void> {
     try {
       // Check SOL balance (only warn, don't error - simulation will catch actual issues)
       const payerBalance = await this.connection.getBalance(params.payer);
       const estimatedFee = 0.00001; // ~0.00001 SOL for burn transaction
-      
+
       if (payerBalance < estimatedFee * 1e9) {
-        warnings.push(`💰 LOW SOL BALANCE: Wallet has ${(payerBalance / 1e9).toFixed(6)} SOL, recommend at least ${estimatedFee} SOL`);
+        warnings.push(
+          `💰 LOW SOL BALANCE: Wallet has ${(payerBalance / 1e9).toFixed(6)} SOL, recommend at least ${estimatedFee} SOL`,
+        );
       }
 
       // Check if token account exists for the owner
-      const tokenAccounts = await this.connection.getTokenAccountsByOwner(
-        params.owner,
-        { mint: params.mint }
-      );
+      const tokenAccounts = await this.connection.getTokenAccountsByOwner(params.owner, {
+        mint: params.mint,
+      });
 
       if (tokenAccounts.value.length === 0) {
-        errors.push(`🔍 NO TOKEN ACCOUNT: Owner doesn't have an Associated Token Account for this NFT`);
+        errors.push(
+          `🔍 NO TOKEN ACCOUNT: Owner doesn't have an Associated Token Account for this NFT`,
+        );
         errors.push(`   The NFT may not be in this wallet or the token account doesn't exist.`);
       } else {
         // Check token balance
         const tokenAccount = tokenAccounts.value[0];
         if (tokenAccount) {
           const accountInfo = await this.connection.getTokenAccountBalance(tokenAccount.pubkey);
-          
+
           if (accountInfo.value.uiAmount === 0) {
             errors.push(`🔍 NO TOKENS: Token account exists but has 0 balance`);
             errors.push(`   The NFT may have been transferred out of this wallet.`);
           }
         }
       }
-
     } catch (error) {
-      warnings.push(`Pre-transaction validation failed: ${error instanceof Error ? error.message : String(error)}`);
+      warnings.push(
+        `Pre-transaction validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   /**
-   * 
+   *
    * @param report - Dry run report
    * @returns JSON string ready for download
    */
@@ -644,17 +668,17 @@ export class DryRunService {
       mint: report.mint,
       inscription: report.inscriptionId,
       method: report.method,
-      
+
       planned_transactions: report.steps.map((step) => ({
         name: step.name,
         description: step.description,
         programs: step.decoded.instructions.map((ix) => ix.programName),
-        accounts: step.decoded.instructions.flatMap((ix) => 
+        accounts: step.decoded.instructions.flatMap((ix) =>
           ix.accounts.map((acc) => ({
             pubkey: acc.pubkey,
             roles: acc.roles,
             label: acc.label,
-          }))
+          })),
         ),
         estimated_fee_lamports: step.estimatedFee,
         estimated_fee_sol: step.estimatedFee / 1e9,
@@ -686,7 +710,7 @@ export class DryRunService {
 
   /**
    * Estimate total SOL cost for entire teleburn flow
-   * 
+   *
    * @param params - Dry run parameters
    * @returns Estimated total cost in SOL
    */
@@ -697,7 +721,7 @@ export class DryRunService {
 
   /**
    * Quick validation check (fast, no full simulation)
-   * 
+   *
    * @param params - Dry run parameters
    * @returns Array of validation errors (empty if valid)
    */
@@ -732,7 +756,7 @@ export class DryRunService {
 
 /**
  * Helper function to create a dry run service instance
- * 
+ *
  * @param rpcUrl - Solana RPC URL
  * @returns DryRunService instance
  */
@@ -743,11 +767,10 @@ export function createDryRunService(rpcUrl: string): DryRunService {
 /**
  * Helper function to create a dry run service with RPC fallback
  * Use this for better reliability with potentially invalid RPC URLs
- * 
+ *
  * @param rpcUrl - Solana RPC URL
  * @returns Promise<DryRunService> instance with validated RPC
  */
 export async function createDryRunServiceWithFallback(rpcUrl: string): Promise<DryRunService> {
   return DryRunService.createWithFallback(rpcUrl);
 }
-

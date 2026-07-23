@@ -1,6 +1,6 @@
 /**
  * Emergency Shutdown Tests
- * 
+ *
  * Tests for emergency shutdown mechanism.
  */
 
@@ -9,7 +9,7 @@ jest.mock('next/server', () => ({
   NextRequest: class NextRequest {
     headers: Headers;
     ip?: string;
-    
+
     constructor(init?: { headers?: Headers; ip?: string }) {
       this.headers = init?.headers || new Headers();
       this.ip = init?.ip;
@@ -19,13 +19,13 @@ jest.mock('next/server', () => ({
     status: number;
     headers: Headers;
     body?: string;
-    
+
     constructor(body?: any, init?: { status?: number; headers?: HeadersInit }) {
       this.body = typeof body === 'string' ? body : JSON.stringify(body);
       this.status = init?.status || 200;
       this.headers = new Headers(init?.headers);
     }
-    
+
     static json(body: any, init?: { status?: number; headers?: HeadersInit }) {
       const response = new NextResponse(JSON.stringify(body), {
         ...init,
@@ -36,7 +36,7 @@ jest.mock('next/server', () => ({
       });
       return response;
     }
-    
+
     json() {
       return Promise.resolve(JSON.parse(this.body || '{}'));
     }
@@ -53,7 +53,7 @@ const originalEnv = process.env;
 function createMockRequest(origin?: string): NextRequest {
   const headers = new Headers();
   if (origin) headers.set('origin', origin);
-  
+
   return new NextRequest({
     headers,
     ip: '127.0.0.1',
@@ -91,7 +91,7 @@ describe('Emergency Shutdown', () => {
 
       expect(result).toBeDefined();
       expect(result?.status).toBe(503);
-      
+
       // Verify response body
       return result?.json().then((body: unknown) => {
         expect(body).toHaveProperty('success', false);
@@ -149,7 +149,7 @@ describe('Emergency Shutdown', () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
       process.env.EMERGENCY_SHUTDOWN = 'true';
-      
+
       // Use localhost origin (allowed in development mode)
       const request = createMockRequest('http://localhost:3000');
 
@@ -157,7 +157,7 @@ describe('Emergency Shutdown', () => {
 
       expect(result?.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000');
       expect(result?.headers.get('Access-Control-Allow-Methods')).toBe('POST, OPTIONS');
-      
+
       // Restore original NODE_ENV
       process.env.NODE_ENV = originalEnv;
     });

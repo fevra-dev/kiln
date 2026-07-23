@@ -1,6 +1,6 @@
 /**
  * Integration Tests: API Rate Limiting
- * 
+ *
  * Tests rate limiting across actual API routes.
  */
 
@@ -10,7 +10,7 @@ jest.mock('next/server', () => ({
     headers: Headers;
     ip?: string;
     url?: string;
-    
+
     constructor(init?: { headers?: Headers; ip?: string; url?: string }) {
       this.headers = init?.headers || new Headers();
       this.ip = init?.ip;
@@ -27,9 +27,9 @@ import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limiter';
 function createMockRequest(ip?: string, path?: string): NextRequest {
   const headers = new Headers();
   if (ip) headers.set('x-real-ip', ip);
-  
+
   const url = `http://localhost:3000${path || '/api/tx/seal'}`;
-  
+
   return {
     headers,
     ip: ip || '127.0.0.1',
@@ -131,4 +131,3 @@ describe('API Rate Limiting Integration', () => {
     });
   });
 });
-

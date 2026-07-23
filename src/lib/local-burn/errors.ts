@@ -20,7 +20,7 @@ export const ErrorCode = {
   MALFORMED_DAS_RESPONSE: 'MALFORMED_DAS_RESPONSE',
 } as const;
 
-export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
+export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 export class NotAnNftError extends Error {
   readonly code: ErrorCode = ErrorCode.NOT_AN_NFT;
@@ -59,14 +59,23 @@ export class CnftStaleProofError extends Error {
 
 export class CnftTooDeepError extends Error {
   readonly code: ErrorCode = ErrorCode.CNFT_TOO_DEEP;
-  constructor(public tree: string, public proofLength: number, public estimatedSize: number) {
-    super(`cNFT tree ${tree} produces a ${proofLength}-node proof (~${estimatedSize} bytes) that exceeds the 1232-byte transaction size limit`);
+  constructor(
+    public tree: string,
+    public proofLength: number,
+    public estimatedSize: number,
+  ) {
+    super(
+      `cNFT tree ${tree} produces a ${proofLength}-node proof (~${estimatedSize} bytes) that exceeds the 1232-byte transaction size limit`,
+    );
   }
 }
 
 export class CnftOwnershipMismatchError extends Error {
   readonly code: ErrorCode = ErrorCode.CNFT_OWNERSHIP_MISMATCH;
-  constructor(public daOwner: string, public signer: string) {
+  constructor(
+    public daOwner: string,
+    public signer: string,
+  ) {
     super(`cNFT is owned by ${daOwner} but signer is ${signer}`);
   }
 }

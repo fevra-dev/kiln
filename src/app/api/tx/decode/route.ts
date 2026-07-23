@@ -1,14 +1,14 @@
 // src/app/api/tx/decode/route.ts
 /**
  * API Route: POST /api/tx/decode
- * 
+ *
  * Decodes a Solana transaction into human-readable format.
  * Shows:
  * - Program invocations
  * - Account roles (signer, writable, readonly)
  * - Instruction data
  * - Fee estimation
- * 
+ *
  * Used for dry run mode and user transparency.
  */
 
@@ -33,10 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check CORS origin
     if (!isOriginAllowed(request)) {
-      return NextResponse.json(
-        { success: false, error: 'Origin not allowed' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Origin not allowed' }, { status: 403 });
     }
 
     // Parse and validate request body
@@ -44,7 +41,10 @@ export async function POST(request: NextRequest) {
     const validated = decodeRequestSchema.parse(body);
 
     // Get RPC URL
-    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com';
+    const rpcUrl =
+      validated.rpcUrl ||
+      process.env['NEXT_PUBLIC_SOLANA_RPC'] ||
+      'https://api.mainnet-beta.solana.com';
 
     // Deserialize transaction
     const transactionBuffer = Buffer.from(validated.transaction, 'base64');
@@ -58,14 +58,16 @@ export async function POST(request: NextRequest) {
 
     // Return decoded transaction with CORS headers
     const corsHeaders = getCorsHeaders(request);
-    return NextResponse.json({
-      success: true,
-      decoded,
-      metadata: {
-        timestamp: new Date().toISOString(),
+    return NextResponse.json(
+      {
+        success: true,
+        decoded,
+        metadata: {
+          timestamp: new Date().toISOString(),
+        },
       },
-    }, { headers: corsHeaders });
-
+      { headers: corsHeaders },
+    );
   } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
           error: 'Validation failed',
           details: error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to decode transaction',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -101,4 +103,3 @@ export async function OPTIONS(request: NextRequest) {
     headers: corsHeaders,
   });
 }
-

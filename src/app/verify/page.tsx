@@ -2,10 +2,10 @@
 
 /**
  * Public Verification Page
- * 
+ *
  * Allows anyone to verify the teleburn status of a Solana mint.
  * Shows proof details, confidence scoring, and transaction links.
- * 
+ *
  * @description Public verification interface
  * @version 0.1.1
  */
@@ -45,20 +45,18 @@ export default function VerifyPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Helper references for Kiln memo rendering
-  const kilnMemoRecord = result?.kilnMemo
-    ? (result.kilnMemo as Record<string, unknown>)
-    : null;
+  const kilnMemoRecord = result?.kilnMemo ? (result.kilnMemo as Record<string, unknown>) : null;
   const kilnMemoMethodDisplay =
     kilnMemoRecord && kilnMemoRecord['method'] !== undefined && kilnMemoRecord['method'] !== null
       ? String(kilnMemoRecord['method'])
       : null;
-  
+
   // Helper for timestamp display
   const kilnMemoTimestamp = kilnMemoRecord?.['timestamp'];
   const kilnMemoTimestampDisplay = kilnMemoTimestamp
     ? new Date(Number(kilnMemoTimestamp) * 1000).toLocaleString()
     : null;
-  
+
   // Helper for nested objects
   const kilnMemoInscription = kilnMemoRecord?.['inscription'] as { id?: string } | null | undefined;
   const kilnMemoSolana = kilnMemoRecord?.['solana'] as { mint?: string } | null | undefined;
@@ -82,7 +80,7 @@ export default function VerifyPage() {
    */
   const handleDownloadMemo = () => {
     if (!result?.kilnMemo) return;
-    
+
     const memoWithMetadata = {
       ...result.kilnMemo,
       _verification: {
@@ -90,10 +88,12 @@ export default function VerifyPage() {
         burnSignature: result.burnSignature,
         blockTime: result.blockTime,
         supply: result.supply,
-      }
+      },
     };
-    
-    const blob = new Blob([JSON.stringify(memoWithMetadata, null, 2)], { type: 'application/json' });
+
+    const blob = new Blob([JSON.stringify(memoWithMetadata, null, 2)], {
+      type: 'application/json',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -106,7 +106,7 @@ export default function VerifyPage() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isValidPublicKey(mintAddress)) {
       setError('Invalid Solana public key format');
       return;
@@ -124,7 +124,7 @@ export default function VerifyPage() {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Verification failed');
       }
@@ -150,7 +150,7 @@ export default function VerifyPage() {
     try {
       const connection = new Connection(
         process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com',
-        'confirmed'
+        'confirmed',
       );
 
       const metadataUpdateResponse = await fetch('/api/tx/update-metadata', {
@@ -166,7 +166,9 @@ export default function VerifyPage() {
 
       if (!metadataUpdateResponse.ok) {
         const errorData = await metadataUpdateResponse.json();
-        throw new Error(`Failed to build metadata update transaction: ${errorData.error || 'Unknown error'}`);
+        throw new Error(
+          `Failed to build metadata update transaction: ${errorData.error || 'Unknown error'}`,
+        );
       }
 
       const metadataUpdateData = await metadataUpdateResponse.json();
@@ -210,8 +212,8 @@ export default function VerifyPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <a 
-                href="/" 
+              <a
+                href="/"
                 className="text-4xl text-terminal-text glow-text hover:text-matrix-red transition-colors"
                 title="Return to Home"
               >
@@ -238,9 +240,7 @@ export default function VerifyPage() {
               <div className="w-3 h-3 rounded-full bg-matrix-red/50"></div>
               <div className="w-3 h-3 rounded-full bg-matrix-red/30"></div>
             </div>
-            <div className="text-xs opacity-50">
-              VERIFY_STATUS // Public Lookup
-            </div>
+            <div className="text-xs opacity-50">VERIFY_STATUS // Public Lookup</div>
           </div>
           <div className="terminal-window-content p-8">
             <form onSubmit={handleVerify} className="space-y-6">
@@ -257,11 +257,7 @@ export default function VerifyPage() {
                   className="w-full px-4 py-3 bg-black/60 border border-terminal-text/30 text-terminal-text font-mono focus:outline-none focus:border-terminal-text focus:shadow-glow-red"
                   disabled={loading}
                 />
-                {error && (
-                  <div className="mt-2 text-sm text-matrix-red">
-                    🚨 {error}
-                  </div>
-                )}
+                {error && <div className="mt-2 text-sm text-matrix-red">🚨 {error}</div>}
               </div>
 
               <button
@@ -280,33 +276,37 @@ export default function VerifyPage() {
           <div className="terminal-window" style={{ animation: 'none' }}>
             <div className="terminal-window-header">
               <div className="text-sm font-bold">VERIFICATION RESULT</div>
-              {result.isOfficialKilnBurn && (
-                <div className="kiln-badge">
-                  🔥 OFFICIAL KILN BURN
-                </div>
-              )}
+              {result.isOfficialKilnBurn && <div className="kiln-badge">🔥 OFFICIAL KILN BURN</div>}
             </div>
             <div className="terminal-window-content p-8">
               <div className="space-y-4">
                 {/* Status Badge */}
-                <div className={`status-banner ${result.isOfficialKilnBurn ? 'official' : result.status === 'burned' ? 'burned' : 'active'}`}>
+                <div
+                  className={`status-banner ${result.isOfficialKilnBurn ? 'official' : result.status === 'burned' ? 'burned' : 'active'}`}
+                >
                   <div className="status-icon">
-                    {result.isOfficialKilnBurn ? '🔥' : result.status === 'burned' ? '🔥' : result.status === 'active' ? '✓' : '❓'}
+                    {result.isOfficialKilnBurn
+                      ? '🔥'
+                      : result.status === 'burned'
+                        ? '🔥'
+                        : result.status === 'active'
+                          ? '✓'
+                          : '❓'}
                   </div>
                   <div className="status-text">
                     <div className="status-title">
-                      {result.isOfficialKilnBurn 
-                        ? 'OFFICIAL KILN TELEBURN' 
-                        : result.status === 'burned' 
-                          ? 'BURNED (NO KILN MEMO)' 
-                          : result.status === 'active' 
-                            ? 'ACTIVE (NOT BURNED)' 
+                      {result.isOfficialKilnBurn
+                        ? 'OFFICIAL KILN TELEBURN'
+                        : result.status === 'burned'
+                          ? 'BURNED (NO KILN MEMO)'
+                          : result.status === 'active'
+                            ? 'ACTIVE (NOT BURNED)'
                             : 'UNKNOWN STATUS'}
                     </div>
                     <div className="status-subtitle">
-                      {result.isOfficialKilnBurn 
-                        ? 'Kiln protocol memo found on-chain' 
-                        : result.status === 'burned' 
+                      {result.isOfficialKilnBurn
+                        ? 'Kiln protocol memo found on-chain'
+                        : result.status === 'burned'
                           ? 'Supply is zero but no Kiln memo detected'
                           : 'NFT is still active with positive supply'}
                     </div>
@@ -318,8 +318,10 @@ export default function VerifyPage() {
                   <div className="result-row">
                     <span className="result-label">Mint Address</span>
                     <div className="result-value-group">
-                      <span className="font-mono text-xs">{result.mint.slice(0, 16)}...{result.mint.slice(-8)}</span>
-                      <button 
+                      <span className="font-mono text-xs">
+                        {result.mint.slice(0, 16)}...{result.mint.slice(-8)}
+                      </span>
+                      <button
                         onClick={() => handleCopy(result.mint, 'mint')}
                         className="copy-btn"
                         title="Copy mint address"
@@ -332,7 +334,9 @@ export default function VerifyPage() {
                   {/* Supply */}
                   <div className="result-row">
                     <span className="result-label">Supply</span>
-                    <span className={`font-bold ${result.supply === '0' ? 'text-orange-400' : 'text-terminal-green'}`}>
+                    <span
+                      className={`font-bold ${result.supply === '0' ? 'text-orange-400' : 'text-terminal-green'}`}
+                    >
                       {result.supply || '0'}
                     </span>
                   </div>
@@ -352,7 +356,7 @@ export default function VerifyPage() {
                         <span className="font-mono text-sm">{result.inscriptionId}</span>
                         <span className="link-arrow">→</span>
                       </a>
-                      <button 
+                      <button
                         onClick={() => handleCopy(result.inscriptionId!, 'inscription')}
                         className="copy-btn-inline"
                         title="Copy inscription ID"
@@ -395,7 +399,7 @@ export default function VerifyPage() {
                         >
                           {result.burnSignature.slice(0, 12)}...
                         </a>
-                        <button 
+                        <button
                           onClick={() => handleCopy(result.burnSignature!, 'burnSig')}
                           className="copy-btn"
                           title="Copy signature"
@@ -418,7 +422,7 @@ export default function VerifyPage() {
                         >
                           {result.sealSignature.slice(0, 12)}...
                         </a>
-                        <button 
+                        <button
                           onClick={() => handleCopy(result.sealSignature!, 'sealSig')}
                           className="copy-btn"
                           title="Copy signature"
@@ -440,7 +444,9 @@ export default function VerifyPage() {
                       <div className="memo-row">
                         <span className="memo-label">Standard</span>
                         <span className="memo-value">
-                          {String((result.kilnMemo as Record<string, unknown>)?.['standard'] || 'Kiln')}
+                          {String(
+                            (result.kilnMemo as Record<string, unknown>)?.['standard'] || 'Kiln',
+                          )}
                         </span>
                       </div>
                       <div className="memo-row">
@@ -486,9 +492,7 @@ export default function VerifyPage() {
                       {kilnMemoTimestampDisplay && (
                         <div className="memo-row">
                           <span className="memo-label">Timestamp</span>
-                          <span className="memo-value">
-                            {kilnMemoTimestampDisplay}
-                          </span>
+                          <span className="memo-value">{kilnMemoTimestampDisplay}</span>
                         </div>
                       )}
                     </div>
@@ -498,10 +502,7 @@ export default function VerifyPage() {
                 {/* Download Memo Button */}
                 {result.kilnMemo && (
                   <div className="download-section">
-                    <button
-                      onClick={handleDownloadMemo}
-                      className="download-btn"
-                    >
+                    <button onClick={handleDownloadMemo} className="download-btn">
                       📥 DOWNLOAD KILN MEMO (JSON)
                     </button>
                     <div className="text-xs opacity-60 mt-2">
@@ -509,7 +510,6 @@ export default function VerifyPage() {
                     </div>
                   </div>
                 )}
-
 
                 {/* Optional Metadata Update (only if burned and inscription found) */}
                 {result.status === 'burned' && result.inscriptionId && (
@@ -523,19 +523,27 @@ export default function VerifyPage() {
                             disabled={updatingMetadata || metadataUpdateCompleted}
                             className="terminal-button px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {updatingMetadata ? 'UPDATING...' : metadataUpdateCompleted ? '✓ UPDATED' : 'UPDATE METADATA'}
+                            {updatingMetadata
+                              ? 'UPDATING...'
+                              : metadataUpdateCompleted
+                                ? '✓ UPDATED'
+                                : 'UPDATE METADATA'}
                           </button>
                           <div className="flex-1">
                             <div className="font-bold mb-2">
                               Update NFT Metadata to Ordinals Link
                             </div>
                             <div className="text-xs space-y-2 opacity-80">
-                              <p>Update this NFT&apos;s metadata image URL to point to the Ordinals content.</p>
+                              <p>
+                                Update this NFT&apos;s metadata image URL to point to the Ordinals
+                                content.
+                              </p>
                               <p className="font-mono text-xs break-all text-orange-400">
                                 https://ordinals.com/content/{result.inscriptionId}
                               </p>
                               <p className="text-xs italic">
-                                🚨 Requires: NFT must be mutable and you must be the update authority
+                                🚨 Requires: NFT must be mutable and you must be the update
+                                authority
                               </p>
                             </div>
                           </div>
@@ -549,7 +557,10 @@ export default function VerifyPage() {
                     ) : (
                       <div className="text-xs opacity-70 space-y-3">
                         <p className="font-bold mb-2">Connect Wallet to Update Metadata</p>
-                        <p>Connect your wallet to update this NFT&apos;s metadata image URL to point to the Ordinals inscription.</p>
+                        <p>
+                          Connect your wallet to update this NFT&apos;s metadata image URL to point
+                          to the Ordinals inscription.
+                        </p>
                         <div className="flex justify-start">
                           <WalletMultiButton className="!bg-black/60 !border-terminal-text/30 hover:!bg-black/80" />
                         </div>
@@ -565,8 +576,12 @@ export default function VerifyPage() {
         {/* Info Box */}
         <div className="mt-8 p-6 border border-terminal-text/20 bg-black/40">
           <div className="text-xs space-y-2 opacity-70">
-            <p><strong>How Verification Works:</strong></p>
-            <p>This endpoint checks on-chain state to determine if a Solana NFT has been teleburned:</p>
+            <p>
+              <strong>How Verification Works:</strong>
+            </p>
+            <p>
+              This endpoint checks on-chain state to determine if a Solana NFT has been teleburned:
+            </p>
             <ul className="list-disc list-inside ml-4">
               <li>Checks derived owner ATA balance</li>
               <li>Checks incinerator ATA balance</li>
@@ -911,4 +926,3 @@ export default function VerifyPage() {
     </main>
   );
 }
-

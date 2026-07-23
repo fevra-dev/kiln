@@ -37,17 +37,17 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
       // First sound - the burn/superheat sound
       const burnSound = new Audio('/sfx/Superheat_Item.mp3');
       burnSound.volume = 0.6;
-      
+
       // Second sound - the unique drop/success sound
       const successSound = new Audio('/sfx/Unique_drop_sound_effect.ogg');
       successSound.volume = 0.5;
 
       // Play burn sound first
-      burnSound.play().catch(err => console.log('Audio play failed:', err));
-      
+      burnSound.play().catch((err) => console.log('Audio play failed:', err));
+
       // Play success sound after burn sound (with slight overlap for better effect)
       setTimeout(() => {
-        successSound.play().catch(err => console.log('Audio play failed:', err));
+        successSound.play().catch((err) => console.log('Audio play failed:', err));
       }, 800);
     } catch (err) {
       console.log('Sound playback error:', err);
@@ -60,7 +60,7 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
   const generateParticles = useCallback(() => {
     const colors = ['#ff4400', '#ff6600', '#ff8800', '#ffaa00', '#ffcc00', '#ff0000'];
     const newParticles: Particle[] = [];
-    
+
     for (let i = 0; i < 50; i++) {
       newParticles.push({
         id: i,
@@ -73,7 +73,7 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
         color: colors[Math.floor(Math.random() * colors.length)] || '#ff4400',
       });
     }
-    
+
     return newParticles;
   }, []);
 
@@ -81,21 +81,21 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
     if (!isActive) {
       return; // Early return when not active
     }
-    
+
     // Play sounds
     playSounds();
-    
+
     // Generate particles
     setParticles(generateParticles());
-    
+
     // Show celebration text after a brief delay
     setTimeout(() => setShowText(true), 300);
-    
+
     // Animate particles
     const interval = setInterval(() => {
-      setParticles(prev => 
+      setParticles((prev) =>
         prev
-          .map(p => ({
+          .map((p) => ({
             ...p,
             x: p.x + p.speedX * 0.5,
             y: p.y + p.speedY * 0.5,
@@ -103,7 +103,7 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
             life: p.life - 2,
             size: p.size * 0.98,
           }))
-          .filter(p => p.life > 0)
+          .filter((p) => p.life > 0),
       );
     }, 30);
 
@@ -127,7 +127,7 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
     <div className="burn-celebration-overlay">
       {/* Fire particles */}
       <div className="particles-container">
-        {particles.map(particle => (
+        {particles.map((particle) => (
           <div
             key={particle.id}
             className="fire-particle"
@@ -234,4 +234,3 @@ export function BurnCelebration({ isActive, onComplete }: BurnCelebrationProps) 
     </div>
   );
 }
-

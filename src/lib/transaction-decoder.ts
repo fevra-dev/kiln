@@ -1,14 +1,14 @@
 // src/lib/transaction-decoder.ts
 /**
  * KILN.1 Transaction Decoder
- * 
+ *
  * Decodes Solana transactions into human-readable format.
  * Shows:
  * - Program invocations
  * - Account roles (signer, writable, read-only)
  * - Instruction data interpretation
  * - Fee estimation
- * 
+ *
  * Critical for dry run mode and user transparency.
  */
 
@@ -80,10 +80,10 @@ const KNOWN_PROGRAMS: Record<string, string> = {
   [ASSOCIATED_TOKEN_PROGRAM_ID.toBase58()]: 'Associated Token Program',
   [MEMO_PROGRAM_ID.toBase58()]: 'SPL Memo',
   '11111111111111111111111111111111': 'System Program',
-  'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr': 'SPL Memo',
-  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA': 'SPL Token',
-  'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb': 'SPL Token-2022',
-  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL': 'Associated Token Program',
+  MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr: 'SPL Memo',
+  TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA: 'SPL Token',
+  TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb: 'SPL Token-2022',
+  ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL: 'Associated Token Program',
 };
 
 /**
@@ -120,12 +120,15 @@ export class TransactionDecoder {
 
   /**
    * Decode a transaction into human-readable format
-   * 
+   *
    * @param transaction - Transaction to decode
    * @param skipUnsignedWarning - Skip "Transaction not signed" warning (for dry run)
    * @returns Decoded transaction details
    */
-  async decodeTransaction(transaction: Transaction, skipUnsignedWarning = false): Promise<DecodedTransaction> {
+  async decodeTransaction(
+    transaction: Transaction,
+    skipUnsignedWarning = false,
+  ): Promise<DecodedTransaction> {
     const warnings: string[] = [];
     const instructions: DecodedInstruction[] = [];
 
@@ -133,8 +136,8 @@ export class TransactionDecoder {
     const feePayer = transaction.feePayer?.toBase58() || 'Unknown';
 
     // Get signatures
-    const signatures = transaction.signatures.map((sig) => 
-      sig.signature ? Buffer.from(sig.signature).toString('hex') : 'Unsigned'
+    const signatures = transaction.signatures.map((sig) =>
+      sig.signature ? Buffer.from(sig.signature).toString('hex') : 'Unsigned',
     );
 
     // Decode each instruction
@@ -152,7 +155,7 @@ export class TransactionDecoder {
       const message = transaction.compileMessage();
       const feeResponse = await this.connection.getFeeForMessage(message);
       estimatedFee = feeResponse.value ?? 5000;
-    } catch (error) {
+    } catch {
       warnings.push('Failed to estimate transaction fee');
     }
 
@@ -177,7 +180,7 @@ export class TransactionDecoder {
 
   /**
    * Decode a single instruction
-   * 
+   *
    * @param instruction - Instruction to decode
    * @param index - Instruction index in transaction
    * @param transaction - Parent transaction for context
@@ -186,10 +189,11 @@ export class TransactionDecoder {
   private async decodeInstruction(
     instruction: TransactionInstruction,
     _index: number,
-    _transaction: Transaction
+    _transaction: Transaction,
   ): Promise<DecodedInstruction> {
     const programId = instruction.programId.toBase58();
-    const programName = KNOWN_PROGRAMS[programId] || `Unknown Program (${programId.slice(0, 8)}...)`;
+    const programName =
+      KNOWN_PROGRAMS[programId] || `Unknown Program (${programId.slice(0, 8)}...)`;
 
     // Decode accounts
     const accounts: DecodedAccount[] = instruction.keys.map((meta) => {
@@ -214,7 +218,7 @@ export class TransactionDecoder {
       try {
         const memoText = instruction.data.toString('utf-8');
         decodedData = { memo: memoText };
-        
+
         // Try to parse as KILN.1 JSON
         try {
           const json = JSON.parse(memoText);
@@ -254,7 +258,7 @@ export class TransactionDecoder {
 
   /**
    * Decode SPL Token instruction
-   * 
+   *
    * @param instruction - Token instruction
    * @returns Decoded instruction name and data
    */
@@ -274,7 +278,7 @@ export class TransactionDecoder {
           name: 'Transfer',
           data: this.decodeTransferInstruction(instruction.data),
         };
-      
+
       case TokenInstruction.TransferChecked:
         return {
           name: 'Transfer (Checked)',
@@ -324,7 +328,7 @@ export class TransactionDecoder {
    */
   private decodeTransferInstruction(data: Buffer): Record<string, unknown> {
     if (data.length < 9) return { error: 'Invalid data length' };
-    
+
     // Transfer layout: [u8 instruction, u64 amount]
     const amount = data.readBigUInt64LE(1);
     return { amount: amount.toString() };
@@ -335,7 +339,7 @@ export class TransactionDecoder {
    */
   private decodeTransferCheckedInstruction(data: Buffer): Record<string, unknown> {
     if (data.length < 10) return { error: 'Invalid data length' };
-    
+
     // TransferChecked layout: [u8 instruction, u64 amount, u8 decimals]
     const amount = data.readBigUInt64LE(1);
     const decimals = data.readUInt8(9);
@@ -347,7 +351,7 @@ export class TransactionDecoder {
    */
   private decodeBurnInstruction(data: Buffer): Record<string, unknown> {
     if (data.length < 9) return { error: 'Invalid data length' };
-    
+
     // Burn layout: [u8 instruction, u64 amount]
     const amount = data.readBigUInt64LE(1);
     return { amount: amount.toString() };
@@ -358,7 +362,7 @@ export class TransactionDecoder {
    */
   private decodeBurnCheckedInstruction(data: Buffer): Record<string, unknown> {
     if (data.length < 10) return { error: 'Invalid data length' };
-    
+
     // BurnChecked layout: [u8 instruction, u64 amount, u8 decimals]
     const amount = data.readBigUInt64LE(1);
     const decimals = data.readUInt8(9);
@@ -367,7 +371,7 @@ export class TransactionDecoder {
 
   /**
    * Label an account based on its role
-   * 
+   *
    * @param pubkey - Account public key
    * @param programId - Program ID for context
    * @returns Human-readable label
@@ -403,7 +407,7 @@ export class TransactionDecoder {
 
   /**
    * Decode multiple transactions in a flow
-   * 
+   *
    * @param transactions - Array of transactions
    * @returns Array of decoded transactions
    */
@@ -420,11 +424,10 @@ export class TransactionDecoder {
 
 /**
  * Helper function to create a transaction decoder instance
- * 
+ *
  * @param rpcUrl - Solana RPC URL
  * @returns TransactionDecoder instance
  */
 export function createTransactionDecoder(rpcUrl: string): TransactionDecoder {
   return new TransactionDecoder(rpcUrl);
 }
-

@@ -2,11 +2,11 @@
 
 /**
  * Step 3: Dry Run Preview
- * 
+ *
  * Third step of teleburn wizard - execute dry run simulation.
  * Shows complete transaction preview before execution.
  * User can download receipt and review all details.
- * 
+ *
  * @description Dry run simulation step with preview
  * @version 0.1.1
  */
@@ -28,14 +28,10 @@ interface Step3PreviewProps {
 
 /**
  * Step 3: Dry Run Preview
- * 
+ *
  * Executes dry run simulation and displays results.
  */
-export const Step3Preview: FC<Step3PreviewProps> = ({
-  formData,
-  onComplete,
-  onBack,
-}) => {
+export const Step3Preview: FC<Step3PreviewProps> = ({ formData, onComplete, onBack }) => {
   const { publicKey } = useWallet();
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<DryRunReport | null>(null);
@@ -82,7 +78,7 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       console.log('✅ CLIENT: Dry run completed successfully');
       console.log('📊 CLIENT: Report:', data.report);
       console.log('🔍 CLIENT: Debug info:', data.debug);
-      
+
       // Log pNFT detection results specifically
       if (data.report?.debug?.pnftDetection) {
         console.log('🔍 CLIENT: pNFT Detection Results:', data.report.debug.pnftDetection);
@@ -91,7 +87,6 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
         console.log('🔍 CLIENT: Available debug fields:', Object.keys(data.report?.debug || {}));
       }
       setReport(data.report);
-
     } catch (err) {
       console.error('Dry run error:', err);
       setError(err instanceof Error ? err.message : 'Failed to execute dry run');
@@ -117,7 +112,7 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       mint: report.mint,
       inscription: report.inscriptionId,
       method: report.method,
-      steps: report.steps.map(step => ({
+      steps: report.steps.map((step) => ({
         name: step.name,
         description: step.description,
         fee_sol: step.estimatedFee / 1e9,
@@ -147,9 +142,12 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
       <div className="terminal-output mb-6">
         <div className="text-terminal-prompt mb-2">$ execute_dry_run_simulation</div>
         <div className="text-terminal-text/70 text-sm mb-4">
-          {`> Building transactions...`}<br />
-          {`> Simulating on-chain...`}<br />
-          {`> Computing fees and warnings...`}<br />
+          {`> Building transactions...`}
+          <br />
+          {`> Simulating on-chain...`}
+          <br />
+          {`> Computing fees and warnings...`}
+          <br />
           <span className="animate-terminal-blink">▊</span>
         </div>
       </div>
@@ -178,10 +176,7 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
             <div className="flex-1">
               <div className="font-bold mb-2 text-matrix-red">SIMULATION FAILED</div>
               <div className="text-sm mb-4">{error}</div>
-              <button
-                onClick={executeDryRun}
-                className="terminal-button-secondary px-6 py-2"
-              >
+              <button onClick={executeDryRun} className="terminal-button-secondary px-6 py-2">
                 🔄 RETRY SIMULATION
               </button>
             </div>
@@ -225,17 +220,11 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
             )}
           </div>
 
-          <DryRunPreview
-            report={report}
-            onDownloadReceipt={handleDownloadReceipt}
-          />
+          <DryRunPreview report={report} onDownloadReceipt={handleDownloadReceipt} />
 
           {/* Action Buttons */}
           <div className="flex justify-between pt-6 border-t border-terminal-text/20">
-            <button
-              onClick={onBack}
-              className="terminal-button-secondary px-6 py-2"
-            >
+            <button onClick={onBack} className="terminal-button-secondary px-6 py-2">
               ← BACK
             </button>
 
@@ -248,19 +237,18 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
                   opacity: inscriptionAcknowledged ? 1 : 0.5,
                   cursor: inscriptionAcknowledged ? 'pointer' : 'not-allowed',
                 }}
-                title={inscriptionAcknowledged ? '' : 'Complete the inscription pre-flight before proceeding'}
+                title={
+                  inscriptionAcknowledged
+                    ? ''
+                    : 'Complete the inscription pre-flight before proceeding'
+                }
               >
                 ⚡ PROCEED TO EXECUTION →
               </button>
             ) : (
               <div className="text-right">
-                <div className="text-sm text-matrix-red mb-2">
-                  Cannot proceed with errors
-                </div>
-                <button
-                  onClick={onBack}
-                  className="terminal-button-secondary px-6 py-2"
-                >
+                <div className="text-sm text-matrix-red mb-2">Cannot proceed with errors</div>
+                <button onClick={onBack} className="terminal-button-secondary px-6 py-2">
                   EDIT PARAMETERS
                 </button>
               </div>
@@ -338,4 +326,3 @@ export const Step3Preview: FC<Step3PreviewProps> = ({
     </div>
   );
 };
-

@@ -2,10 +2,10 @@
 
 /**
  * Batch Teleburn Page
- * 
+ *
  * Allows users to teleburn multiple NFTs in a single session.
  * Each NFT is processed sequentially.
- * 
+ *
  * @description Batch teleburn feature for multiple NFTs
  * @version 0.1.1
  */
@@ -62,7 +62,7 @@ export default function BatchTeleburnPage() {
       status: 'validating',
     };
 
-    setItems(prev => [...prev, newItem]);
+    setItems((prev) => [...prev, newItem]);
     setNewMint('');
     setNewInscriptionId('');
 
@@ -70,24 +70,28 @@ export default function BatchTeleburnPage() {
     try {
       const result = await InscriptionVerifier.fetchAndHash(newInscriptionId);
       if (result.success && result.actualSha256) {
-        setItems(prev => prev.map(item => 
-          item.id === id 
-            ? { ...item, sha256: result.actualSha256 || '', status: 'ready' }
-            : item
-        ));
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === id ? { ...item, sha256: result.actualSha256 || '', status: 'ready' } : item,
+          ),
+        );
       } else {
-        setItems(prev => prev.map(item => 
-          item.id === id 
-            ? { ...item, status: 'error', error: result.error || 'Could not fetch inscription' }
-            : item
-        ));
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === id
+              ? { ...item, status: 'error', error: result.error || 'Could not fetch inscription' }
+              : item,
+          ),
+        );
       }
-    } catch (error) {
-      setItems(prev => prev.map(item => 
-        item.id === id 
-          ? { ...item, status: 'error', error: 'Failed to validate inscription' }
-          : item
-      ));
+    } catch {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? { ...item, status: 'error', error: 'Failed to validate inscription' }
+            : item,
+        ),
+      );
     }
 
     KilnEventLogger.log('batch_item_added', { mint: newMint, inscriptionId: newInscriptionId });
@@ -97,7 +101,7 @@ export default function BatchTeleburnPage() {
    * Remove an item from the batch
    */
   const removeItem = useCallback((id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+    setItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
   /**
@@ -106,7 +110,7 @@ export default function BatchTeleburnPage() {
   const executeBatch = useCallback(async () => {
     if (!publicKey || !signTransaction) return;
 
-    const readyItems = items.filter(item => item.status === 'ready');
+    const readyItems = items.filter((item) => item.status === 'ready');
     if (readyItems.length === 0) {
       alert('No items ready to burn');
       return;
@@ -121,13 +125,11 @@ export default function BatchTeleburnPage() {
     for (let i = 0; i < readyItems.length; i++) {
       const item = readyItems[i];
       if (!item) continue; // TypeScript guard
-      
+
       setCurrentIndex(i);
 
       // Update status to burning
-      setItems(prev => prev.map(it => 
-        it.id === item.id ? { ...it, status: 'burning' } : it
-      ));
+      setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, status: 'burning' } : it)));
 
       try {
         // Build the burn+memo transaction
@@ -163,35 +165,36 @@ export default function BatchTeleburnPage() {
         await connection.confirmTransaction(signature, 'confirmed');
 
         // Update status to success
-        setItems(prev => prev.map(it => 
-          it.id === item.id ? { ...it, status: 'success', signature } : it
-        ));
+        setItems((prev) =>
+          prev.map((it) => (it.id === item.id ? { ...it, status: 'success', signature } : it)),
+        );
 
         KilnEventLogger.log('batch_item_success', { mint: item.mint, signature });
-
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        setItems(prev => prev.map(it => 
-          it.id === item.id ? { ...it, status: 'error', error: errorMessage } : it
-        ));
+        setItems((prev) =>
+          prev.map((it) =>
+            it.id === item.id ? { ...it, status: 'error', error: errorMessage } : it,
+          ),
+        );
 
         KilnEventLogger.log('batch_item_error', { mint: item.mint, error: errorMessage });
       }
 
       // Small delay between burns
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     setProcessing(false);
     setCurrentIndex(-1);
-    KilnEventLogger.log('batch_burn_completed', { 
+    KilnEventLogger.log('batch_burn_completed', {
       total: readyItems.length,
-      success: items.filter(i => i.status === 'success').length,
+      success: items.filter((i) => i.status === 'success').length,
     });
   }, [items, publicKey, signTransaction]);
 
-  const readyCount = items.filter(i => i.status === 'ready').length;
-  const successCount = items.filter(i => i.status === 'success').length;
+  const readyCount = items.filter((i) => i.status === 'ready').length;
+  const successCount = items.filter((i) => i.status === 'success').length;
 
   return (
     <div className="min-h-screen bg-terminal-bg text-terminal-text font-mono">
@@ -200,8 +203,8 @@ export default function BatchTeleburnPage() {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <a 
-                href="/" 
+              <a
+                href="/"
                 className="text-4xl hover:text-matrix-red transition-colors duration-200"
                 title="Return to Home"
               >
@@ -320,42 +323,55 @@ export default function BatchTeleburnPage() {
                 <div className="terminal-window-content p-4">
                   <div className="space-y-3">
                     {items.map((item, index) => (
-                      <div 
-                        key={item.id} 
+                      <div
+                        key={item.id}
                         className={`p-3 border ${
-                          item.status === 'success' ? 'border-green-500/50 bg-green-500/10' :
-                          item.status === 'error' ? 'border-red-500/50 bg-red-500/10' :
-                          item.status === 'burning' ? 'border-orange-500/50 bg-orange-500/10 animate-pulse' :
-                          item.status === 'ready' ? 'border-terminal-text/30' :
-                          'border-terminal-text/20 opacity-70'
+                          item.status === 'success'
+                            ? 'border-green-500/50 bg-green-500/10'
+                            : item.status === 'error'
+                              ? 'border-red-500/50 bg-red-500/10'
+                              : item.status === 'burning'
+                                ? 'border-orange-500/50 bg-orange-500/10 animate-pulse'
+                                : item.status === 'ready'
+                                  ? 'border-terminal-text/30'
+                                  : 'border-terminal-text/20 opacity-70'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-bold">#{index + 1}</span>
-                              <span className={`text-xs px-2 py-0.5 rounded ${
-                                item.status === 'success' ? 'bg-green-500/20 text-green-400' :
-                                item.status === 'error' ? 'bg-red-500/20 text-red-400' :
-                                item.status === 'burning' ? 'bg-orange-500/20 text-orange-400' :
-                                item.status === 'ready' ? 'bg-blue-500/20 text-blue-400' :
-                                'bg-gray-500/20 text-gray-400'
-                              }`}>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded ${
+                                  item.status === 'success'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : item.status === 'error'
+                                      ? 'bg-red-500/20 text-red-400'
+                                      : item.status === 'burning'
+                                        ? 'bg-orange-500/20 text-orange-400'
+                                        : item.status === 'ready'
+                                          ? 'bg-blue-500/20 text-blue-400'
+                                          : 'bg-gray-500/20 text-gray-400'
+                                }`}
+                              >
                                 {item.status.toUpperCase()}
                               </span>
                             </div>
                             <div className="font-mono text-xs text-terminal-text/70">
-                              <span className="text-terminal-prompt">Mint:</span> {item.mint.slice(0, 16)}...
+                              <span className="text-terminal-prompt">Mint:</span>{' '}
+                              {item.mint.slice(0, 16)}...
                             </div>
                             <div className="font-mono text-xs text-terminal-text/70">
-                              <span className="text-orange-400">Inscription:</span> {item.inscriptionId.slice(0, 16)}...
+                              <span className="text-orange-400">Inscription:</span>{' '}
+                              {item.inscriptionId.slice(0, 16)}...
                             </div>
                             {item.error && (
                               <div className="text-xs text-red-400 mt-1">🚨 {item.error}</div>
                             )}
                             {item.signature && (
                               <div className="text-xs text-green-400 mt-1">
-                                ✓ <a 
+                                ✓{' '}
+                                <a
                                   href={`https://orb.helius.dev/tx/${item.signature}?tab=instructions`}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -395,10 +411,9 @@ export default function BatchTeleburnPage() {
                       : 'bg-matrix-red hover:bg-red-500 text-black'
                   } transition-colors`}
                 >
-                  {processing 
-                    ? `🔥 BURNING ${currentIndex + 1} OF ${items.filter(i => i.status === 'ready' || i.status === 'burning').length}...`
-                    : `🔥 EXECUTE BATCH (${readyCount} ITEMS)`
-                  }
+                  {processing
+                    ? `🔥 BURNING ${currentIndex + 1} OF ${items.filter((i) => i.status === 'ready' || i.status === 'burning').length}...`
+                    : `🔥 EXECUTE BATCH (${readyCount} ITEMS)`}
                 </button>
                 {processing && (
                   <div className="text-sm text-terminal-text/60 mt-2">
@@ -489,4 +504,3 @@ export default function BatchTeleburnPage() {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 /**
  * Frozen Account Detector Tests
- * 
+ *
  * Tests for frozen account detection before burn operations.
  */
 
@@ -45,7 +45,7 @@ describe('Frozen Account Detector', () => {
       const result = await checkIfFrozenBeforeBurn(
         mockConnection,
         mockTokenAccount,
-        TOKEN_PROGRAM_ID
+        TOKEN_PROGRAM_ID,
       );
 
       expect(result.frozen).toBe(true);
@@ -61,7 +61,7 @@ describe('Frozen Account Detector', () => {
       const result = await checkIfFrozenBeforeBurn(
         mockConnection,
         mockTokenAccount,
-        TOKEN_PROGRAM_ID
+        TOKEN_PROGRAM_ID,
       );
 
       expect(result.frozen).toBe(false);
@@ -74,7 +74,7 @@ describe('Frozen Account Detector', () => {
       const result = await checkIfFrozenBeforeBurn(
         mockConnection,
         mockTokenAccount,
-        TOKEN_PROGRAM_ID
+        TOKEN_PROGRAM_ID,
       );
 
       expect(result.frozen).toBe(false);
@@ -100,7 +100,7 @@ describe('Frozen Account Detector', () => {
         mockConnection,
         mockMint,
         mockOwner,
-        TOKEN_PROGRAM_ID
+        TOKEN_PROGRAM_ID,
       );
 
       expect(result.frozen).toBe(false);
@@ -113,7 +113,7 @@ describe('Frozen Account Detector', () => {
         mockConnection,
         mockMint,
         mockOwner,
-        TOKEN_PROGRAM_ID
+        TOKEN_PROGRAM_ID,
       );
 
       expect(result.error).toBeDefined();
@@ -128,7 +128,7 @@ describe('Frozen Account Detector', () => {
       });
 
       await expect(
-        assertNotFrozen(mockConnection, mockTokenAccount, TOKEN_PROGRAM_ID)
+        assertNotFrozen(mockConnection, mockTokenAccount, TOKEN_PROGRAM_ID),
       ).resolves.not.toThrow();
     });
 
@@ -140,7 +140,7 @@ describe('Frozen Account Detector', () => {
       });
 
       await expect(
-        assertNotFrozen(mockConnection, mockTokenAccount, TOKEN_PROGRAM_ID)
+        assertNotFrozen(mockConnection, mockTokenAccount, TOKEN_PROGRAM_ID),
       ).rejects.toThrow('frozen');
     });
   });
@@ -160,11 +160,7 @@ describe('Frozen Account Detector', () => {
           amount: BigInt(1),
         });
 
-      const results = await checkMultipleAccountsFrozen(
-        mockConnection,
-        accounts,
-        TOKEN_PROGRAM_ID
-      );
+      const results = await checkMultipleAccountsFrozen(mockConnection, accounts, TOKEN_PROGRAM_ID);
 
       expect(results).toHaveLength(2);
       expect(results[0]?.frozen).toBe(false);
@@ -172,4 +168,3 @@ describe('Frozen Account Detector', () => {
     });
   });
 });
-

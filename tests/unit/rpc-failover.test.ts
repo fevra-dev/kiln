@@ -1,6 +1,6 @@
 /**
  * RPC Failover Tests
- * 
+ *
  * Tests for RPC failover functionality to ensure high availability.
  */
 
@@ -25,8 +25,7 @@ describe('RPC Failover', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockConnection = jest.fn();
-    (Connection as unknown as jest.Mock) = mockConnection;
+    mockConnection = Connection as unknown as jest.Mock;
   });
 
   describe('RpcFailoverManager', () => {
@@ -87,7 +86,7 @@ describe('RPC Failover', () => {
       await expect(
         manager.withFailover(async (conn) => {
           return await conn.getSlot();
-        })
+        }),
       ).resolves.toBe(1000);
     });
 
@@ -103,7 +102,7 @@ describe('RPC Failover', () => {
       manager['startHealthChecks']();
 
       // Wait a bit for health check
-      await new Promise(resolve => setTimeout(resolve, 1100));
+      await new Promise((resolve) => setTimeout(resolve, 1100));
 
       const status = manager.getStatus();
       expect(status.endpoints.length).toBeGreaterThan(0);
@@ -197,4 +196,3 @@ describe('RPC Failover', () => {
     });
   });
 });
-

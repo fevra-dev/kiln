@@ -20,7 +20,7 @@ export interface LatestBurnTx {
 export async function findLatestMetaplexTxForMint(
   connection: Connection,
   mint: string,
-  limit = 20
+  limit = 20,
 ): Promise<LatestBurnTx | null> {
   try {
     const mintPk = new PublicKey(mint);
@@ -45,7 +45,7 @@ export async function findLatestMetaplexTxForMint(
         const metaPidStr = TOKEN_METADATA_PROGRAM_ID.toBase58();
         const staticKeys = tx.transaction.message.staticAccountKeys || [];
         hasMetaIx = staticKeys.some((key) => key.toBase58() === metaPidStr);
-        
+
         // Also check in instructions (compile-time programs are in static keys)
         if (!hasMetaIx && tx.transaction.message.compiledInstructions) {
           for (const ix of tx.transaction.message.compiledInstructions) {
@@ -58,11 +58,11 @@ export async function findLatestMetaplexTxForMint(
           }
         }
       }
-      
+
       if (!hasMetaIx) continue;
 
       // Get fee payer (first account key)
-      const feePayer = 
+      const feePayer =
         'accountKeys' in tx.transaction.message
           ? tx.transaction.message.accountKeys[0]?.toBase58()
           : tx.transaction.message.staticAccountKeys[0]?.toBase58();
@@ -78,5 +78,3 @@ export async function findLatestMetaplexTxForMint(
     return null;
   }
 }
-
-

@@ -69,9 +69,12 @@ export const InscriptionPanel: FC<InscriptionPanelProps> = ({
           ⚠️ Couldn&apos;t reach Bitcoin indexers
         </div>
         <div style={{ fontSize: 13, marginBottom: 12 }}>
-          {error ?? 'Both ordinals.com and the fallback indexer were unreachable. The inscription may still be valid; we just can\'t verify right now.'}
+          {error ??
+            "Both ordinals.com and the fallback indexer were unreachable. The inscription may still be valid; we just can't verify right now."}
         </div>
-        <button onClick={onRetry} style={buttonStyle}>Retry</button>
+        <button onClick={onRetry} style={buttonStyle}>
+          Retry
+        </button>
         <div style={{ marginTop: 12 }}>
           <OverrideControls
             kind="checkbox"
@@ -93,8 +96,8 @@ export const InscriptionPanel: FC<InscriptionPanelProps> = ({
           ⛔ Inscription not found on Bitcoin
         </div>
         <div style={{ fontSize: 13 }}>
-          Both indexers returned 404. Check the ID for typos or wrong index
-          (most commonly <code>i0</code> vs <code>i1</code>).
+          Both indexers returned 404. Check the ID for typos or wrong index (most commonly{' '}
+          <code>i0</code> vs <code>i1</code>).
         </div>
         <div style={{ fontSize: 12, marginTop: 8, opacity: 0.7 }}>
           ID: <code>{result.inscriptionId}</code>
@@ -122,21 +125,39 @@ export const InscriptionPanel: FC<InscriptionPanelProps> = ({
           />
         </div>
         <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-          <Field label="ID" value={<code style={{ fontSize: 12, wordBreak: 'break-all' }}>{result.inscriptionId}</code>} />
+          <Field
+            label="ID"
+            value={
+              <code style={{ fontSize: 12, wordBreak: 'break-all' }}>{result.inscriptionId}</code>
+            }
+          />
           <Field label="Type" value={result.contentType} />
           <Field label="Size" value={sizeStr} />
           {result.contentSha256 ? (
-            <Field label="SHA-256" value={<code style={{ fontSize: 11, wordBreak: 'break-all' }}>{result.contentSha256}</code>} />
+            <Field
+              label="SHA-256"
+              value={
+                <code style={{ fontSize: 11, wordBreak: 'break-all' }}>{result.contentSha256}</code>
+              }
+            />
           ) : (
-            <Field label="SHA-256" value={<span style={{ opacity: 0.6 }}>(too large to hash, or fallback indexer)</span>} />
+            <Field
+              label="SHA-256"
+              value={<span style={{ opacity: 0.6 }}>(too large to hash, or fallback indexer)</span>}
+            />
           )}
           <Field label="Sat" value={`${result.sat.toLocaleString()} (${result.satRarity})`} />
           <Field
             label="Block"
             value={
-              result.genesisBlockHeight === null
-                ? <span style={{ color: '#cc6328' }}>mempool (0 conf)</span>
-                : <>{result.genesisBlockHeight.toLocaleString()} · <strong>{result.confirmations} conf</strong></>
+              result.genesisBlockHeight === null ? (
+                <span style={{ color: '#cc6328' }}>mempool (0 conf)</span>
+              ) : (
+                <>
+                  {result.genesisBlockHeight.toLocaleString()} ·{' '}
+                  <strong>{result.confirmations} conf</strong>
+                </>
+              )
             }
           />
           {result.cursed && <Field label="Note" value="Cursed inscription (pre-jubilee)" />}
@@ -146,7 +167,9 @@ export const InscriptionPanel: FC<InscriptionPanelProps> = ({
 
       {/* Override widget — only renders when overrideKind != 'none' */}
       {overrideKind !== 'none' && (
-        <div style={{ marginTop: 16, padding: 12, border: '1px solid currentColor', borderRadius: 4 }}>
+        <div
+          style={{ marginTop: 16, padding: 12, border: '1px solid currentColor', borderRadius: 4 }}
+        >
           {overrideKind === 'checkbox' && (
             <OverrideControls
               kind="checkbox"

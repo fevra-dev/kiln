@@ -2,11 +2,11 @@
 
 /**
  * Wizard Layout Component
- * 
+ *
  * Container for multi-step teleburn wizard.
  * Shows progress, step indicators, and navigation.
  * Red matrix hacker theme with terminal aesthetics.
- * 
+ *
  * @description Main wizard container with step management
  * @version 0.1.1
  */
@@ -29,15 +29,11 @@ const STEPS: { id: WizardStep; label: string; description: string }[] = [
 
 /**
  * Wizard Layout Component
- * 
+ *
  * Manages step progression and displays current step content.
  */
-export const WizardLayout: FC<WizardLayoutProps> = ({ 
-  currentStep, 
-  children,
-  onStepChange 
-}) => {
-  const currentStepIndex = STEPS.findIndex(s => s.id === currentStep);
+export const WizardLayout: FC<WizardLayoutProps> = ({ currentStep, children, onStepChange }) => {
+  const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep);
 
   return (
     <div className="wizard-layout min-h-screen bg-terminal-bg text-terminal-text font-mono">
@@ -46,8 +42,8 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <a 
-                href="/" 
+              <a
+                href="/"
                 className="text-3xl text-terminal-text glow-text hover:text-matrix-red transition-colors"
                 title="Return to Home"
               >
@@ -70,9 +66,7 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
                 return (
                   <div
                     key={step.id}
-                    className={`step-item flex-1 ${
-                      index < STEPS.length - 1 ? 'relative' : ''
-                    }`}
+                    className={`step-item flex-1 ${index < STEPS.length - 1 ? 'relative' : ''}`}
                   >
                     <div className="flex items-center">
                       {/* Step Circle */}
@@ -93,14 +87,18 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
 
                       {/* Step Label */}
                       <div className="ml-3">
-                        <div className={`text-xs font-bold ${
-                          isActive ? 'text-terminal-text' : 'text-terminal-text/50'
-                        }`}>
+                        <div
+                          className={`text-xs font-bold ${
+                            isActive ? 'text-terminal-text' : 'text-terminal-text/50'
+                          }`}
+                        >
                           {step.label}
                         </div>
-                        <div className={`text-xs ${
-                          isActive ? 'text-terminal-text/70' : 'text-terminal-text/40'
-                        }`}>
+                        <div
+                          className={`text-xs ${
+                            isActive ? 'text-terminal-text/70' : 'text-terminal-text/40'
+                          }`}
+                        >
                           {step.description}
                         </div>
                       </div>
@@ -109,7 +107,7 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
                     {/* Connector Line */}
                     {index < STEPS.length - 1 && (
                       <div className="absolute top-5 left-10 right-0 h-0.5 bg-terminal-text/20 -z-10">
-                        <div 
+                        <div
                           className={`h-full bg-terminal-text transition-all duration-300 ${
                             isCompleted ? 'w-full' : 'w-0'
                           }`}
@@ -138,9 +136,7 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
                 {STEPS[currentStepIndex]?.label} {/* {STEPS[currentStepIndex]?.description} */}
               </div>
             </div>
-            <div className="terminal-window-content p-8">
-              {children}
-            </div>
+            <div className="terminal-window-content p-8">{children}</div>
           </div>
         </div>
       </div>
@@ -185,4 +181,3 @@ export const WizardLayout: FC<WizardLayoutProps> = ({
     </div>
   );
 };
-

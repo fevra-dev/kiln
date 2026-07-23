@@ -1,9 +1,9 @@
 /**
  * Emergency Shutdown Utility
- * 
+ *
  * Allows instant shutdown of API endpoints without redeploying.
  * Set EMERGENCY_SHUTDOWN=true environment variable to enable.
- * 
+ *
  * @version 0.1.1
  */
 
@@ -39,25 +39,23 @@ export function getEmergencyShutdownMessage(): string {
 
 /**
  * Check if emergency shutdown is active and return error response if so
- * 
+ *
  * @param request - Next.js request object
  * @returns Error response if shutdown is active, null otherwise
- * 
+ *
  * @example
  * ```typescript
  * export async function POST(request: NextRequest) {
  *   // Check emergency shutdown first
  *   const shutdownResponse = checkEmergencyShutdown(request);
  *   if (shutdownResponse) return shutdownResponse;
- *   
+ *
  *   // Normal request handling
  *   // ...
  * }
  * ```
  */
-export function checkEmergencyShutdown(
-  request: NextRequest
-): NextResponse | null {
+export function checkEmergencyShutdown(request: NextRequest): NextResponse | null {
   if (!isEmergencyShutdownEnabled()) {
     return null; // Shutdown not active, proceed normally
   }
@@ -81,22 +79,22 @@ export function checkEmergencyShutdown(
         'X-Emergency-Shutdown': 'true',
         ...corsHeaders,
       },
-    }
+    },
   );
 }
 
 /**
  * Check emergency shutdown and throw error if active
  * Alternative API that throws instead of returning response
- * 
+ *
  * @throws Error if emergency shutdown is active
- * 
+ *
  * @example
  * ```typescript
  * export async function POST(request: NextRequest) {
  *   // Check emergency shutdown (throws if active)
  *   assertNotEmergencyShutdown();
- *   
+ *
  *   // Normal request handling
  *   // ...
  * }
@@ -110,7 +108,7 @@ export function assertNotEmergencyShutdown(): void {
 
 /**
  * Get emergency shutdown status for health checks
- * 
+ *
  * @returns Status information about emergency shutdown
  */
 export function getEmergencyShutdownStatus(): {
@@ -124,4 +122,3 @@ export function getEmergencyShutdownStatus(): {
     timestamp: new Date().toISOString(),
   };
 }
-

@@ -2,11 +2,11 @@
 
 /**
  * Dry Run Preview Component
- * 
+ *
  * Displays dry run simulation results with expandable transaction details.
  * Terminal-style interface with red matrix theme.
  * Shows fees, warnings, errors, and allows receipt download.
- * 
+ *
  * @description Interactive dry run results viewer
  * @version 0.1.1
  */
@@ -21,13 +21,10 @@ interface DryRunPreviewProps {
 
 /**
  * Dry Run Preview Component
- * 
+ *
  * Displays simulation results with expandable details.
  */
-export const DryRunPreview: FC<DryRunPreviewProps> = ({ 
-  report,
-  onDownloadReceipt 
-}) => {
+export const DryRunPreview: FC<DryRunPreviewProps> = ({ report, onDownloadReceipt }) => {
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
 
   const toggleStep = (stepName: string) => {
@@ -40,15 +37,13 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
       <div className={`status-banner ${report.success ? 'success' : 'error'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="text-2xl">
-              {report.success ? '✓' : '✗'}
-            </div>
+            <div className="text-2xl">{report.success ? '✓' : '✗'}</div>
             <div>
               <div className="font-bold text-lg">
                 {report.success ? 'READY TO TELEBURN' : 'SIMULATION FAILED'}
               </div>
               <div className="text-sm opacity-80">
-                {report.success 
+                {report.success
                   ? 'All systems verified. Your NFT is ready for teleburning!'
                   : 'Errors detected. Review issues before proceeding.'}
               </div>
@@ -99,16 +94,11 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
 
       {/* Transaction Steps */}
       <div className="steps-box">
-        <div className="font-bold text-sm mb-4 text-terminal-prompt">
-          [ TRANSACTION SEQUENCE ]
-        </div>
-        
+        <div className="font-bold text-sm mb-4 text-terminal-prompt">[ TRANSACTION SEQUENCE ]</div>
+
         {report.steps.map((step, index) => (
           <div key={step.name} className="step-item mb-3">
-            <button
-              onClick={() => toggleStep(step.name)}
-              className="step-header w-full"
-            >
+            <button onClick={() => toggleStep(step.name)} className="step-header w-full">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`step-number ${step.simulation.success ? 'success' : 'error'}`}>
@@ -124,9 +114,7 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
                     <div className="text-xs opacity-70">Fee</div>
                     <div className="text-sm">{(step.estimatedFee / 1e9).toFixed(6)} SOL</div>
                   </div>
-                  <div className="expand-icon">
-                    {expandedStep === step.name ? '▼' : '▶'}
-                  </div>
+                  <div className="expand-icon">{expandedStep === step.name ? '▼' : '▶'}</div>
                 </div>
               </div>
             </button>
@@ -174,7 +162,9 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
                     <div className="detail-label">Logs:</div>
                     <div className="logs-container">
                       {step.simulation.logs.slice(0, 5).map((log, i) => (
-                        <div key={i} className="log-line">{log}</div>
+                        <div key={i} className="log-line">
+                          {log}
+                        </div>
                       ))}
                       {step.simulation.logs.length > 5 && (
                         <div className="opacity-50 text-xs">
@@ -203,7 +193,9 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
           </div>
           <div>
             <div className="text-xs opacity-70 mb-1">Total Fee</div>
-            <div className="text-xl font-bold">{(report.totalEstimatedFee / 1e9).toFixed(4)} SOL</div>
+            <div className="text-xl font-bold">
+              {(report.totalEstimatedFee / 1e9).toFixed(4)} SOL
+            </div>
           </div>
         </div>
       </div>
@@ -211,10 +203,7 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
       {/* Download Receipt Button */}
       {onDownloadReceipt && (
         <div className="flex justify-center">
-          <button
-            onClick={onDownloadReceipt}
-            className="terminal-button-secondary px-6 py-2"
-          >
+          <button onClick={onDownloadReceipt} className="terminal-button-secondary px-6 py-2">
             💾 DOWNLOAD REHEARSAL RECEIPT
           </button>
         </div>
@@ -372,4 +361,3 @@ export const DryRunPreview: FC<DryRunPreviewProps> = ({
     </div>
   );
 };
-

@@ -2,12 +2,12 @@
 
 /**
  * Teleburn Form Component
- * 
+ *
  * User input form for teleburn parameters:
  * - Solana mint address
  * - Bitcoin inscription ID
  * - Retire method: teleburn-derived (fixed)
- * 
+ *
  * @description Main input form for teleburn wizard
  * @version 1.0
  */
@@ -33,14 +33,10 @@ interface TeleburnFormProps {
 
 /**
  * Teleburn Form Component
- * 
+ *
  * Collects user input for teleburn parameters with validation.
  */
-export const TeleburnForm: FC<TeleburnFormProps> = ({ 
-  onSubmit, 
-  onBack,
-  initialData 
-}) => {
+export const TeleburnForm: FC<TeleburnFormProps> = ({ onSubmit, onBack, initialData }) => {
   const [formData, setFormData] = useState<TeleburnFormData>({
     mint: initialData?.mint || '',
     inscriptionId: initialData?.inscriptionId || '',
@@ -58,18 +54,18 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
     preflight.result.reason === 'not_found';
 
   const handleChange = (field: keyof TeleburnFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
   // SHA-256 auto-fetch removed in v1.0 protocol
 
   const handleBlur = (field: keyof TeleburnFormData) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
+    setTouched((prev) => ({ ...prev, [field]: true }));
     validateField(field, formData[field]);
   };
 
@@ -102,20 +98,20 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
       // SHA-256 validation removed in v1.0 protocol
     }
 
-    setErrors(prev => ({ ...prev, [field]: error }));
+    setErrors((prev) => ({ ...prev, [field]: error }));
     return !error;
   };
 
   const validateAll = (): boolean => {
     const fields: (keyof TeleburnFormData)[] = ['mint', 'inscriptionId'];
-    const results = fields.map(field => validateField(field, formData[field]));
+    const results = fields.map((field) => validateField(field, formData[field]));
     setTouched({ mint: true, inscriptionId: true });
-    return results.every(r => r);
+    return results.every((r) => r);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (validateAll()) {
       onSubmit(formData);
     }
@@ -146,12 +142,8 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
             className={`form-input ${touched.mint && errors.mint ? 'error' : ''}`}
             placeholder="e.g., 7xKXy9H8P3ZYQEXxf5..."
           />
-          {touched.mint && errors.mint && (
-            <div className="form-error">🚨 {errors.mint}</div>
-          )}
-          <div className="form-hint">
-            The Solana NFT you want to teleburn to Bitcoin
-          </div>
+          {touched.mint && errors.mint && <div className="form-error">🚨 {errors.mint}</div>}
+          <div className="form-hint">The Solana NFT you want to teleburn to Bitcoin</div>
         </div>
 
         {/* Inscription ID */}
@@ -178,37 +170,36 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
               error={preflight.error}
             />
           )}
-          <div className="form-hint">
-            Format: {'<64-hex-txid>i<index>'} (from ordinals.com)
-          </div>
+          <div className="form-hint">Format: {'<64-hex-txid>i<index>'} (from ordinals.com)</div>
         </div>
 
         {/* SHA-256 field removed in v1.0 protocol */}
 
         {/* Retire Method - Fixed to teleburn-derived */}
         <div className="method-info">
-          <div className="text-xs font-bold mb-3 text-terminal-prompt">
-            [ TELEBURN-DERIVED ]
-          </div>
+          <div className="text-xs font-bold mb-3 text-terminal-prompt">[ TELEBURN-DERIVED ]</div>
           <div className="space-y-2 text-xs">
             <div className="flex gap-2">
               <div className="text-terminal-green">✓</div>
               <div>
-                <strong>Cryptographically linked to Bitcoin inscription</strong><br />
+                <strong>Cryptographically linked to Bitcoin inscription</strong>
+                <br />
                 Derives deterministic off-curve address from inscription ID
               </div>
             </div>
             <div className="flex gap-2">
               <div className="text-terminal-green">✓</div>
               <div>
-                <strong>Provably unspendable</strong><br />
+                <strong>Provably unspendable</strong>
+                <br />
                 No private key exists for the derived address
               </div>
             </div>
             <div className="flex gap-2">
               <div className="text-terminal-green">✓</div>
               <div>
-                <strong>Verifiable on-chain</strong><br />
+                <strong>Verifiable on-chain</strong>
+                <br />
                 Anyone can verify the burn is linked to your inscription
               </div>
             </div>
@@ -219,11 +210,7 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
       {/* Action Buttons */}
       <div className="flex justify-between pt-6 border-t border-terminal-text/20">
         {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="terminal-button-secondary px-6 py-2"
-          >
+          <button type="button" onClick={onBack} className="terminal-button-secondary px-6 py-2">
             ← BACK
           </button>
         )}
@@ -359,4 +346,3 @@ export const TeleburnForm: FC<TeleburnFormProps> = ({
     </form>
   );
 };
-

@@ -14,5 +14,3 @@ export function createClientUmi(rpcUrl: string, wallet: WalletAdapter) {
   }
   return createUmi(rpcUrl).use(walletAdapterIdentity(wallet));
 }
-
-

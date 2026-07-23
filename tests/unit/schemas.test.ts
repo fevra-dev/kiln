@@ -1,6 +1,6 @@
 /**
  * Unit Tests for Zod Schemas
- * 
+ *
  * @description Tests validation logic for all input schemas
  */
 
@@ -46,7 +46,7 @@ describe('Base Validators', () => {
     });
 
     it('rejects inscription ID with non-hex characters', () => {
-      const invalid = 'GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG'+ 'i0';
+      const invalid = 'GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG' + 'i0';
       expect(() => InscriptionIdSchema.parse(invalid)).toThrow();
     });
   });
@@ -154,7 +154,7 @@ describe('Request Schemas', () => {
     it('validates with optional signers array', () => {
       const withSigners = {
         ...validRequest,
-        signers: ['Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr']
+        signers: ['Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'],
       };
       expect(() => SealTransactionRequestSchema.parse(withSigners)).not.toThrow();
     });
@@ -192,7 +192,7 @@ describe('Request Schemas', () => {
       const derived = {
         ...validRequest,
         method: 'teleburn-derived' as const,
-        bump: 42
+        bump: 42,
       };
       expect(() => RetireTransactionRequestSchema.parse(derived)).not.toThrow();
     });
@@ -273,4 +273,3 @@ describe('Helper Functions', () => {
     });
   });
 });
-

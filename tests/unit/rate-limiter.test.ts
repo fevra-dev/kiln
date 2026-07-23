@@ -1,6 +1,6 @@
 /**
  * Rate Limiter Tests
- * 
+ *
  * Tests for rate limiting functionality to prevent API abuse.
  */
 
@@ -12,7 +12,7 @@ function createMockRequest(ip?: string, forwardedFor?: string): NextRequest {
   const headers = new Headers();
   if (ip) headers.set('x-real-ip', ip);
   if (forwardedFor) headers.set('x-forwarded-for', forwardedFor);
-  
+
   return {
     headers,
     ip: ip || '127.0.0.1',
@@ -94,12 +94,12 @@ describe('Rate Limiter', () => {
       // Exhaust limit
       await checkRateLimit(request, config);
       await checkRateLimit(request, config);
-      
+
       const blocked = await checkRateLimit(request, config);
       expect(blocked.allowed).toBe(false);
 
       // Wait for window to expire
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Should be allowed again
       const allowed = await checkRateLimit(request, config);
@@ -108,7 +108,7 @@ describe('Rate Limiter', () => {
 
     it('should handle different IPs separately', async () => {
       const config = { maxRequests: 2, windowMs: 60000 };
-      
+
       const request1 = createMockRequest('192.168.1.10');
       const request2 = createMockRequest('192.168.1.11');
 
@@ -153,4 +153,3 @@ describe('Rate Limiter', () => {
     });
   });
 });
-

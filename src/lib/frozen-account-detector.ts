@@ -1,9 +1,9 @@
 /**
  * Frozen Account Detector
- * 
+ *
  * Detects if token accounts are frozen before allowing burn operations.
  * Handles both regular NFTs and pNFTs (which can also be frozen).
- * 
+ *
  * @version 0.1.1
  */
 
@@ -34,15 +34,15 @@ export interface FrozenAccountCheckResult {
 
 /**
  * Check if token account is frozen
- * 
+ *
  * Works for both regular NFTs and pNFTs. Regular NFTs can be manually
  * frozen by the freeze authority (often used for scam prevention).
- * 
+ *
  * @param connection - Solana connection
  * @param tokenAccount - Token account to check
  * @param tokenProgram - Token program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
  * @returns Check result with frozen status and details
- * 
+ *
  * @example
  * ```typescript
  * const result = await checkIfFrozenBeforeBurn(
@@ -50,7 +50,7 @@ export interface FrozenAccountCheckResult {
  *   tokenAccount,
  *   TOKEN_PROGRAM_ID
  * );
- * 
+ *
  * if (result.frozen) {
  *   throw new Error(`Account is frozen by authority: ${result.freezeAuthority}`);
  * }
@@ -59,7 +59,7 @@ export interface FrozenAccountCheckResult {
 export async function checkIfFrozenBeforeBurn(
   connection: Connection,
   tokenAccount: PublicKey,
-  tokenProgram: PublicKey = TOKEN_PROGRAM_ID
+  tokenProgram: PublicKey = TOKEN_PROGRAM_ID,
 ): Promise<FrozenAccountCheckResult> {
   try {
     // Get token account info
@@ -107,13 +107,13 @@ export async function checkIfFrozenBeforeBurn(
 
 /**
  * Check if NFT token account is frozen (helper for NFT-specific checks)
- * 
+ *
  * This function finds the associated token account for an NFT and checks
  * if it's frozen. Useful as a pre-flight check before burn operations.
- * 
- * Auto-detects token program if not provided (checks both TOKEN_PROGRAM_ID 
+ *
+ * Auto-detects token program if not provided (checks both TOKEN_PROGRAM_ID
  * and TOKEN_2022_PROGRAM_ID).
- * 
+ *
  * @param connection - Solana connection
  * @param mint - Mint address
  * @param owner - Token owner
@@ -124,25 +124,32 @@ export async function checkNFTFrozenStatus(
   connection: Connection,
   mint: PublicKey,
   owner: PublicKey,
-  tokenProgram?: PublicKey
+  tokenProgram?: PublicKey,
 ): Promise<FrozenAccountCheckResult> {
   try {
-    const { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
-    
+    const { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } = await import(
+      '@solana/spl-token'
+    );
+
     // If tokenProgram not provided, try to auto-detect by checking which ATA exists
     let programToUse = tokenProgram;
     if (!programToUse) {
       // Try SPL Token first (most common)
       const splAta = getAssociatedTokenAddressSync(mint, owner, false, TOKEN_PROGRAM_ID);
       const splAccount = await connection.getAccountInfo(splAta);
-      
+
       if (splAccount) {
         programToUse = TOKEN_PROGRAM_ID;
       } else {
         // Try TOKEN_2022
-        const token2022Ata = getAssociatedTokenAddressSync(mint, owner, false, TOKEN_2022_PROGRAM_ID);
+        const token2022Ata = getAssociatedTokenAddressSync(
+          mint,
+          owner,
+          false,
+          TOKEN_2022_PROGRAM_ID,
+        );
         const token2022Account = await connection.getAccountInfo(token2022Ata);
-        
+
         if (token2022Account) {
           programToUse = TOKEN_2022_PROGRAM_ID;
         } else {
@@ -151,7 +158,7 @@ export async function checkNFTFrozenStatus(
         }
       }
     }
-    
+
     // Get associated token account with detected program
     const tokenAccount = getAssociatedTokenAddressSync(mint, owner, false, programToUse);
 
@@ -168,10 +175,10 @@ export async function checkNFTFrozenStatus(
 
 /**
  * Validate that token account is not frozen before burn
- * 
+ *
  * Throws an error if account is frozen, otherwise returns silently.
  * Useful as a guard before building burn transactions.
- * 
+ *
  * @param connection - Solana connection
  * @param tokenAccount - Token account to validate
  * @param tokenProgram - Token program ID
@@ -180,15 +187,15 @@ export async function checkNFTFrozenStatus(
 export async function assertNotFrozen(
   connection: Connection,
   tokenAccount: PublicKey,
-  tokenProgram: PublicKey = TOKEN_PROGRAM_ID
+  tokenProgram: PublicKey = TOKEN_PROGRAM_ID,
 ): Promise<void> {
   const result = await checkIfFrozenBeforeBurn(connection, tokenAccount, tokenProgram);
 
   if (result.frozen) {
     throw new Error(
       `Token account ${tokenAccount.toBase58()} is frozen. ` +
-      `Cannot burn frozen tokens. Freeze authority: ${result.freezeAuthority?.toBase58() || 'Unknown'}. ` +
-      `Contact the freeze authority to unfreeze the account before burning.`
+        `Cannot burn frozen tokens. Freeze authority: ${result.freezeAuthority?.toBase58() || 'Unknown'}. ` +
+        `Contact the freeze authority to unfreeze the account before burning.`,
     );
   }
 
@@ -200,9 +207,9 @@ export async function assertNotFrozen(
 
 /**
  * Check multiple token accounts for frozen status
- * 
+ *
  * Useful for batch operations or checking multiple NFTs at once.
- * 
+ *
  * @param connection - Solana connection
  * @param tokenAccounts - Array of token accounts to check
  * @param tokenProgram - Token program ID
@@ -211,12 +218,11 @@ export async function assertNotFrozen(
 export async function checkMultipleAccountsFrozen(
   connection: Connection,
   tokenAccounts: PublicKey[],
-  tokenProgram: PublicKey = TOKEN_PROGRAM_ID
+  tokenProgram: PublicKey = TOKEN_PROGRAM_ID,
 ): Promise<FrozenAccountCheckResult[]> {
   const checks = tokenAccounts.map((account) =>
-    checkIfFrozenBeforeBurn(connection, account, tokenProgram)
+    checkIfFrozenBeforeBurn(connection, account, tokenProgram),
   );
 
   return Promise.all(checks);
 }
-

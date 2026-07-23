@@ -1,10 +1,10 @@
 // src/app/api/tx/update-metadata/route.ts
 /**
  * API Route: POST /api/tx/update-metadata
- * 
+ *
  * Builds a transaction to update NFT metadata URI to point to Ordinals inscription.
  * This is an optional step after teleburn completion.
- * 
+ *
  * Safety: Transaction is built but NOT signed or broadcast.
  * User must sign in their wallet.
  */
@@ -31,10 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check CORS origin
     if (!isOriginAllowed(request)) {
-      return NextResponse.json(
-        { success: false, error: 'Origin not allowed' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Origin not allowed' }, { status: 403 });
     }
 
     // Parse and validate request body
@@ -50,26 +47,28 @@ export async function POST(request: NextRequest) {
       validated.mint,
       validated.updateAuthority,
       validated.inscriptionId,
-      validated.priorityMicrolamports
+      validated.priorityMicrolamports,
     );
 
     // Return transaction + metadata with CORS headers
     const corsHeaders = getCorsHeaders(request);
-    return NextResponse.json({
-      success: true,
-      transaction: result.transaction, // base64 serialized transaction
-      isVersioned: result.isVersioned,
-      ordinalsUrl: result.ordinalsUrl,
-      description: `UPDATE METADATA: Point NFT image to Ordinals inscription`,
-      metadata: {
-        action: 'update-metadata',
-        mint: validated.mint,
-        inscriptionId: validated.inscriptionId,
+    return NextResponse.json(
+      {
+        success: true,
+        transaction: result.transaction, // base64 serialized transaction
+        isVersioned: result.isVersioned,
         ordinalsUrl: result.ordinalsUrl,
-        timestamp: new Date().toISOString(),
+        description: `UPDATE METADATA: Point NFT image to Ordinals inscription`,
+        metadata: {
+          action: 'update-metadata',
+          mint: validated.mint,
+          inscriptionId: validated.inscriptionId,
+          ordinalsUrl: result.ordinalsUrl,
+          timestamp: new Date().toISOString(),
+        },
       },
-    }, { headers: corsHeaders });
-
+      { headers: corsHeaders },
+    );
   } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
@@ -79,7 +78,7 @@ export async function POST(request: NextRequest) {
           error: 'Validation failed',
           details: error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -88,9 +87,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to build metadata update transaction',
+        error:
+          error instanceof Error ? error.message : 'Failed to build metadata update transaction',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -105,4 +105,3 @@ export async function OPTIONS(request: NextRequest) {
     headers: corsHeaders,
   });
 }
-

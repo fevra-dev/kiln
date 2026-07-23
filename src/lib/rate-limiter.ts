@@ -1,11 +1,11 @@
 /**
  * Rate Limiter Utility
- * 
+ *
  * Prevents spam/DoS attacks on API endpoints by limiting requests per user/IP.
  * Uses in-memory storage with automatic cleanup of expired entries.
- * 
+ *
  * For production, consider using Redis for distributed rate limiting.
- * 
+ *
  * @version 0.1.1
  */
 
@@ -94,7 +94,7 @@ function startCleanupInterval(): void {
 /**
  * Get client identifier from request
  * Prioritizes IP address, falls back to user agent + IP
- * 
+ *
  * @param request - Next.js request object
  * @returns Unique identifier for rate limiting
  */
@@ -104,11 +104,8 @@ function getClientIdentifier(request: NextRequest): string {
   const realIp = request.headers.get('x-real-ip');
   const cfConnectingIp = request.headers.get('cf-connecting-ip');
 
-  const ip = forwarded?.split(',')[0]?.trim() 
-    || realIp 
-    || cfConnectingIp 
-    || request.ip 
-    || 'unknown';
+  const ip =
+    forwarded?.split(',')[0]?.trim() || realIp || cfConnectingIp || request.ip || 'unknown';
 
   // Fallback: use user agent + IP for better uniqueness
   const userAgent = request.headers.get('user-agent') || 'unknown';
@@ -117,18 +114,18 @@ function getClientIdentifier(request: NextRequest): string {
 
 /**
  * Check rate limit for a request
- * 
+ *
  * @param request - Next.js request object
  * @param config - Rate limit configuration
  * @returns Rate limit result with allowed status and metadata
- * 
+ *
  * @example
  * ```typescript
  * const result = await checkRateLimit(request, {
  *   maxRequests: 5,
  *   windowMs: 60000, // 1 minute
  * });
- * 
+ *
  * if (!result.allowed) {
  *   return NextResponse.json(
  *     { error: result.error },
@@ -139,7 +136,7 @@ function getClientIdentifier(request: NextRequest): string {
  */
 export async function checkRateLimit(
   request: NextRequest,
-  config: RateLimitConfig = {}
+  config: RateLimitConfig = {},
 ): Promise<RateLimitResult> {
   const {
     maxRequests = 5, // Default: 5 requests per minute
@@ -205,7 +202,7 @@ export async function checkRateLimit(
 
 /**
  * Get rate limit headers for response
- * 
+ *
  * @param result - Rate limit result
  * @returns Headers to add to response
  */
@@ -220,7 +217,7 @@ export function getRateLimitHeaders(result: RateLimitResult): HeadersInit {
 /**
  * Clear rate limit data for a specific identifier
  * Useful for testing or manual reset
- * 
+ *
  * @param identifier - Identifier to clear
  */
 export function clearRateLimit(identifier: string): void {
@@ -242,7 +239,7 @@ export function clearAllRateLimits(): void {
 /**
  * Get current rate limit statistics
  * Useful for monitoring/debugging
- * 
+ *
  * @returns Statistics about current rate limit state
  */
 export function getRateLimitStats(): {
@@ -259,4 +256,3 @@ export function getRateLimitStats(): {
     totalRequests,
   };
 }
-

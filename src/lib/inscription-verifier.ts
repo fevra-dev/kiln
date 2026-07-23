@@ -1,10 +1,10 @@
 /**
  * Inscription Content Verification Service
- * 
+ *
  * @description CRITICAL SAFETY GATE - Verifies Bitcoin Ordinals inscription
  * content matches expected SHA-256 hash before allowing seal operation.
  * This prevents sealing to wrong/corrupted inscriptions.
- * 
+ *
  * @version 0.1.1
  */
 
@@ -27,7 +27,7 @@ const ORDINALS_API_BASE = process.env['ORDINALS_API_URL'] || 'https://ordinals.c
 
 /**
  * Service for verifying Bitcoin Ordinals inscription content
- * 
+ *
  * @example
  * ```typescript
  * const result = await InscriptionVerifier.verify('abc...i0', 'a1b2c3...');
@@ -39,15 +39,13 @@ const ORDINALS_API_BASE = process.env['ORDINALS_API_URL'] || 'https://ordinals.c
 export class InscriptionVerifier {
   /**
    * Fetch inscription content and compute its SHA-256 hash
-   * 
+   *
    * Used for auto-filling the hash field when user enters inscription ID.
-   * 
+   *
    * @param inscriptionId - Inscription ID format: <txid>i<index>
    * @returns Object with success status, hash, content type, and size
    */
-  static async fetchAndHash(
-    inscriptionId: string
-  ): Promise<{
+  static async fetchAndHash(inscriptionId: string): Promise<{
     success: boolean;
     actualSha256?: string;
     contentType?: string;
@@ -59,7 +57,7 @@ export class InscriptionVerifier {
       if (!isValidInscriptionId(inscriptionId)) {
         return {
           success: false,
-          error: 'Invalid inscription ID format'
+          error: 'Invalid inscription ID format',
         };
       }
 
@@ -94,31 +92,30 @@ export class InscriptionVerifier {
         success: true,
         actualSha256: hash,
         contentType: fetchResult.contentType,
-        byteLength: fetchResult.content.byteLength
+        byteLength: fetchResult.content.byteLength,
       };
-
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   /**
    * Verify inscription exists and content matches expected SHA-256 hash
-   * 
+   *
    * This is a HARD GATE - sealing MUST NOT proceed if this fails.
-   * 
+   *
    * @param inscriptionId - Inscription ID format: <txid>i<index>
    * @param expectedSha256 - Expected SHA-256 hash (hex string)
    * @returns Verification result with detailed information
-   * 
+   *
    * @throws Never throws - always returns result object with error field
    */
   static async verify(
     inscriptionId: string,
-    expectedSha256: string
+    expectedSha256: string,
   ): Promise<InscriptionVerificationResult> {
     try {
       // Step 1: Validate input formats
@@ -152,9 +149,8 @@ export class InscriptionVerifier {
         expectedHash: expectedSha256,
         contentType: fetchResult.contentType,
         byteLength: fetchResult.content.byteLength,
-        error: valid ? undefined : 'SHA-256 hash mismatch - content does not match expected hash'
+        error: valid ? undefined : 'SHA-256 hash mismatch - content does not match expected hash',
       };
-
     } catch (error) {
       // Catch-all for unexpected errors (network issues, etc.)
       return {
@@ -162,21 +158,21 @@ export class InscriptionVerifier {
         inscriptionId,
         fetchedHash: '',
         expectedHash: expectedSha256,
-        error: error instanceof Error ? error.message : 'Unknown verification error'
+        error: error instanceof Error ? error.message : 'Unknown verification error',
       };
     }
   }
 
   /**
    * Validate inscription ID and SHA-256 formats before fetching
-   * 
+   *
    * @param inscriptionId - Inscription ID to validate
    * @param expectedSha256 - SHA-256 hash to validate
    * @returns Partial verification result or success indicator
    */
   private static validateFormats(
     inscriptionId: string,
-    expectedSha256: string
+    expectedSha256: string,
   ): InscriptionVerificationResult | { valid: true } {
     // Validate inscription ID format
     if (!isValidInscriptionId(inscriptionId)) {
@@ -185,7 +181,7 @@ export class InscriptionVerifier {
         inscriptionId,
         fetchedHash: '',
         expectedHash: expectedSha256,
-        error: 'Invalid inscription ID format. Expected: <64-char-hex-txid>i<index>'
+        error: 'Invalid inscription ID format. Expected: <64-char-hex-txid>i<index>',
       };
     }
 
@@ -196,7 +192,7 @@ export class InscriptionVerifier {
         inscriptionId,
         fetchedHash: '',
         expectedHash: expectedSha256,
-        error: 'Invalid SHA-256 format. Expected: 64-character hex string'
+        error: 'Invalid SHA-256 format. Expected: 64-character hex string',
       };
     }
 
@@ -205,18 +201,17 @@ export class InscriptionVerifier {
 
   /**
    * Fetch inscription content from ordinals.com
-   * 
+   *
    * @deprecated Use fetchInscriptionWithFailover from inscription-resilience instead
    * Kept for backward compatibility
-   * 
+   *
    * @param inscriptionId - Inscription ID to fetch
    * @returns Fetch result with content or error
    */
   private static async fetchInscriptionContent(
-    inscriptionId: string
+    inscriptionId: string,
   ): Promise<
-    | { success: true; content: ArrayBuffer; contentType: string }
-    | { success: false; error: string }
+    { success: true; content: ArrayBuffer; contentType: string } | { success: false; error: string }
   > {
     // Use resilient fetch with failover and caching
     const result = await fetchInscriptionWithFailover(inscriptionId);
@@ -233,26 +228,26 @@ export class InscriptionVerifier {
 
   /**
    * Compute SHA-256 hash of content using Web Crypto API
-   * 
+   *
    * @param content - Content to hash
    * @returns Hex-encoded SHA-256 hash
    */
   private static async computeSha256(content: ArrayBuffer): Promise<string> {
     // Use Web Crypto API for SHA-256 (available in browser and Node.js 15+)
     const hashBuffer = await crypto.subtle.digest('SHA-256', content);
-    
+
     // Convert ArrayBuffer to hex string
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hexHash = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
-    
+    const hexHash = hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+
     return hexHash;
   }
 
   /**
    * Fetch inscription metadata from ordinals.com (optional)
-   * 
+   *
    * This provides additional information but is not required for verification.
-   * 
+   *
    * @param inscriptionId - Inscription ID to fetch metadata for
    * @returns Metadata object or null if unavailable
    */
@@ -261,10 +256,10 @@ export class InscriptionVerifier {
       const url = `${ORDINALS_API_BASE}/inscription/${inscriptionId}`;
       const response = await fetch(url, {
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'KILN.1-Verifier/0.1.1'
+          Accept: 'application/json',
+          'User-Agent': 'KILN.1-Verifier/0.1.1',
         },
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(10000), // 10 second timeout
       });
 
       if (response.ok) {
@@ -272,7 +267,6 @@ export class InscriptionVerifier {
       }
 
       return null;
-
     } catch (error) {
       // Metadata fetch is optional, don't throw
       // Log metadata fetch failure (development only)
@@ -286,7 +280,7 @@ export class InscriptionVerifier {
 
   /**
    * Get direct content URL for inscription (for iframe/preview)
-   * 
+   *
    * @param inscriptionId - Inscription ID
    * @returns Full URL to inscription content
    */
@@ -296,7 +290,7 @@ export class InscriptionVerifier {
 
   /**
    * Get inscription explorer URL (for user to view on ordinals.com)
-   * 
+   *
    * @param inscriptionId - Inscription ID
    * @returns Full URL to inscription page
    */
@@ -306,14 +300,14 @@ export class InscriptionVerifier {
 
   /**
    * Batch verify multiple inscriptions (parallel execution)
-   * 
+   *
    * @param items - Array of {inscriptionId, expectedSha256} pairs
    * @param maxConcurrent - Maximum parallel verifications (default: 3)
    * @returns Array of verification results
    */
   static async verifyBatch(
     items: Array<{ inscriptionId: string; expectedSha256: string }>,
-    maxConcurrent = 3
+    maxConcurrent = 3,
   ): Promise<InscriptionVerificationResult[]> {
     const results: InscriptionVerificationResult[] = [];
     const executing: Promise<void>[] = [];
@@ -325,13 +319,12 @@ export class InscriptionVerifier {
       }
 
       // Start verification
-      const promise = this.verify(item.inscriptionId, item.expectedSha256)
-        .then(result => {
-          results.push(result);
-          // Remove from executing when done
-          const index = executing.indexOf(promise);
-          if (index !== -1) executing.splice(index, 1);
-        });
+      const promise = this.verify(item.inscriptionId, item.expectedSha256).then((result) => {
+        results.push(result);
+        // Remove from executing when done
+        const index = executing.indexOf(promise);
+        if (index !== -1) executing.splice(index, 1);
+      });
 
       executing.push(promise);
     }
@@ -349,14 +342,14 @@ export class InscriptionVerifier {
 
 /**
  * Check if ordinals.com API is reachable
- * 
+ *
  * @returns true if API is responding
  */
 export async function checkOrdinalsApiHealth(): Promise<boolean> {
   try {
     const response = await fetch(`${ORDINALS_API_BASE}/`, {
       method: 'HEAD',
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(5000),
     });
     return response.ok;
   } catch {
@@ -366,7 +359,7 @@ export async function checkOrdinalsApiHealth(): Promise<boolean> {
 
 /**
  * Format byte size for human-readable display
- * 
+ *
  * @param bytes - Size in bytes
  * @returns Formatted string (e.g., "1.5 MB")
  */
@@ -385,7 +378,7 @@ export function formatByteSize(bytes: number): string {
 
 /**
  * Get MIME type category for display
- * 
+ *
  * @param contentType - MIME type string
  * @returns Category: 'image' | 'video' | 'audio' | 'text' | 'other'
  */
@@ -402,4 +395,3 @@ export function getContentCategory(contentType: string): string {
 // ============================================================================
 
 export default InscriptionVerifier;
-

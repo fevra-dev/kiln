@@ -30,21 +30,30 @@ export async function detectAssetKind(
     });
   } catch (e) {
     if (e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
-      throw new Error(`DAS getAsset timed out after ${DAS_GETASSET_TIMEOUT_MS}ms`);
+      throw new Error(`DAS getAsset timed out after ${DAS_GETASSET_TIMEOUT_MS}ms`, { cause: e });
     }
-    throw new Error(`DAS getAsset fetch failed: ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`DAS getAsset fetch failed: ${e instanceof Error ? e.message : String(e)}`, {
+      cause: e,
+    });
   }
 
   if (!res.ok) {
     throw new Error(`DAS getAsset HTTP ${res.status}`);
   }
 
-  const env = (await res.json()) as { jsonrpc?: string; id?: string; result?: unknown; error?: { code: number; message: string } };
+  const env = (await res.json()) as {
+    jsonrpc?: string;
+    id?: string;
+    result?: unknown;
+    error?: { code: number; message: string };
+  };
 
   if (env.error) {
     // DAS returns -32000 "RecordNotFound" when the asset doesn't exist
-    if (env.error.message?.toLowerCase().includes('recordnotfound') ||
-        env.error.message?.toLowerCase().includes('asset not found')) {
+    if (
+      env.error.message?.toLowerCase().includes('recordnotfound') ||
+      env.error.message?.toLowerCase().includes('asset not found')
+    ) {
       throw new AssetNotFoundError(mintOrAssetId);
     }
     throw new Error(`DAS getAsset RPC error ${env.error.code}: ${env.error.message}`);

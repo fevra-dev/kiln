@@ -1,10 +1,15 @@
 /**
  * Unit Tests for Inscription Verifier
- * 
+ *
  * @description Tests inscription content fetching and SHA-256 verification
  */
 
-import { InscriptionVerifier, checkOrdinalsApiHealth, formatByteSize, getContentCategory } from '@/lib/inscription-verifier';
+import {
+  InscriptionVerifier,
+  checkOrdinalsApiHealth,
+  formatByteSize,
+  getContentCategory,
+} from '@/lib/inscription-verifier';
 
 // Mock fetch globally
 const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
@@ -27,7 +32,7 @@ describe('InscriptionVerifier', () => {
         statusText: 'OK',
         headers: new Headers({
           'content-type': 'text/plain',
-          'content-length': '13'
+          'content-length': '13',
         }),
         arrayBuffer: async () => new TextEncoder().encode(testContent).buffer,
       } as Response);
@@ -113,7 +118,7 @@ describe('InscriptionVerifier', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({
-          'content-length': '200000000' // 200MB
+          'content-length': '200000000', // 200MB
         }),
       } as Response);
 
@@ -150,9 +155,9 @@ describe('InscriptionVerifier', () => {
         expect.stringContaining(`/content/${validInscriptionId}`),
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Accept': '*/*',
+            Accept: '*/*',
           }),
-        })
+        }),
       );
     });
   });
@@ -251,10 +256,12 @@ describe('InscriptionVerifier', () => {
         arrayBuffer: async () => new TextEncoder().encode('test').buffer,
       } as Response);
 
-      const items = Array(10).fill(null).map((_, i) => ({
-        inscriptionId: `${'a'.repeat(64)}i${i}`,
-        expectedSha256: 'a' + 'b'.repeat(63)
-      }));
+      const items = Array(10)
+        .fill(null)
+        .map((_, i) => ({
+          inscriptionId: `${'a'.repeat(64)}i${i}`,
+          expectedSha256: 'a' + 'b'.repeat(63),
+        }));
 
       const results = await InscriptionVerifier.verifyBatch(items, 2);
 
@@ -324,4 +331,3 @@ describe('Helper Functions', () => {
     });
   });
 });
-

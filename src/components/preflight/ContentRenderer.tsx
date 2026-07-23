@@ -89,7 +89,12 @@ const TextPreview: FC<{ contentUrl: string }> = ({ contentUrl }) => {
     <iframe
       src={contentUrl}
       sandbox=""
-      style={{ width: '100%', height: 256, border: '1px solid currentColor', background: 'transparent' }}
+      style={{
+        width: '100%',
+        height: 256,
+        border: '1px solid currentColor',
+        background: 'transparent',
+      }}
       title="inscription text preview"
     />
   );

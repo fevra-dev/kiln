@@ -2,9 +2,9 @@
 
 /**
  * Copy Button Component
- * 
+ *
  * Reusable button to copy text to clipboard with feedback.
- * 
+ *
  * @description Click-to-copy functionality with visual feedback
  * @version 0.1.1
  */
@@ -24,15 +24,10 @@ interface CopyButtonProps {
 
 /**
  * Copy Button Component
- * 
+ *
  * Shows text with a copy icon. Clicking copies to clipboard.
  */
-export const CopyButton: FC<CopyButtonProps> = ({ 
-  text, 
-  label,
-  size = 'sm',
-  className = ''
-}) => {
+export const CopyButton: FC<CopyButtonProps> = ({ text, label, size = 'sm', className = '' }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -45,13 +40,10 @@ export const CopyButton: FC<CopyButtonProps> = ({
     }
   }, [text]);
 
-  const displayText = label || (text.length > 20 
-    ? `${text.slice(0, 8)}...${text.slice(-8)}` 
-    : text);
+  const displayText =
+    label || (text.length > 20 ? `${text.slice(0, 8)}...${text.slice(-8)}` : text);
 
-  const sizeClasses = size === 'sm' 
-    ? 'text-xs px-2 py-1' 
-    : 'text-sm px-3 py-1.5';
+  const sizeClasses = size === 'sm' ? 'text-xs px-2 py-1' : 'text-sm px-3 py-1.5';
 
   return (
     <button
@@ -122,12 +114,13 @@ export const CopyableText: FC<{
     }
   }, [text]);
 
-  const displayText = truncate && text.length > truncate
-    ? `${text.slice(0, Math.floor(truncate/2))}...${text.slice(-Math.floor(truncate/2))}`
-    : text;
+  const displayText =
+    truncate && text.length > truncate
+      ? `${text.slice(0, Math.floor(truncate / 2))}...${text.slice(-Math.floor(truncate / 2))}`
+      : text;
 
   return (
-    <span 
+    <span
       onClick={handleCopy}
       className={`copyable-text ${copied ? 'copied' : ''} ${className}`}
       title={copied ? 'Copied!' : `Click to copy`}
@@ -156,4 +149,3 @@ export const CopyableText: FC<{
     </span>
   );
 };
-

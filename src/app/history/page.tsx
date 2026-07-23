@@ -2,10 +2,10 @@
 
 /**
  * History Page
- * 
+ *
  * Displays teleburn history for the connected wallet.
  * Allows users to view their past teleburns.
- * 
+ *
  * @description My Teleburns history view
  * @version 0.1.1
  */
@@ -46,7 +46,7 @@ export default function HistoryPage() {
     } else {
       setTeleburns([]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, publicKey]);
 
   /**
@@ -106,8 +106,8 @@ export default function HistoryPage() {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <a 
-                href="/" 
+              <a
+                href="/"
                 className="text-4xl hover:text-matrix-red transition-colors duration-200"
                 title="Return to Home"
               >
@@ -122,7 +122,8 @@ export default function HistoryPage() {
             </div>
           </div>
           <p className="text-lg text-matrix-red/80 mb-2">
-            <span className="text-terminal-prompt">$</span> query_teleburn_history --wallet {publicKey?.toBase58().slice(0, 8) || '...'}
+            <span className="text-terminal-prompt">$</span> query_teleburn_history --wallet{' '}
+            {publicKey?.toBase58().slice(0, 8) || '...'}
           </p>
         </div>
       </header>
@@ -133,7 +134,9 @@ export default function HistoryPage() {
         <div className="terminal-output mb-6">
           <div className="text-terminal-text/70 text-sm">
             {loading && '> Searching blockchain for Kiln teleburns...'}
-            {!loading && connected && `> Found ${teleburns.length} teleburn${teleburns.length !== 1 ? 's' : ''}`}
+            {!loading &&
+              connected &&
+              `> Found ${teleburns.length} teleburn${teleburns.length !== 1 ? 's' : ''}`}
             {!connected && '> Connect wallet to view your teleburn history'}
             <span className="animate-terminal-blink ml-1">▊</span>
           </div>
@@ -194,7 +197,7 @@ export default function HistoryPage() {
             </div>
             <div className="terminal-window-content p-6">
               <div className="text-red-400">🚨 {error}</div>
-              <button 
+              <button
                 onClick={fetchHistory}
                 className="mt-4 px-4 py-2 border border-terminal-text/30 hover:border-terminal-text transition-colors"
               >
@@ -221,7 +224,7 @@ export default function HistoryPage() {
               <div className="text-terminal-text/60 mb-6">
                 You haven&apos;t performed any teleburns with this wallet yet.
               </div>
-              <a 
+              <a
                 href="/teleburn"
                 className="inline-block px-6 py-3 bg-matrix-red text-black font-bold hover:bg-red-400 transition-colors"
               >
@@ -280,9 +283,7 @@ export default function HistoryPage() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <span className="text-terminal-text/60">📅 Date:</span>
-                        <span className="font-mono text-sm">
-                          {formatDate(burn.blockTime)}
-                        </span>
+                        <span className="font-mono text-sm">{formatDate(burn.blockTime)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-terminal-text/60">📜 Tx:</span>
@@ -320,21 +321,25 @@ export default function HistoryPage() {
           <div className="mt-6 text-center">
             <button
               onClick={() => {
-                const dataStr = JSON.stringify({
-                  wallet: publicKey?.toBase58(),
-                  exportedAt: new Date().toISOString(),
-                  count: teleburns.length,
-                  teleburns: teleburns.map(burn => ({
-                    signature: burn.signature,
-                    mint: burn.mint,
-                    inscriptionId: burn.inscriptionId,
-                    timestamp: burn.timestamp,
-                    blockTime: burn.blockTime,
-                    date: formatDate(burn.blockTime),
-                    version: burn.memo.version,
-                    method: burn.memo.method,
-                  })),
-                }, null, 2);
+                const dataStr = JSON.stringify(
+                  {
+                    wallet: publicKey?.toBase58(),
+                    exportedAt: new Date().toISOString(),
+                    count: teleburns.length,
+                    teleburns: teleburns.map((burn) => ({
+                      signature: burn.signature,
+                      mint: burn.mint,
+                      inscriptionId: burn.inscriptionId,
+                      timestamp: burn.timestamp,
+                      blockTime: burn.blockTime,
+                      date: formatDate(burn.blockTime),
+                      version: burn.memo.version,
+                      method: burn.memo.method,
+                    })),
+                  },
+                  null,
+                  2,
+                );
                 const dataBlob = new Blob([dataStr], { type: 'application/json' });
                 const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement('a');
@@ -448,4 +453,3 @@ export default function HistoryPage() {
     </div>
   );
 }
-

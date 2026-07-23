@@ -2,16 +2,16 @@
 
 /**
  * Step 4: Execute Transactions
- * 
+ *
  * Final step of teleburn wizard - sign and broadcast transactions.
  * Shows real-time status updates for each transaction.
  * Displays success confirmation with proof details.
- * 
+ *
  * Features:
  * - Confirmation modal before execution
  * - Copy buttons for signatures
  * - Real-time status updates
- * 
+ *
  * @description Transaction execution step with wallet signing
  * @version 0.1.1
  */
@@ -48,14 +48,10 @@ interface TxState {
 
 /**
  * Step 4: Execute Transactions
- * 
+ *
  * Signs and broadcasts seal and retire transactions.
  */
-export const Step4Execute: FC<Step4ExecuteProps> = ({
-  formData,
-  onComplete,
-  onBack,
-}) => {
+export const Step4Execute: FC<Step4ExecuteProps> = ({ formData, onComplete, onBack }) => {
   const { publicKey, signTransaction } = useWallet();
   const [executing, setExecuting] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -66,14 +62,10 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [retryable, setRetryable] = useState(false);
-  const [txStates, setTxStates] = useState<TxState[]>([
-    { name: 'BURN+MEMO', status: 'pending' },
-  ]);
+  const [txStates, setTxStates] = useState<TxState[]>([{ name: 'BURN+MEMO', status: 'pending' }]);
 
   const updateTxStatus = (index: number, updates: Partial<TxState>) => {
-    setTxStates(prev => prev.map((tx, i) => 
-      i === index ? { ...tx, ...updates } : tx
-    ));
+    setTxStates((prev) => prev.map((tx, i) => (i === index ? { ...tx, ...updates } : tx)));
   };
 
   const executeTransactions = async () => {
@@ -83,22 +75,25 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
     }
 
     setExecuting(true);
-    KilnEventLogger.log('teleburn_started', { mint: formData.mint, inscriptionId: formData.inscriptionId });
+    KilnEventLogger.log('teleburn_started', {
+      mint: formData.mint,
+      inscriptionId: formData.inscriptionId,
+    });
 
     try {
       const connection = new Connection(
         process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com',
-        'confirmed'
+        'confirmed',
       );
 
       // Build and sign single BURN+MEMO transaction
       updateTxStatus(0, { status: 'signing' });
-      
+
       console.log(`🔥 EXECUTION: Building single burn+memo transaction...`);
       console.log(`📋 EXECUTION: Mint: ${formData.mint}`);
       console.log(`📋 EXECUTION: Owner: ${publicKey.toBase58()}`);
       console.log(`📋 EXECUTION: Inscription ID: ${formData.inscriptionId}`);
-      
+
       const burnMemoResponse = await fetch('/api/tx/burn-memo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,31 +113,36 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
 
         switch (code) {
           case 'NOT_AN_NFT':
-            userMessage = "That mint isn't an NFT — looks like a fungible token. Teleburn only supports NFTs.";
+            userMessage =
+              "That mint isn't an NFT — looks like a fungible token. Teleburn only supports NFTs.";
             break;
           case 'NOT_YET_IMPLEMENTED':
-            userMessage = "That asset standard isn't supported yet. Coming soon: Core, MPL Inscriptions, LibrePlex.";
+            userMessage =
+              "That asset standard isn't supported yet. Coming soon: Core, MPL Inscriptions, LibrePlex.";
             break;
           case 'UNSUPPORTED_STANDARD':
-            userMessage = "Unrecognized asset standard. KILN supports regular, programmable, and compressed NFTs.";
+            userMessage =
+              'Unrecognized asset standard. KILN supports regular, programmable, and compressed NFTs.';
             break;
           case 'ASSET_NOT_FOUND':
-            userMessage = "Asset not found. Check the mint address.";
+            userMessage = 'Asset not found. Check the mint address.';
             break;
           case 'CNFT_DELEGATED':
-            userMessage = "This cNFT has an active delegate. Revoke delegation before burning.";
+            userMessage = 'This cNFT has an active delegate. Revoke delegation before burning.';
             break;
           case 'CNFT_OWNERSHIP_MISMATCH':
             userMessage = "Connected wallet doesn't own this cNFT (it may have been transferred).";
             break;
           case 'CNFT_TOO_DEEP':
-            userMessage = "This cNFT's tree is unsupported (proof too large for one transaction). Address Lookup Tables planned for a future release.";
+            userMessage =
+              "This cNFT's tree is unsupported (proof too large for one transaction). Address Lookup Tables planned for a future release.";
             break;
           case 'MALFORMED_DAS_RESPONSE':
-            userMessage = "Solana asset RPC returned unexpected data. Try again or contact support.";
+            userMessage =
+              'Solana asset RPC returned unexpected data. Try again or contact support.';
             break;
           case 'CNFT_STALE_PROOF':
-            userMessage = "Tree state changed mid-sign. Click Retry to fetch a fresh proof.";
+            userMessage = 'Tree state changed mid-sign. Click Retry to fetch a fresh proof.';
             isRetryable = true;
             break;
           default:
@@ -157,33 +157,35 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
 
       const burnMemoData = await burnMemoResponse.json();
       console.log(`✅ EXECUTION: Burn+memo transaction built: ${burnMemoData.nftKind}`);
-      
+
       // Parse the transaction (handles both versioned and legacy)
       let burnMemoTx: Transaction | VersionedTransaction;
-      
+
       try {
         const txBuffer = Buffer.from(burnMemoData.transaction, 'base64');
-        
+
         if (burnMemoData.isVersioned) {
           // Try versioned transaction first
           burnMemoTx = VersionedTransaction.deserialize(txBuffer);
           console.log(`✅ EXECUTION: Parsed VersionedTransaction`);
-          
+
           // Update fee payer if needed (VersionedTransaction uses message)
           // The wallet will set the fee payer correctly when signing
         } else {
           // Fallback to legacy transaction
           burnMemoTx = Transaction.from(txBuffer);
           console.log(`✅ EXECUTION: Parsed legacy Transaction`);
-          
+
           // Ensure fee payer is set correctly
           if ('feePayer' in burnMemoTx && burnMemoTx.feePayer) {
             if (!burnMemoTx.feePayer.equals(publicKey)) {
-              console.log(`🔄 EXECUTION: Updating fee payer from ${burnMemoTx.feePayer.toBase58()} to ${publicKey.toBase58()}`);
+              console.log(
+                `🔄 EXECUTION: Updating fee payer from ${burnMemoTx.feePayer.toBase58()} to ${publicKey.toBase58()}`,
+              );
               burnMemoTx.feePayer = publicKey;
             }
           }
-          
+
           // Refresh blockhash to ensure it's fresh (handles expiry automatically)
           if (burnMemoTx instanceof Transaction) {
             burnMemoTx = await refreshBlockhashIfNeeded(burnMemoTx, connection);
@@ -191,16 +193,19 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         }
       } catch (parseErr) {
         console.error(`❌ EXECUTION: Failed to parse transaction:`, parseErr);
-        throw new Error(`Failed to parse transaction: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+        throw new Error(
+          `Failed to parse transaction: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`,
+          { cause: parseErr },
+        );
       }
-      
+
       // Validate account state before sending (for legacy transactions)
       if (burnMemoTx instanceof Transaction && publicKey) {
         try {
           const accountValidation = await validateAccountStateBeforeSend(
             connection,
             new PublicKey(formData.mint),
-            publicKey
+            publicKey,
           );
           if (!accountValidation.valid) {
             throw new Error(`Account validation failed: ${accountValidation.reason}`);
@@ -210,70 +215,64 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
           // Don't block execution, but log the warning
         }
       }
-      
+
       // Sign the transaction (wallet will set correct fee payer)
-      console.log(`🔍 EXECUTION: About to sign transaction. Type: ${burnMemoTx instanceof VersionedTransaction ? 'VersionedTransaction' : 'Transaction'}`);
-      
+      console.log(
+        `🔍 EXECUTION: About to sign transaction. Type: ${burnMemoTx instanceof VersionedTransaction ? 'VersionedTransaction' : 'Transaction'}`,
+      );
+
       // Declare signature variable outside if/else blocks for scope
       let burnMemoSig: string;
-      
+
       // For legacy transactions, use enhanced send with retry
       if (burnMemoTx instanceof Transaction) {
         updateTxStatus(0, { status: 'broadcasting' });
-        
+
         burnMemoSig = await sendTransactionWithRetry(
           connection,
           burnMemoTx,
           async (tx) => {
             // Ensure fresh blockhash before signing
             const freshTx = await refreshBlockhashIfNeeded(tx, connection);
-            return await signTransaction(freshTx) as Transaction;
+            return (await signTransaction(freshTx)) as Transaction;
           },
           {
             maxRetries: 3,
             baseDelayMs: 1000,
-          }
+          },
         );
-        
+
         // Confirm with timeout
         updateTxStatus(0, { status: 'confirming' });
-        const confirmation = await confirmTransactionWithTimeout(
-          connection,
-          burnMemoSig,
-          {
-            timeoutMs: 30_000, // 30 seconds
-            commitment: 'confirmed',
-          }
-        );
-        
+        const confirmation = await confirmTransactionWithTimeout(connection, burnMemoSig, {
+          timeoutMs: 30_000, // 30 seconds
+          commitment: 'confirmed',
+        });
+
         if (!confirmation.confirmed) {
           throw new Error(`Transaction confirmation failed: ${confirmation.error || 'Timeout'}`);
         }
-        
+
         updateTxStatus(0, { status: 'success', signature: burnMemoSig });
         console.log(`✅ EXECUTION: Burn+memo transaction confirmed: ${burnMemoSig}`);
       } else {
         // For versioned transactions, use standard flow (wallet handles differently)
         const signedBurnMemoTx = await signTransaction(burnMemoTx);
-        
+
         updateTxStatus(0, { status: 'broadcasting' });
         const serializedTx = signedBurnMemoTx.serialize();
         burnMemoSig = await connection.sendRawTransaction(serializedTx);
-        
+
         updateTxStatus(0, { status: 'confirming' });
-        const confirmation = await confirmTransactionWithTimeout(
-          connection,
-          burnMemoSig,
-          {
-            timeoutMs: 30_000,
-            commitment: 'confirmed',
-          }
-        );
-        
+        const confirmation = await confirmTransactionWithTimeout(connection, burnMemoSig, {
+          timeoutMs: 30_000,
+          commitment: 'confirmed',
+        });
+
         if (!confirmation.confirmed) {
           throw new Error(`Transaction confirmation failed: ${confirmation.error || 'Timeout'}`);
         }
-        
+
         updateTxStatus(0, { status: 'success', signature: burnMemoSig });
         console.log(`✅ EXECUTION: Burn+memo transaction confirmed: ${burnMemoSig}`);
       }
@@ -281,19 +280,23 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       // Mark as completed and trigger celebration
       setCompleted(true);
       setShowCelebration(true);
-      KilnEventLogger.log('teleburn_success', { mint: formData.mint, inscriptionId: formData.inscriptionId });
+      KilnEventLogger.log('teleburn_success', {
+        mint: formData.mint,
+        inscriptionId: formData.inscriptionId,
+      });
 
       // If user opted to update metadata, do it now
       if (updateMetadata && publicKey) {
         await executeMetadataUpdate(burnMemoSig);
       }
-
     } catch (error) {
       console.error('Transaction execution error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Transaction failed';
-      
+
       // Mark current transaction as error
-      const failedIndex = txStates.findIndex(tx => tx.status !== 'success' && tx.status !== 'pending');
+      const failedIndex = txStates.findIndex(
+        (tx) => tx.status !== 'success' && tx.status !== 'pending',
+      );
       if (failedIndex !== -1) {
         updateTxStatus(failedIndex, { status: 'error', error: errorMsg });
       }
@@ -315,7 +318,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
     try {
       const connection = new Connection(
         process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://api.mainnet-beta.solana.com',
-        'confirmed'
+        'confirmed',
       );
 
       console.log(`🔄 EXECUTION: Building metadata update transaction...`);
@@ -333,11 +336,15 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
 
       if (!metadataUpdateResponse.ok) {
         const errorData = await metadataUpdateResponse.json();
-        throw new Error(`Failed to build metadata update transaction: ${errorData.error || 'Unknown error'}`);
+        throw new Error(
+          `Failed to build metadata update transaction: ${errorData.error || 'Unknown error'}`,
+        );
       }
 
       const metadataUpdateData = await metadataUpdateResponse.json();
-      console.log(`✅ EXECUTION: Metadata update transaction built. Ordinals URL: ${metadataUpdateData.ordinalsUrl}`);
+      console.log(
+        `✅ EXECUTION: Metadata update transaction built. Ordinals URL: ${metadataUpdateData.ordinalsUrl}`,
+      );
 
       // Parse the transaction
       let metadataUpdateTx: Transaction | VersionedTransaction;
@@ -375,20 +382,29 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
 
   const getStatusIcon = (status: TxStatus) => {
     switch (status) {
-      case 'pending': return '○';
-      case 'signing': return '◐';
-      case 'broadcasting': return '◑';
-      case 'confirming': return '◒';
-      case 'success': return '✓';
-      case 'error': return '✗';
+      case 'pending':
+        return '○';
+      case 'signing':
+        return '◐';
+      case 'broadcasting':
+        return '◑';
+      case 'confirming':
+        return '◒';
+      case 'success':
+        return '✓';
+      case 'error':
+        return '✗';
     }
   };
 
   const getStatusColor = (status: TxStatus) => {
     switch (status) {
-      case 'success': return 'text-terminal-green';
-      case 'error': return 'text-matrix-red';
-      default: return 'text-terminal-text';
+      case 'success':
+        return 'text-terminal-green';
+      case 'error':
+        return 'text-matrix-red';
+      default:
+        return 'text-terminal-text';
     }
   };
 
@@ -421,7 +437,8 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                   <li>Requires your explicit signature for each transaction</li>
                 </ul>
                 <p className="mt-3 font-bold">
-                  Ensure you have verified the inscription and reviewed the dry run before proceeding.
+                  Ensure you have verified the inscription and reviewed the dry run before
+                  proceeding.
                 </p>
               </div>
             </div>
@@ -431,10 +448,8 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
 
       {/* Transaction Status */}
       <div className="status-box">
-        <div className="text-xs font-bold mb-4 text-terminal-prompt">
-          [ TRANSACTION SEQUENCE ]
-        </div>
-        
+        <div className="text-xs font-bold mb-4 text-terminal-prompt">[ TRANSACTION SEQUENCE ]</div>
+
         {txStates.map((tx, _index) => (
           <div key={tx.name} className={`tx-status ${tx.status}`}>
             <div className="flex items-center justify-between mb-2">
@@ -492,7 +507,9 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                 OPTIONAL: Update NFT Metadata to Ordinals
               </label>
               <div className="text-sm space-y-2 opacity-80">
-                <p>After teleburn completes, update this NFT&apos;s metadata image URL to point to:</p>
+                <p>
+                  After teleburn completes, update this NFT&apos;s metadata image URL to point to:
+                </p>
                 <p className="font-mono text-xs break-all">
                   https://ordinals.com/inscription/{formData.inscriptionId}
                 </p>
@@ -551,7 +568,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
               <p>Proof of burn recorded on-chain.</p>
               <p>Bitcoin Ordinal inscription: {formData.inscriptionId}</p>
             </div>
-            
+
             {/* Memo Display */}
             <div className="mb-6">
               <div className="memo-display-simple p-4 bg-black/50 border border-red-500/30 rounded">
@@ -561,14 +578,11 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                 </code>
               </div>
             </div>
-            
+
             <div className="text-xs opacity-60 mb-4">
               Review the Helius Orb links above to verify your transactions.
             </div>
-            <button
-              onClick={onComplete}
-              className="terminal-button px-8 py-3"
-            >
+            <button onClick={onComplete} className="terminal-button px-8 py-3">
               ✓ CONTINUE
             </button>
           </div>
@@ -599,10 +613,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
         )}
 
         {!retryable && !executing && !completed && (
-          <button
-            onClick={() => setShowConfirmModal(true)}
-            className="terminal-button px-8 py-3"
-          >
+          <button onClick={() => setShowConfirmModal(true)} className="terminal-button px-8 py-3">
             ⚡ EXECUTE TELEBURN
           </button>
         )}
@@ -616,7 +627,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
               <div className="text-2xl">🔥</div>
               <h3 className="text-xl font-bold">CONFIRM TELEBURN</h3>
             </div>
-            
+
             <div className="modal-body">
               <div className="confirm-details">
                 <div className="detail-row">
@@ -625,15 +636,19 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Inscription:</span>
-                  <span className="detail-value text-xs">{formData.inscriptionId.slice(0, 20)}...</span>
+                  <span className="detail-value text-xs">
+                    {formData.inscriptionId.slice(0, 20)}...
+                  </span>
                 </div>
               </div>
-              
+
               <div className="confirm-warning">
-                <p>⚠️ This action is <strong>IRREVERSIBLE</strong>.</p>
+                <p>
+                  ⚠️ This action is <strong>IRREVERSIBLE</strong>.
+                </p>
                 <p>Your NFT will be permanently burned.</p>
               </div>
-              
+
               <label className="confirm-checkbox">
                 <input
                   type="checkbox"
@@ -643,7 +658,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
                 <span>I understand this action cannot be undone</span>
               </label>
             </div>
-            
+
             <div className="modal-actions">
               <button
                 onClick={() => {
@@ -886,11 +901,7 @@ export const Step4Execute: FC<Step4ExecuteProps> = ({
       `}</style>
 
       {/* Celebration Animation */}
-      <BurnCelebration 
-        isActive={showCelebration} 
-        onComplete={() => setShowCelebration(false)} 
-      />
+      <BurnCelebration isActive={showCelebration} onComplete={() => setShowCelebration(false)} />
     </div>
   );
 };
-

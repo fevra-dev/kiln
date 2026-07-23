@@ -47,11 +47,13 @@ export async function buildRegularBurn(args: {
 
   // Optional collection metadata (from DAS grouping)
   let collectionMetadata: ReturnType<typeof findMetadataPda>[0] | undefined;
-  const grouping = (args.asset as DasAsset & {
-    grouping?: Array<{ group_key: string; group_value: string }>;
-  }).grouping;
+  const grouping = (
+    args.asset as DasAsset & {
+      grouping?: Array<{ group_key: string; group_value: string }>;
+    }
+  ).grouping;
   if (grouping && grouping.length > 0) {
-    const collKey = grouping.find(g => g.group_key === 'collection')?.group_value;
+    const collKey = grouping.find((g) => g.group_key === 'collection')?.group_value;
     if (collKey) {
       collectionMetadata = findMetadataPda(args.umi, { mint: publicKey(collKey) })[0];
     }
