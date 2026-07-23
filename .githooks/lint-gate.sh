@@ -45,10 +45,35 @@ if command -v ruff >/dev/null 2>&1 && { [ -f pyproject.toml ] || [ -f ruff.toml 
   ruff format --check . || fail=1
 else echo "· skip ruff (no pyproject.toml/ruff.toml or ruff absent)"; fi
 
-# 3. Dependency / secret / license scan — ADR-0001 zero-trust-deps.
+# 3. Dependency / license / secret scan — ADR-0001 zero-trust-deps, scoped per ADR-0017.
+#    Vuln scan targets the pnpm graph (not the fs tree, dropping vendored foreign
+#    manifests); license scan stays filesystem-scoped so trivy reads real LICENSE
+#    files; secret scan stays filesystem-scoped and fail-closed. Accepted risks live
+#    in the expiring risk register .trivyignore.yaml, gated by two review checks first.
 if command -v trivy >/dev/null 2>&1; then
-  step "trivy fs (vuln,secret,license)"
-  trivy fs --scanners vuln,secret,license --exit-code 1 --severity HIGH,CRITICAL --quiet . || fail=1
+  # 3a. Risk-register hygiene (ADR-0017): every accepted CVE justified + within expiry cap.
+  if [ -f .trivyignore.yaml ] && [ -f scripts/check-trivyignore.mjs ] && command -v node >/dev/null 2>&1; then
+    step "risk-register hygiene (.trivyignore.yaml)"
+    node scripts/check-trivyignore.mjs .trivyignore.yaml || fail=1
+  fi
+  # 3b. Sensitive-path change review (ADR-0017): patches/lockfile/register need SECURITY-REVIEW.
+  if [ -f scripts/check-security-paths.sh ]; then
+    step "security-sensitive-path review"
+    bash scripts/check-security-paths.sh || fail=1
+  fi
+  IGN=""; [ -f .trivyignore.yaml ] && IGN="--ignorefile .trivyignore.yaml"
+  # 3c. Vulnerabilities — dependency graph only (ADR-0017 scope).
+  if [ -f pnpm-lock.yaml ]; then
+    step "trivy vuln (pnpm-lock.yaml, HIGH/CRITICAL)"
+    trivy fs --scanners vuln --severity HIGH,CRITICAL $IGN --exit-code 1 --quiet pnpm-lock.yaml || fail=1
+  fi
+  # 3d. Licenses — full fs incl node_modules (that is where real LICENSE files live;
+  #     skipping node_modules or scanning only the lockfile detects nothing — ADR-0017 grill #5).
+  step "trivy license (fs, HIGH/CRITICAL)"
+  trivy fs --scanners license --severity HIGH,CRITICAL $IGN --exit-code 1 --quiet . || fail=1
+  # 3e. Secrets — filesystem-scoped, fail-closed, no register.
+  step "trivy secret (fs, fail-closed)"
+  trivy fs --scanners secret --exit-code 1 --quiet --skip-dirs node_modules . || fail=1
 else echo "· skip trivy (not installed)"; fi
 
 # 4. Semgrep — ADR-derived security rules authored via semgrep-rule-creator.
