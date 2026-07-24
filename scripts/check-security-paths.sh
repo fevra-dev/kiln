@@ -23,7 +23,11 @@ if [ -z "$changed" ]; then
   exit 0
 fi
 
-if git log "$range" --format='%B' 2>/dev/null | grep -qiE '^[[:space:]]*SECURITY-REVIEW:'; then
+# Capture bodies first, then grep a here-string: piping `git log | grep -q`
+# under `set -o pipefail` makes grep close the pipe on first match, killing
+# git log with SIGPIPE (141) and failing the pipeline even on a match.
+review_bodies="$(git log "$range" --format='%B' 2>/dev/null || true)"
+if grep -qiE '^[[:space:]]*SECURITY-REVIEW:' <<<"$review_bodies"; then
   echo "· security-paths: sensitive-path change(s) present, SECURITY-REVIEW trailer found — OK"
   exit 0
 fi
