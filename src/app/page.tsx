@@ -1,8 +1,8 @@
 /**
- * KILN-0.1.1 TELEBURN PROTOCOL
+ * KILN TELEBURN PROTOCOL v1.0
  *
  * @description Red Matrix Hacker Interface - Cypherpunk Edition
- * @version 0.1.1
+ * @version 1.0
  * @classification [UNCLASSIFIED]
  */
 
@@ -12,9 +12,6 @@ import { useState, useEffect, useMemo } from 'react';
 
 export default function HomePage() {
   const [bootComplete, setBootComplete] = useState(false);
-  const [passwordEntered, setPasswordEntered] = useState(false);
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(false);
 
   // Scroll to top on mobile when page loads
   useEffect(() => {
@@ -23,35 +20,18 @@ export default function HomePage() {
     }
   }, []);
 
-  const handlePasswordSubmit = (e: React.FormEvent): void => {
-    e.preventDefault();
-    // Access code can be configured via environment variable
-    const accessCode = process.env['NEXT_PUBLIC_ACCESS_CODE'] || 'iceland';
-    if (password === accessCode) {
-      setPasswordEntered(true);
-      setPasswordError(false);
-      // Start boot sequence after typing animation completes
-      setTimeout(() => setBootComplete(true), 8000);
-    } else {
-      setPasswordError(true);
-      setPassword('');
-    }
-  };
+  // Run the boot sequence on load, then reveal the interface. The access-code
+  // gate that used to precede this was removed for public launch — see
+  // archive/password-gate/ to restore it.
+  useEffect(() => {
+    const timer = setTimeout(() => setBootComplete(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <main className="min-h-screen bg-black text-matrix-red font-mono relative overflow-hidden w-full max-w-full">
-      {/* Password Entry */}
-      {!passwordEntered && (
-        <PasswordEntry
-          password={password}
-          setPassword={setPassword}
-          onSubmit={handlePasswordSubmit}
-          error={passwordError}
-        />
-      )}
-
       {/* Boot Sequence */}
-      {passwordEntered && !bootComplete && <BootSequence />}
+      {!bootComplete && <BootSequence />}
 
       {/* Main Interface */}
       {bootComplete && (
@@ -71,42 +51,6 @@ export default function HomePage() {
         </div>
       )}
     </main>
-  );
-}
-
-/**
- * Password Entry Component
- */
-function PasswordEntry({
-  password,
-  setPassword,
-  onSubmit,
-  error,
-}: {
-  password: string;
-  setPassword: (password: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  error: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-      <div className="text-matrix-red font-mono text-center space-y-4">
-        <div className="text-6xl mb-8">ঌ</div>
-        <form onSubmit={onSubmit} className="space-y-3">
-          <div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="access code"
-              className="bg-black border border-matrix-red/30 text-matrix-red px-3 py-2 font-mono text-center focus:outline-none focus:border-matrix-red focus:ring-1 focus:ring-matrix-red/50 w-48"
-              autoFocus
-            />
-          </div>
-          {error && <div className="text-red-500 text-xs">denied</div>}
-        </form>
-      </div>
-    </div>
   );
 }
 
@@ -267,11 +211,11 @@ function TerminalInterface() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
               <div className="code-block">
                 <div className="text-matrix-red/60 mb-2">PROTOCOL</div>
-                <div className="text-matrix-red">KILN v0.1.1</div>
+                <div className="text-matrix-red">KILN v1.0</div>
               </div>
               <div className="code-block">
                 <div className="text-matrix-red/60 mb-2">SECURITY</div>
-                <div className="text-matrix-red">SHA-256 VERIFIED</div>
+                <div className="text-matrix-red">NON-CUSTODIAL</div>
               </div>
               <div className="code-block">
                 <div className="text-matrix-red/60 mb-2">STATUS</div>
@@ -293,39 +237,39 @@ function FeaturesSection() {
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
         <FeatureCard
-          icon="[✓]"
-          title="INSCRIPTION VERIFICATION"
-          description="Mandatory SHA-256 content verification. Prevents sealing to corrupted inscriptions."
+          icon="[🔥]"
+          title="ATOMIC BURN + MEMO"
+          description="Burn and on-chain proof in a single transaction. ~78-byte teleburn: memo. One signature."
           status="ACTIVE"
         />
         <FeatureCard
-          icon="[⏱]"
-          title="TEMPORAL ANCHORING"
-          description="Block height + timestamp in all on-chain memos. Immutable proof of execution."
+          icon="[🧬]"
+          title="MULTI-STANDARD"
+          description="Regular NFTs, programmable NFTs (pNFT), and compressed NFTs (cNFT). One flow."
           status="ACTIVE"
         />
         <FeatureCard
-          icon="[🔐]"
-          title="DERIVED OWNER"
-          description="Off-curve address derivation. Provably no private key exists. Irreversible."
+          icon="[🛰]"
+          title="DAS AUTO-DETECT"
+          description="Helius DAS detects the asset standard and routes the correct burn path. No guesswork."
           status="ACTIVE"
         />
         <FeatureCard
           icon="[🧪]"
           title="DRY RUN MODE"
-          description="Full transaction simulation. Decode + simulate before signature. Zero risk."
+          description="Decode + simulate every transaction before signature. Full transparency. Zero surprise."
           status="ACTIVE"
         />
         <FeatureCard
           icon="[🔍]"
-          title="MULTI-RPC VERIFY"
-          description="Cross-validation across multiple RPCs. Confidence scoring. High certainty."
+          title="PUBLIC VERIFICATION"
+          description="Anyone can verify a teleburn on-chain at /verify. Solana memo ↔ Bitcoin inscription."
           status="ACTIVE"
         />
         <FeatureCard
-          icon="[⚡]"
-          title="TOKEN-2022 COMPATIBLE"
-          description="Extension detection. Automatic compatibility check. Prevents failed TX."
+          icon="[🔑]"
+          title="NON-CUSTODIAL"
+          description="Never handles private keys. The connecting wallet signs. Nothing auto-signed."
           status="ACTIVE"
         />
       </div>
@@ -388,7 +332,7 @@ function Footer() {
                 → What is Teleburn
               </a>
               <a
-                href="/docs?doc=/docs/TELEBURN_ALGORITHM.md"
+                href="/docs?doc=/docs/TELEBURN_SPEC_v1.0.md"
                 className="block hover:text-matrix-red cursor-pointer"
               >
                 → Technical Details
@@ -433,8 +377,8 @@ function Footer() {
         </div>
 
         <div className="border-t border-matrix-red/20 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-matrix-red/60 font-mono">KILN v0.1.1</div>
-          <div className="text-sm text-matrix-red/60 font-mono">BUILD.DATE: 2025-12-03</div>
+          <div className="text-sm text-matrix-red/60 font-mono">KILN v1.0</div>
+          <div className="text-sm text-matrix-red/60 font-mono">BUILD.DATE: 2026-07-24</div>
         </div>
       </div>
     </footer>

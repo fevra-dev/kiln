@@ -9,5 +9,12 @@
   "rules": {
     "no-eval": "error"
   },
-  "ignorePatterns": ["dist/**", "build/**", "coverage/**", "node_modules/**", "*.min.js"]
+  "ignorePatterns": [
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "node_modules/**",
+    "archive/**",
+    "*.min.js"
+  ]
 }
