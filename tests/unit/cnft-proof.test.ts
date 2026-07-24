@@ -25,7 +25,12 @@ describe('cnft-proof', () => {
     });
 
     it('throws on DAS HTTP error', async () => {
-      fetchMock.mockResolvedValueOnce({ ok: false, status: 500, headers: new Headers(), json: async () => ({}) });
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        headers: new Headers(),
+        json: async () => ({}),
+      });
       const assetId = new PublicKey('11111111111111111111111111111112');
       await expect(fetchAssetProof(assetId, RPC_URL)).rejects.toThrow(/500/);
     });

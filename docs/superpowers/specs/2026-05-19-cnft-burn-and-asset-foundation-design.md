@@ -5,7 +5,7 @@
 | Spec | `2026-05-19-cnft-burn-and-asset-foundation-design.md` |
 | Date | 2026-05-19 |
 | Owner | fevra-dev |
-| Sub-spec of | `public/docs/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.5 (Asset Coverage) |
+| Sub-spec of | `docs/internal/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.5 (Asset Coverage) |
 | Status | Draft, pending implementation plan |
 | Estimated effort | 1 week (2 PRs: foundation refactor + cNFT implementation) |
 | First of | 4 planned per-standard sub-specs (cNFT → Core → MPL Inscriptions → LibrePlex) |
@@ -557,7 +557,7 @@ Safety improvement on a flow that already works for pNFT/regular; ship on for ev
 
 ## 11. References
 
-- Parent proposal: `public/docs/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.5
+- Parent proposal: `docs/internal/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.5
 - KILN spec: `public/docs/TELEBURN_SPEC_v1.0.md`
 - Inscription preflight spec (sibling sub-spec): `docs/superpowers/specs/2026-05-17-pre-burn-inscription-check-design.md`
 - Helius DAS API: https://docs.helius.dev/compression-and-das-api/digital-asset-standard-das-api

@@ -1,11 +1,11 @@
 /**
  * RPC Failover Utility
- * 
+ *
  * Provides automatic failover to backup RPC endpoints when primary fails.
  * Implements health checks, automatic switching, and retry logic.
- * 
+ *
  * Supports multiple RPC providers (Helius, QuickNode, Alchemy, public RPCs).
- * 
+ *
  * @version 0.1.1
  */
 
@@ -59,7 +59,7 @@ export interface HealthCheckResult {
 
 /**
  * RPC Failover Manager
- * 
+ *
  * Manages multiple RPC endpoints with automatic failover and health checks.
  */
 export class RpcFailoverManager {
@@ -150,7 +150,7 @@ export class RpcFailoverManager {
 
   /**
    * Execute a function with automatic failover
-   * 
+   *
    * @param fn - Function that takes a Connection and returns a result
    * @returns Result from the function
    * @throws Error if all endpoints fail
@@ -209,14 +209,16 @@ export class RpcFailoverManager {
         // Mark unhealthy if too many failures
         if (endpoint.consecutiveFailures >= this.maxFailures) {
           endpoint.healthy = false;
-          console.warn(`⚠️ RPC Failover: ${endpoint.provider} marked unhealthy (${endpoint.consecutiveFailures} failures)`);
+          console.warn(
+            `⚠️ RPC Failover: ${endpoint.provider} marked unhealthy (${endpoint.consecutiveFailures} failures)`,
+          );
         }
       }
     }
 
     // All endpoints failed
     throw new Error(
-      `All RPC endpoints failed. Last error: ${lastError?.message || 'Unknown error'}`
+      `All RPC endpoints failed. Last error: ${lastError?.message || 'Unknown error'}`,
     );
   }
 
@@ -268,7 +270,7 @@ export class RpcFailoverManager {
       if (endpoint.consecutiveFailures >= this.maxFailures) {
         endpoint.healthy = false;
         console.warn(
-          `⚠️ RPC Failover: ${endpoint.provider} marked unhealthy (${endpoint.consecutiveFailures} failures)`
+          `⚠️ RPC Failover: ${endpoint.provider} marked unhealthy (${endpoint.consecutiveFailures} failures)`,
         );
       }
 
@@ -301,7 +303,9 @@ export class RpcFailoverManager {
    * Perform health checks on all endpoints
    */
   private async performHealthChecks(): Promise<void> {
-    console.log(`🔍 RPC Failover: Performing health checks on ${this.endpoints.length} endpoints...`);
+    console.log(
+      `🔍 RPC Failover: Performing health checks on ${this.endpoints.length} endpoints...`,
+    );
 
     const checks = this.endpoints.map((endpoint) => this.checkEndpointHealth(endpoint));
     const results = await Promise.allSettled(checks);
@@ -321,9 +325,7 @@ export class RpcFailoverManager {
     if (healthyIndex !== -1 && healthyIndex !== this.currentIndex) {
       const healthyEndpoint = this.endpoints[healthyIndex];
       if (healthyEndpoint) {
-        console.log(
-          `🔄 RPC Failover: Switching to ${healthyEndpoint.provider} (primary healthy)`
-        );
+        console.log(`🔄 RPC Failover: Switching to ${healthyEndpoint.provider} (primary healthy)`);
         this.currentIndex = healthyIndex;
       }
     }
@@ -377,7 +379,7 @@ let globalRpcManager: RpcFailoverManager | null = null;
 
 /**
  * Initialize global RPC failover manager
- * 
+ *
  * @param config - RPC failover configuration
  */
 export function initializeRpcFailover(config: RpcFailoverConfig): RpcFailoverManager {
@@ -391,7 +393,7 @@ export function initializeRpcFailover(config: RpcFailoverConfig): RpcFailoverMan
 
 /**
  * Get global RPC failover manager
- * 
+ *
  * @returns Global RPC manager instance
  */
 export function getRpcManager(): RpcFailoverManager | null {
@@ -400,7 +402,7 @@ export function getRpcManager(): RpcFailoverManager | null {
 
 /**
  * Get RPC URL with automatic failover
- * 
+ *
  * @returns Current RPC URL
  */
 export function getRpcUrl(): string {
@@ -418,7 +420,7 @@ export function getRpcUrl(): string {
 
 /**
  * Create Connection with automatic failover
- * 
+ *
  * @returns Connection instance
  */
 export function createConnectionWithFailover(): Connection {
@@ -433,13 +435,11 @@ export function createConnectionWithFailover(): Connection {
 
 /**
  * Execute function with automatic RPC failover
- * 
+ *
  * @param fn - Function that takes a Connection and returns a result
  * @returns Result from the function
  */
-export async function withRpcFailover<T>(
-  fn: (connection: Connection) => Promise<T>
-): Promise<T> {
+export async function withRpcFailover<T>(fn: (connection: Connection) => Promise<T>): Promise<T> {
   if (globalRpcManager) {
     return globalRpcManager.withFailover(fn);
   }
@@ -448,4 +448,3 @@ export async function withRpcFailover<T>(
   const connection = createConnectionWithFailover();
   return fn(connection);
 }
-

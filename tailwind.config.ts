@@ -38,9 +38,9 @@ const config: Config = {
       animation: {
         'pulse-red': 'pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'scan-line': 'scan-line 8s linear infinite',
-        'flicker': 'flicker 0.15s infinite',
+        flicker: 'flicker 0.15s infinite',
         'terminal-blink': 'terminal-blink 1s step-end infinite',
-        'glitch': 'glitch 0.3s infinite',
+        glitch: 'glitch 0.3s infinite',
       },
       keyframes: {
         'pulse-red': {
@@ -51,7 +51,7 @@ const config: Config = {
           '0%': { transform: 'translateY(-100%)' },
           '100%': { transform: 'translateY(100vh)' },
         },
-        'flicker': {
+        flicker: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.8' },
         },
@@ -59,7 +59,7 @@ const config: Config = {
           '0%, 50%': { opacity: '1' },
           '51%, 100%': { opacity: '0' },
         },
-        'glitch': {
+        glitch: {
           '0%': { transform: 'translate(0)' },
           '20%': { transform: 'translate(-2px, 2px)' },
           '40%': { transform: 'translate(-2px, -2px)' },
@@ -80,7 +80,7 @@ const config: Config = {
   },
   plugins: [
     // Text shadow plugin
-    function({ addUtilities }: any) {
+    function ({ addUtilities }: any) {
       const newUtilities = {
         '.text-glow-red': {
           textShadow: '0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.5)',
@@ -91,11 +91,10 @@ const config: Config = {
         '.text-glow-red-lg': {
           textShadow: '0 0 15px rgba(255, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.7)',
         },
-      }
-      addUtilities(newUtilities)
+      };
+      addUtilities(newUtilities);
     },
   ],
 };
 
 export default config;
-

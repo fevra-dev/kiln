@@ -1,6 +1,6 @@
 /**
  * Integration Tests: Transaction Building
- * 
+ *
  * Tests transaction building with all new features integrated:
  * - Frozen account detection
  * - Transaction size validation
@@ -20,7 +20,7 @@ jest.mock('@/lib/metaplex-burn', () => ({
 
 jest.mock('@/lib/rpc-failover', () => ({
   withRpcFailover: jest.fn((fn) => fn({} as Connection)),
-  createConnectionWithFailover: jest.fn(() => ({} as Connection)),
+  createConnectionWithFailover: jest.fn(() => ({}) as Connection),
 }));
 
 jest.mock('@/lib/frozen-account-detector', () => ({
@@ -37,11 +37,11 @@ jest.mock('@solana/web3.js', () => ({
 }));
 
 describe('Transaction Building Integration', () => {
-  let mockConnection: Connection;
+  let _mockConnection: Connection;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockConnection = {} as Connection;
+    _mockConnection = {} as Connection;
   });
 
   describe('Build Seal Transaction', () => {
@@ -53,7 +53,7 @@ describe('Transaction Building Integration', () => {
       });
 
       const builder = new TransactionBuilder('https://api.example.com');
-      
+
       const result = await builder.buildSealTransaction({
         payer: PublicKey.default,
         mint: PublicKey.default,
@@ -81,7 +81,7 @@ describe('Transaction Building Integration', () => {
           mint: PublicKey.default,
           inscriptionId: 'abc123i0',
           sha256: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
-        })
+        }),
       ).rejects.toThrow('Transaction too large');
     });
   });
@@ -130,7 +130,7 @@ describe('Transaction Building Integration', () => {
           inscriptionId: 'abc123i0',
           sha256: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
           method: 'burn',
-        })
+        }),
       ).rejects.toThrow('frozen');
     });
   });
@@ -165,4 +165,3 @@ describe('Transaction Building Integration', () => {
     });
   });
 });
-

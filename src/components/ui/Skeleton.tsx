@@ -2,9 +2,9 @@
 
 /**
  * Skeleton Loading Component
- * 
+ *
  * Animated placeholder for loading states.
- * 
+ *
  * @description Skeleton loading animations
  * @version 0.1.1
  */
@@ -23,16 +23,13 @@ interface SkeletonProps {
 /**
  * Basic skeleton line
  */
-export const Skeleton: FC<SkeletonProps> = ({ 
-  width = '100%', 
+export const Skeleton: FC<SkeletonProps> = ({
+  width = '100%',
   height = '1rem',
-  className = ''
+  className = '',
 }) => {
   return (
-    <div 
-      className={`skeleton ${className}`}
-      style={{ width, height }}
-    >
+    <div className={`skeleton ${className}`} style={{ width, height }}>
       <style jsx>{`
         .skeleton {
           background: linear-gradient(
@@ -113,10 +110,10 @@ export const SimulationSkeleton: FC = () => {
         <Skeleton width="200px" height="2rem" />
         <Skeleton width="100px" height="1.5rem" />
       </div>
-      
+
       {/* Transaction cards */}
       <TransactionSkeleton />
-      
+
       {/* Summary */}
       <div className="summary-skeleton">
         <div className="summary-row">
@@ -160,4 +157,3 @@ export const SimulationSkeleton: FC = () => {
     </div>
   );
 };
-

@@ -1,11 +1,11 @@
 // src/app/api/tx/simulate/route.ts
 /**
  * API Route: POST /api/tx/simulate
- * 
+ *
  * Simulates a complete teleburn flow without signing or broadcasting.
  * Builds all transactions, decodes them, simulates on-chain, and returns
  * a comprehensive dry run report.
- * 
+ *
  * CRITICAL: No transactions are signed or sent. Zero risk.
  */
 
@@ -30,14 +30,18 @@ const simulateRequestSchema = z.object({
 
   // Retire params
   owner: z.string().describe('Token owner public key'),
-  method: z.enum(['teleburn-burn', 'teleburn-incinerate', 'teleburn-derived', 'burn', 'incinerate']).describe('Retire method'), // Includes old values for backward compatibility
+  method: z
+    .enum(['teleburn-burn', 'teleburn-incinerate', 'teleburn-derived', 'burn', 'incinerate'])
+    .describe('Retire method'), // Includes old values for backward compatibility
   amount: z.string().optional().describe('Amount to retire (default: 1)'),
 
   // Optional URI update
-  updateUri: z.object({
-    authority: z.string().describe('Metadata update authority'),
-    newUri: z.string().url().describe('New metadata URI (pointer JSON)'),
-  }).optional(),
+  updateUri: z
+    .object({
+      authority: z.string().describe('Metadata update authority'),
+      newUri: z.string().url().describe('New metadata URI (pointer JSON)'),
+    })
+    .optional(),
 
   // RPC
   rpcUrl: z.string().url().optional(),
@@ -72,16 +76,13 @@ export async function POST(request: NextRequest) {
             ...corsHeaders,
             ...getRateLimitHeaders(rateLimitResult),
           },
-        }
+        },
       );
     }
 
     // Check CORS origin
     if (!isOriginAllowed(request)) {
-      return NextResponse.json(
-        { success: false, error: 'Origin not allowed' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Origin not allowed' }, { status: 403 });
     }
 
     // Parse and validate request body
@@ -89,8 +90,11 @@ export async function POST(request: NextRequest) {
     const validated = simulateRequestSchema.parse(body);
 
     // Get RPC URL - prioritize client-provided URL, then environment, then fallback
-    const rpcUrl = validated.rpcUrl || process.env['NEXT_PUBLIC_SOLANA_RPC'] || 'https://solana-rpc.publicnode.com';
-    
+    const rpcUrl =
+      validated.rpcUrl ||
+      process.env['NEXT_PUBLIC_SOLANA_RPC'] ||
+      'https://solana-rpc.publicnode.com';
+
     // Debug RPC URL selection
     console.log('🔍 API: RPC URL Debug:');
     console.log('  - Client provided rpcUrl:', validated.rpcUrl);
@@ -126,7 +130,7 @@ export async function POST(request: NextRequest) {
     console.log('📋 API: Inscription ID:', validated.inscriptionId);
     console.log('📋 API: Method:', validated.method);
     console.log('📋 API: RPC URL:', rpcUrl);
-    
+
     const report = await dryRun.executeDryRun({
       payer,
       mint,
@@ -174,9 +178,8 @@ export async function POST(request: NextRequest) {
           ...corsHeaders,
           ...getRateLimitHeaders(rateLimitResult),
         },
-      }
+      },
     );
-
   } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
@@ -186,7 +189,7 @@ export async function POST(request: NextRequest) {
           error: 'Validation failed',
           details: error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -197,7 +200,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to simulate teleburn flow',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -212,4 +215,3 @@ export async function OPTIONS(request: NextRequest) {
     headers: corsHeaders,
   });
 }
-

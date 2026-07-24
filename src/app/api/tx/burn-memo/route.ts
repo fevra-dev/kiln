@@ -1,11 +1,11 @@
 // src/app/api/tx/burn-memo/route.ts
 /**
  * API Route: POST /api/tx/burn-memo
- * 
+ *
  * Builds a SINGLE transaction that combines:
  * 1. Burn instruction (Metaplex burnV1 - handles both pNFT and regular NFT)
  * 2. SPL Memo instruction with Kiln teleburn proof
- * 
+ *
  * This eliminates the need for separate seal/retire/memo transactions.
  * The transaction is built but NOT signed or broadcast.
  * User must sign in their wallet.
@@ -68,16 +68,13 @@ export async function POST(request: NextRequest) {
             ...corsHeaders,
             ...getRateLimitHeaders(rateLimitResult),
           },
-        }
+        },
       );
     }
 
     // Check CORS origin
     if (!isOriginAllowed(request)) {
-      return NextResponse.json(
-        { success: false, error: 'Origin not allowed' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Origin not allowed' }, { status: 403 });
     }
 
     // Parse and validate request body
@@ -118,9 +115,8 @@ export async function POST(request: NextRequest) {
           ...corsHeaders,
           ...getRateLimitHeaders(rateLimitResult),
         },
-      }
+      },
     );
-
   } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
@@ -130,7 +126,7 @@ export async function POST(request: NextRequest) {
           error: 'Validation failed',
           details: error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -170,7 +166,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to build burn+memo transaction',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -185,4 +181,3 @@ export async function OPTIONS(request: NextRequest) {
     headers: corsHeaders,
   });
 }
-

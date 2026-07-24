@@ -2,10 +2,10 @@
 
 /**
  * Step 1: Connect Wallet
- * 
+ *
  * First step of teleburn wizard - wallet connection.
  * Terminal-style interface with red matrix theme.
- * 
+ *
  * @description Wallet connection step with balance display
  * @version 0.1.1
  */
@@ -21,7 +21,7 @@ interface Step1ConnectProps {
 
 /**
  * Step 1: Wallet Connection
- * 
+ *
  * Prompts user to connect wallet and displays balance.
  */
 export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
@@ -36,7 +36,8 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
     if (publicKey && connected) {
       setLoading(true);
       setBalanceError(null);
-      connection.getBalance(publicKey)
+      connection
+        .getBalance(publicKey)
         .then((bal) => {
           setBalance(bal / LAMPORTS_PER_SOL);
           setBalanceError(null);
@@ -44,7 +45,9 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
         .catch((err) => {
           console.error('Failed to fetch balance:', err);
           setBalance(0); // Set to 0 instead of null so we can proceed
-          setBalanceError('Unable to fetch balance (RPC error). You may need to configure a custom RPC endpoint.');
+          setBalanceError(
+            'Unable to fetch balance (RPC error). You may need to configure a custom RPC endpoint.',
+          );
         })
         .finally(() => setLoading(false));
     } else {
@@ -71,8 +74,10 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
       <div className="terminal-output mb-8">
         <div className="text-terminal-prompt mb-2">$ init_teleburn_session</div>
         <div className="text-terminal-text/70 text-sm mb-4">
-          {`> Initializing Kiln protocol...`}<br />
-          {`> Awaiting wallet authentication...`}<br />
+          {`> Initializing Kiln protocol...`}
+          <br />
+          {`> Awaiting wallet authentication...`}
+          <br />
           <span className="animate-terminal-blink">▊</span>
         </div>
       </div>
@@ -86,8 +91,8 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
               <div>
                 <div className="font-bold mb-1">WALLET CONNECTION REQUIRED</div>
                 <div className="text-sm opacity-80">
-                  This protocol requires a Solana wallet to sign transactions.
-                  Connect your wallet to begin the teleburn process.
+                  This protocol requires a Solana wallet to sign transactions. Connect your wallet
+                  to begin the teleburn process.
                 </div>
               </div>
             </div>
@@ -123,19 +128,17 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
                     {loading ? (
                       <span className="animate-pulse">Loading...</span>
                     ) : balanceError ? (
-                      <span className="text-yellow-500 text-xs">{balance?.toFixed(4) || '0.0000'} SOL (unverified)</span>
-                    ) : balance !== null ? (
-                      <span className="text-terminal-text">
-                        {balance.toFixed(4)} SOL
+                      <span className="text-yellow-500 text-xs">
+                        {balance?.toFixed(4) || '0.0000'} SOL (unverified)
                       </span>
+                    ) : balance !== null ? (
+                      <span className="text-terminal-text">{balance.toFixed(4)} SOL</span>
                     ) : (
                       <span className="opacity-50">Unknown</span>
                     )}
                   </div>
                   {balanceError && (
-                    <div className="text-xs text-yellow-500/80 mt-2">
-                      🚨 {balanceError}
-                    </div>
+                    <div className="text-xs text-yellow-500/80 mt-2">🚨 {balanceError}</div>
                   )}
                   <div>
                     <span className="text-terminal-prompt">STATUS:</span>{' '}
@@ -148,18 +151,14 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
 
           {/* Auto-advancing message */}
           <div className="text-center text-sm opacity-70">
-            <div className="animate-pulse">
-              {`> Proceeding to inscription verification...`}
-            </div>
+            <div className="animate-pulse">{`> Proceeding to inscription verification...`}</div>
           </div>
         </div>
       )}
 
       {/* Connection Requirements */}
       <div className="requirements-box">
-        <div className="text-xs font-bold mb-3 text-terminal-prompt">
-          [ REQUIREMENTS ]
-        </div>
+        <div className="text-xs font-bold mb-3 text-terminal-prompt">[ REQUIREMENTS ]</div>
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2">
             <div className={connected ? 'text-green-500' : 'text-terminal-text/40'}>
@@ -174,8 +173,12 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
             <div>Wallet connected to mainnet</div>
           </div>
           <div className="flex items-center gap-2">
-            <div className={(balance !== null && balance > 0.01) ? 'text-green-500' : 'text-terminal-text/40'}>
-              {(balance !== null && balance > 0.01) ? '✓' : '○'}
+            <div
+              className={
+                balance !== null && balance > 0.01 ? 'text-green-500' : 'text-terminal-text/40'
+              }
+            >
+              {balance !== null && balance > 0.01 ? '✓' : '○'}
             </div>
             <div>Sufficient SOL for transaction fees (~0.01 SOL)</div>
           </div>
@@ -229,4 +232,3 @@ export const Step1Connect: FC<Step1ConnectProps> = ({ onComplete }) => {
     </div>
   );
 };
-

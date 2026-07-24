@@ -2,10 +2,10 @@
 
 /**
  * Document Window Component
- * 
+ *
  * Draggable, resizable window for displaying documentation
  * Mimics classic desktop window managers
- * 
+ *
  * @description Desktop-style document viewer
  * @version 0.1.1
  */
@@ -38,7 +38,7 @@ export const DocumentWindow: FC<DocumentWindowProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isMaximized, setIsMaximized] = useState(false);
   const [preMaximizeState, setPreMaximizeState] = useState({ position, size });
-  
+
   const windowRef = useRef<HTMLDivElement>(null);
 
   // Handle dragging
@@ -53,14 +53,17 @@ export const DocumentWindow: FC<DocumentWindowProps> = ({
     }
   };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y,
-      });
-    }
-  }, [isDragging, dragOffset]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y,
+        });
+      }
+    },
+    [isDragging, dragOffset],
+  );
 
   const handleMouseUp = () => {
     setIsDragging(false);
@@ -127,19 +130,15 @@ export const DocumentWindow: FC<DocumentWindowProps> = ({
             <button
               onClick={handleMaximize}
               className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-600 transition-colors"
-              title={isMaximized ? "Restore" : "Maximize"}
+              title={isMaximized ? 'Restore' : 'Maximize'}
             />
           </div>
-          <div className="text-xs text-matrix-red/80 font-mono ml-2 select-none">
-            {title}
-          </div>
+          <div className="text-xs text-matrix-red/80 font-mono ml-2 select-none">{title}</div>
         </div>
       </div>
 
       {/* Window Content */}
-      <div className="window-content">
-        {children}
-      </div>
+      <div className="window-content">{children}</div>
 
       <style jsx>{`
         .document-window {
@@ -313,4 +312,3 @@ export const DocumentWindow: FC<DocumentWindowProps> = ({
     </div>
   );
 };
-

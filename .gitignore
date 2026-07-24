@@ -43,3 +43,6 @@ next-env.d.ts
 # Debug
 .cursor/
 
+# Internal / scratch design docs — kept locally, never deployed or committed
+docs/internal/
+

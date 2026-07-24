@@ -1,0 +1,172 @@
+# KILN vulnerability & license risk register  —  governed by ADR-0017
+# ---------------------------------------------------------------------------
+# Every entry is an ACCEPTED, TIME-BOXED risk. Rules (enforced by
+# scripts/check-trivyignore.mjs in the pre-push gate):
+#   - each entry MUST have a non-empty 'statement' and an 'expired_at' date
+#   - 'expired_at' MUST be in the future; on expiry trivy re-flags it
+#   - direct-dep entries: expired_at <= 30 days;  transitive: <= 90 days
+# Do NOT delete a live finding to silence it — remove an entry only when the
+# underlying dependency is actually fixed. Reseeded 2026-07-24 after the Next 15
+# upgrade (next + postcss advisories resolved; sharp picked up as new transitive).
+# ---------------------------------------------------------------------------
+
+vulnerabilities:
+  # ===== TRANSITIVE dependencies — 90-day expiry =====
+  # No kiln-side upgrade path: the parent package (next / wallet-adapter / RN
+  # / solana chains) must bump. Surfaced here for visibility + quarterly re-triage.
+  # -- axios --
+  - id: CVE-2026-25639
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-42033
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-42035
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-42043
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-42264
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44486
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44487
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44488
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44494
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44495
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44496
+    statement: "transitive: axios (parent-owned). NOT imported in src/. Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- bigint-buffer --
+  - id: CVE-2025-3194
+    statement: "transitive: bigint-buffer (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- brace-expansion --
+  - id: CVE-2026-13149
+    statement: "transitive: brace-expansion (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- defu --
+  - id: CVE-2026-35209
+    statement: "transitive: defu (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- form-data --
+  - id: CVE-2026-12143
+    statement: "transitive: form-data (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- h3 --
+  - id: CVE-2026-23527
+    statement: "transitive: h3 (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-33128
+    statement: "transitive: h3 (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- js-yaml --
+  - id: CVE-2026-59869
+    statement: "transitive: js-yaml (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- jws --
+  - id: CVE-2025-65945
+    statement: "transitive: jws (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- lodash --
+  - id: CVE-2026-4800
+    statement: "transitive: lodash (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- minimatch --
+  - id: CVE-2026-26996
+    statement: "transitive: minimatch (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-27903
+    statement: "transitive: minimatch (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-27904
+    statement: "transitive: minimatch (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- node-forge --
+  - id: CVE-2025-12816
+    statement: "transitive: node-forge (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2025-66031
+    statement: "transitive: node-forge (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-33891
+    statement: "transitive: node-forge (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-33894
+    statement: "transitive: node-forge (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-33895
+    statement: "transitive: node-forge (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-33896
+    statement: "transitive: node-forge (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- parse-duration --
+  - id: CVE-2025-25283
+    statement: "transitive: parse-duration (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- picomatch --
+  - id: CVE-2026-33671
+    statement: "transitive: picomatch (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- protobufjs --
+  - id: CVE-2026-41242
+    statement: "transitive: CRITICAL protobufjs (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44289
+    statement: "transitive: protobufjs (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44290
+    statement: "transitive: protobufjs (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44291
+    statement: "transitive: protobufjs (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-44293
+    statement: "transitive: protobufjs (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-48712
+    statement: "transitive: protobufjs (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- sharp --
+  - id: GHSA-f88m-g3jw-g9cj
+    statement: "transitive: sharp (parent-owned). Next 15 image-optimization dep; not used by kiln image paths (single remotePattern). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- shell-quote --
+  - id: CVE-2026-13311
+    statement: "transitive: shell-quote (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  - id: CVE-2026-9277
+    statement: "transitive: CRITICAL shell-quote (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- socket.io-parser --
+  - id: CVE-2026-33151
+    statement: "transitive: socket.io-parser (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+  # -- ws --
+  - id: CVE-2026-48779
+    statement: "transitive: ws (parent-owned). Upstream fix pending parent bump."
+    expired_at: 2026-10-22
+
+licenses:
+  # ===== TRANSITIVE license findings — 90-day expiry =====
+  - id: AGPL-3.0-or-later
+    statement: "transitive: ua-parser-js via wallet-adapter/react-native. Not modified or redistributed as source by kiln. Re-review if it ever becomes a direct dependency."
+    expired_at: 2026-10-22
+  - id: LGPL-3.0-only
+    statement: "transitive: rpc-websockets + web3-utils (Solana stack). Dynamically-linked transitive deps, not modified/redistributed. Re-review if direct."
+    expired_at: 2026-10-22
+  - id: LGPL-3.0-or-later
+    statement: "transitive: @img/sharp-libvips-* native binaries (Next 15 image-optimization; libvips is LGPL). Dynamically linked, unmodified, not redistributed as source. Re-review if direct."
+    expired_at: 2026-10-22

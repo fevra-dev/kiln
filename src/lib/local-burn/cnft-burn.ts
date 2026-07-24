@@ -18,11 +18,7 @@ import {
 import { withSplMemoString } from './ix-helpers';
 import { buildRetireMemo } from './memo';
 import { fetchAssetProof, fetchTreeCanopyDepth, sliceProof } from './cnft-proof';
-import {
-  CnftOwnershipMismatchError,
-  CnftDelegatedError,
-  CnftTooDeepError,
-} from './errors';
+import { CnftOwnershipMismatchError, CnftDelegatedError, CnftTooDeepError } from './errors';
 import type { DasAsset, NftKind } from './types';
 
 const CNFT_BURN_COMPUTE_UNITS = 300_000;
@@ -77,7 +73,7 @@ export async function buildCnftBurn(args: {
   const rootBytes: Uint8Array = publicKeyBytes(proof.root);
   const dataHashBytes: Uint8Array = Buffer.from(args.kindInfo.dataHash, 'hex');
   const creatorHashBytes: Uint8Array = Buffer.from(args.kindInfo.creatorHash, 'hex');
-  const proofPubkeys = slicedProof.map(p => publicKey(p));
+  const proofPubkeys = slicedProof.map((p) => publicKey(p));
 
   // Build transaction
   let tb = transactionBuilder();

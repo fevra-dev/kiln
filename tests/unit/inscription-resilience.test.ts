@@ -1,6 +1,6 @@
 /**
  * Inscription Resilience Tests
- * 
+ *
  * Tests for inscription fetching with failover and caching.
  */
 
@@ -233,4 +233,3 @@ describe('Inscription Resilience', () => {
     });
   });
 });
-

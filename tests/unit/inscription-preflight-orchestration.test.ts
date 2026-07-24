@@ -22,7 +22,9 @@ function setupTipHeightFetch(height: number = TIP_HEIGHT) {
   });
 }
 
-function setupOrdinalsOk(opts: { height?: number | null; bytes?: Uint8Array; contentLength?: number } = {}) {
+function setupOrdinalsOk(
+  opts: { height?: number | null; bytes?: Uint8Array; contentLength?: number } = {},
+) {
   // ordinals.com path: TWO fetches (metadata + content)
   fetchMock.mockImplementationOnce(async (url: string) => {
     if (url.startsWith('https://ordinals.com/r/inscription/')) {
@@ -48,7 +50,10 @@ function setupOrdinalsOk(opts: { height?: number | null; bytes?: Uint8Array; con
       return {
         ok: true,
         status: 200,
-        headers: new Headers({ 'content-type': 'image/png', 'content-length': String(opts.bytes?.byteLength ?? 3) }),
+        headers: new Headers({
+          'content-type': 'image/png',
+          'content-length': String(opts.bytes?.byteLength ?? 3),
+        }),
         arrayBuffer: async () => (opts.bytes ?? new Uint8Array([1, 2, 3])).buffer,
       };
     }
@@ -245,7 +250,7 @@ describe('preflight()', () => {
     expect(result.exists).toBe(false);
     if (!result.exists) {
       expect(result.reason).toBe('all_unreachable');
-      expect(result.indexersChecked).toEqual([]);  // empty, not fake
+      expect(result.indexersChecked).toEqual([]); // empty, not fake
     }
   });
 });

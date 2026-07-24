@@ -15,10 +15,7 @@ export interface AssetProof {
   tree_id: string;
 }
 
-export async function fetchAssetProof(
-  assetId: PublicKey,
-  rpcUrl: string,
-): Promise<AssetProof> {
+export async function fetchAssetProof(assetId: PublicKey, rpcUrl: string): Promise<AssetProof> {
   const body = {
     jsonrpc: '2.0',
     id: '1',

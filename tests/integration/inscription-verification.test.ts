@@ -1,16 +1,13 @@
 /**
  * Integration Tests: Inscription Verification with Resilience
- * 
+ *
  * Tests inscription verification with resilience features:
  * - Caching
  * - Failover
  * - Immutability tracking
  */
 
-import {
-  fetchInscriptionWithFailover,
-  getCachedSha256,
-} from '@/lib/inscription-resilience';
+import { fetchInscriptionWithFailover } from '@/lib/inscription-resilience';
 import {
   storeInscriptionSnapshot,
   verifyInscriptionImmutability,
@@ -102,4 +99,3 @@ describe('Inscription Verification Integration', () => {
     });
   });
 });
-

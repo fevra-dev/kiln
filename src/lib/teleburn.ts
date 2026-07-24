@@ -1,9 +1,9 @@
 /**
  * KILN Teleburn Protocol v1.0
  * Minimal memo format for Solana → Bitcoin Ordinals teleburns
- * 
+ *
  * Spec: https://github.com/fevra-dev/kiln/blob/main/docs/TELEBURN_SPEC_v1.0.md
- * 
+ *
  * @description Implements the simplified teleburn protocol with minimal memo format.
  * Removed: SHA256 verification, derived addresses, JSON memo format
  * Added: Simple teleburn: prefix format, legacy support
@@ -91,11 +91,11 @@ export function parseInscriptionId(inscriptionId: string): ParsedInscriptionId {
   if (!isValidInscriptionId(inscriptionId)) {
     throw new Error(`Invalid inscription ID: ${inscriptionId}`);
   }
-  
+
   const iIndex = inscriptionId.lastIndexOf('i');
   const txid = inscriptionId.slice(0, iIndex);
   const index = parseInt(inscriptionId.slice(iIndex + 1), 10);
-  
+
   return { txid, index };
 }
 
@@ -135,13 +135,13 @@ export function parseTeleburnMemo(memo: string): string {
   if (!memo.startsWith(PREFIX)) {
     throw new Error('Not a teleburn memo');
   }
-  
+
   const inscriptionId = memo.slice(PREFIX.length);
-  
+
   if (!isValidInscriptionId(inscriptionId)) {
     throw new Error(`Invalid inscription ID in memo: ${inscriptionId}`);
   }
-  
+
   return inscriptionId;
 }
 
@@ -154,13 +154,13 @@ export function parseLegacyPrefixMemo(memo: string): string | null {
   if (!memo.startsWith(LEGACY_PREFIX)) {
     return null;
   }
-  
+
   const inscriptionId = memo.slice(LEGACY_PREFIX.length);
-  
+
   if (!isValidInscriptionId(inscriptionId)) {
     return null;
   }
-  
+
   return inscriptionId;
 }
 
@@ -172,21 +172,20 @@ export function parseLegacyPrefixMemo(memo: string): string | null {
 export function parseLegacyJsonMemo(memo: string): string | null {
   try {
     const parsed: LegacyJsonMemo = JSON.parse(memo);
-    
+
     // Check for KILN standard
     if (parsed.standard?.toLowerCase() !== 'kiln') {
       return null;
     }
-    
+
     // Extract inscription ID
-    const inscriptionId = typeof parsed.inscription === 'string' 
-      ? parsed.inscription 
-      : parsed.inscription?.id;
-    
+    const inscriptionId =
+      typeof parsed.inscription === 'string' ? parsed.inscription : parsed.inscription?.id;
+
     if (!inscriptionId || !isValidInscriptionId(inscriptionId)) {
       return null;
     }
-    
+
     return inscriptionId;
   } catch {
     return null;
@@ -202,30 +201,30 @@ export function parseLegacyJsonMemo(memo: string): string | null {
 export function parseAnyTeleburnMemo(memo: string): MemoParseResult {
   // Try v1.0 format first (teleburn:)
   if (memo.startsWith(PREFIX)) {
-    return { 
-      inscriptionId: parseTeleburnMemo(memo), 
-      format: 'v1' 
+    return {
+      inscriptionId: parseTeleburnMemo(memo),
+      format: 'v1',
     };
   }
-  
+
   // Try legacy kiln: prefix
   const legacyPrefixId = parseLegacyPrefixMemo(memo);
   if (legacyPrefixId) {
-    return { 
-      inscriptionId: legacyPrefixId, 
-      format: 'legacy-prefix' 
+    return {
+      inscriptionId: legacyPrefixId,
+      format: 'legacy-prefix',
     };
   }
-  
+
   // Try legacy JSON format
   const legacyJsonId = parseLegacyJsonMemo(memo);
   if (legacyJsonId) {
-    return { 
-      inscriptionId: legacyJsonId, 
-      format: 'legacy-json' 
+    return {
+      inscriptionId: legacyJsonId,
+      format: 'legacy-json',
     };
   }
-  
+
   throw new Error('Not a valid teleburn memo');
 }
 
@@ -266,14 +265,14 @@ export function verifyMemo(memo: string): TeleburnVerification {
       valid: true,
       inscriptionId,
       format,
-      error: null
+      error: null,
     };
   } catch (e) {
     return {
       valid: false,
       inscriptionId: null,
       format: null,
-      error: e instanceof Error ? e.message : 'Unknown error'
+      error: e instanceof Error ? e.message : 'Unknown error',
     };
   }
 }
@@ -303,9 +302,9 @@ export const TELEBURN_SQL_PATTERN = 'teleburn:%';
  * Usage: WHERE memo LIKE 'teleburn:%' OR memo LIKE 'kiln:%' OR memo LIKE '%"standard":"Kiln"%'
  */
 export const ALL_TELEBURN_SQL_PATTERNS = [
-  'teleburn:%',           // v1.0
-  'kiln:%',               // legacy prefix
-  '%"standard":"Kiln"%'   // legacy JSON
+  'teleburn:%', // v1.0
+  'kiln:%', // legacy prefix
+  '%"standard":"Kiln"%', // legacy JSON
 ];
 
 // ============================================================================
@@ -314,26 +313,26 @@ export const ALL_TELEBURN_SQL_PATTERNS = [
 
 /**
  * Detect token program (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
- * 
+ *
  * @param connection - Solana connection
  * @param mint - Mint public key
  * @returns Token program ID
  */
 export async function getTokenProgramId(
-  connection: Connection, 
-  mint: PublicKey
+  connection: Connection,
+  mint: PublicKey,
 ): Promise<PublicKey> {
   try {
     const accountInfo = await connection.getAccountInfo(mint);
     if (!accountInfo) {
       throw new Error('Mint account not found');
     }
-    
+
     // Check owner
     if (accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
       return TOKEN_2022_PROGRAM_ID;
     }
-    
+
     return TOKEN_PROGRAM_ID;
   } catch (error) {
     // Default to TOKEN_PROGRAM_ID on error
@@ -348,7 +347,7 @@ export async function getTokenProgramId(
 
 /**
  * Create SPL Memo instruction with string payload (v1.0 format)
- * 
+ *
  * @param memo - Memo string (e.g., "teleburn:abc123...i0")
  * @returns Memo instruction
  */
@@ -356,7 +355,6 @@ export function createMemoInstruction(memo: string): TransactionInstruction {
   return new TransactionInstruction({
     programId: MEMO_PROGRAM_ID,
     keys: [],
-    data: Buffer.from(memo, 'utf-8')
+    data: Buffer.from(memo, 'utf-8'),
   });
 }
-

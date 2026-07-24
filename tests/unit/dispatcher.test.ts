@@ -40,7 +40,9 @@ describe('buildBurnMemoTransaction dispatcher', () => {
   it('routes cnft to buildCnftBurn (no longer NotYetImplementedError)', async () => {
     // Mock the getSlot call (for getWorkingRpcUrl) + the getAsset call
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200, headers: new Headers(),
+      ok: true,
+      status: 200,
+      headers: new Headers(),
       json: async () => ({ jsonrpc: '2.0', id: '1', result: 12345 }),
     });
     mockDasResponse(dasCnft);
@@ -54,7 +56,7 @@ describe('buildBurnMemoTransaction dispatcher', () => {
         owner: OWNER,
         inscriptionId: INSCRIPTION,
         priorityMicrolamports: 2000,
-      })
+      }),
     ).rejects.not.toBeInstanceOf(NotYetImplementedError);
   });
 
@@ -68,7 +70,7 @@ describe('buildBurnMemoTransaction dispatcher', () => {
         owner: OWNER,
         inscriptionId: INSCRIPTION,
         priorityMicrolamports: 2000,
-      })
+      }),
     ).rejects.toBeInstanceOf(NotYetImplementedError);
   });
 
@@ -82,7 +84,7 @@ describe('buildBurnMemoTransaction dispatcher', () => {
         owner: OWNER,
         inscriptionId: INSCRIPTION,
         priorityMicrolamports: 2000,
-      })
+      }),
     ).rejects.toBeInstanceOf(NotAnNftError);
   });
 
@@ -101,7 +103,7 @@ describe('buildBurnMemoTransaction dispatcher', () => {
         owner: OWNER,
         inscriptionId: INSCRIPTION,
         priorityMicrolamports: 2000,
-      })
+      }),
     ).rejects.toBeInstanceOf(UnsupportedStandardError);
   });
 

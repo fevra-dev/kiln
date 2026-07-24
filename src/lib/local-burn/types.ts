@@ -18,7 +18,8 @@ export type NftStandard = 'CORE' | 'PNFT' | 'REGULAR';
 export type NftKind =
   | { kind: 'regular'; mint: PublicKey }
   | { kind: 'pnft'; mint: PublicKey }
-  | { kind: 'cnft';
+  | {
+      kind: 'cnft';
       assetId: PublicKey;
       tree: PublicKey;
       /** zero-based leaf index in the Merkle tree, used as both nonce and index in Bubblegum.burn */
@@ -68,10 +69,10 @@ export interface DasAsset {
  * Replaces the old `nftType: 'PNFT' | 'REGULAR'` shape.
  */
 export interface BuiltBurnTx {
-  transaction: string;          // base64 serialized
+  transaction: string; // base64 serialized
   /** true → client must decode with VersionedTransaction; false → legacy Transaction. */
   isVersioned: boolean;
-  nftKind: NftKind['kind'];     // expanded from old nftType
+  nftKind: NftKind['kind']; // expanded from old nftType
 }
 
 /**
@@ -99,5 +100,3 @@ export interface LocalBurnResult {
   /** NFT standard used */
   type: NftStandard;
 }
-
-

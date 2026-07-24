@@ -1,31 +1,32 @@
 /**
  * Update Metaplex NFT metadata to point to Ordinals inscription.
- * 
+ *
  * This function updates the NFT's metadata URI to point to the Ordinals content
  * at https://ordinals.com/content/{inscriptionId}
- * 
+ *
  * Using /content/ endpoint instead of /inscription/ because:
  * - /content/ returns the raw content (image/media)
  * - /inscription/ returns an HTML page with metadata
- * 
+ *
  * Requires:
  * - NFT must be mutable (updateAuthority must allow updates)
  * - User must be the updateAuthority
  */
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { publicKey, transactionBuilder, generateSigner, keypairIdentity } from '@metaplex-foundation/umi';
 import {
-  findMetadataPda,
-  fetchMetadata,
-  updateV1,
-} from '@metaplex-foundation/mpl-token-metadata';
+  publicKey,
+  transactionBuilder,
+  generateSigner,
+  keypairIdentity,
+} from '@metaplex-foundation/umi';
+import { findMetadataPda, fetchMetadata, updateV1 } from '@metaplex-foundation/mpl-token-metadata';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
 import { VersionedTransaction, VersionedMessage } from '@solana/web3.js';
 
 /**
  * Build a metadata update transaction to point NFT image to Ordinals inscription.
- * 
+ *
  * @param rpcUrl - Solana RPC URL
  * @param mint - Mint address (string)
  * @param updateAuthority - Update authority public key (must be the signer)
@@ -38,7 +39,7 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   mint: string,
   _updateAuthority: string, // Unused - client will set authority when signing
   inscriptionId: string,
-  priorityMicrolamports: number = 2_000
+  priorityMicrolamports: number = 2_000,
 ): Promise<{
   transaction: string; // base64 serialized transaction
   isVersioned: boolean;
@@ -48,7 +49,7 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
   const umi = createUmi(rpcUrl);
   const dummyKeypair = generateSigner(umi);
   umi.use(keypairIdentity(dummyKeypair));
-  
+
   const mintPk = publicKey(mint);
   // Note: authority will be set by the client when signing the transaction
 
@@ -81,25 +82,25 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
         sellerFeeBasisPoints: existingMetadata.sellerFeeBasisPoints,
         creators: existingMetadata.creators,
       },
-    })
+    }),
   );
 
   // Build the transaction (without sending)
   const builtTx = await tb.build(umi);
-  
+
   // Get the built transaction message
   const message = builtTx.message;
-  
+
   // Convert Umi TransactionMessage to Solana VersionedMessage format
   // Umi's message structure is compatible with Solana's wire format at runtime
   // The underlying structure matches Solana's VersionedMessage format
   // We use type assertion because the types differ but the runtime structure is compatible
   // Using 'unknown' as intermediate type to satisfy ESLint no-explicit-any rule
   const versionedTx = new VersionedTransaction(message as unknown as VersionedMessage);
-  
+
   // Serialize the versioned transaction (unsigned transaction bytes)
   const serializedMessage = versionedTx.serialize();
-  
+
   // Convert to base64 for transport
   const base64Tx = Buffer.from(serializedMessage).toString('base64');
 
@@ -109,4 +110,3 @@ export async function buildUpdateMetadataToOrdinalsTransaction(
     ordinalsUrl,
   };
 }
-

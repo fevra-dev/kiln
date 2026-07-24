@@ -19,6 +19,7 @@ Kiln is a **teleburn protocol** for permanently migrating Solana NFTs to Bitcoin
 - **Single Transaction Burn** - Burn + memo in one atomic transaction
 - **On-Chain Proof** - Simple `teleburn:<inscription_id>` memo format
 - **Minimal Protocol** - ~78 bytes on-chain (vs 250+ bytes for JSON)
+- **Multi-Standard Support** - Regular NFTs, programmable NFTs (pNFT), and compressed NFTs (cNFT)
 - **Public Verification** - Anyone can verify a teleburn at `/verify`
 - **Bidirectional Linkage** - Solana memo ↔ Bitcoin metadata
 
@@ -87,6 +88,19 @@ Anyone can verify a teleburn at `/verify`:
 - ✅ View linked Bitcoin inscription
 - ✅ Download proof as JSON
 
+### Supported NFT Standards
+
+Kiln detects the asset standard automatically (via Helius DAS) and routes to the correct burn path.
+All standards produce the **same** `teleburn:` memo and are verified identically.
+
+| Standard | Status | Burn mechanism |
+|----------|--------|----------------|
+| Regular NFT | ✅ Supported | Metaplex Token Metadata `burnV1` |
+| Programmable NFT (pNFT) | ✅ Supported | Metaplex Token Metadata `burnV1` |
+| Compressed NFT (cNFT) | ✅ Supported | Bubblegum `burn` + Merkle proof (owner-only) |
+| Metaplex Core | 🔜 Planned | — |
+| MPL / LibrePlex Inscriptions | 🔜 Planned | — |
+
 ## 🏗 Project Structure
 
 ```
@@ -106,11 +120,16 @@ Anyone can verify a teleburn at `/verify`:
     /ui               # Reusable UI components
     
   /lib
-    /local-burn       # Core burn logic
-      build-burn-memo-tx.ts  # Transaction builder
-      memo.ts                # Memo format
-    teleburn.ts       # Teleburn algorithm
-    inscription-verifier.ts  # Content verification
+    /local-burn       # Multi-standard burn dispatcher
+      build-burn-memo-tx.ts  # Dispatcher: detect kind → route to builder
+      detect.ts              # Helius DAS asset-kind detection
+      regular-burn.ts        # Regular NFT burn (Token Metadata)
+      pnft-burn.ts           # Programmable NFT burn
+      cnft-burn.ts           # Compressed NFT burn (Bubblegum)
+      cnft-proof.ts          # cNFT Merkle proof + canopy slicing
+      memo.ts                # v1.0 teleburn: memo
+    teleburn.ts       # Memo build/parse + inscription-id validation
+    inscription-verifier.ts  # Bitcoin inscription content verification
     dry-run.ts        # Transaction simulation
 ```
 
@@ -143,12 +162,13 @@ Anyone can verify a teleburn at `/verify`:
 - @solana/web3.js
 - @metaplex-foundation/umi
 - @metaplex-foundation/mpl-token-metadata
+- @metaplex-foundation/mpl-bubblegum (compressed NFTs)
 
 ## 📚 Documentation
 
-- [Teleburn Algorithm](./docs/TELEBURN_ALGORITHM.md) - Technical specification
-- [API Reference](./docs/API_REFERENCE.md) - API endpoints
-- [Integration Guide](./docs/INTEGRATION_GUIDE.md) - Developer integration
+- [Teleburn Protocol Spec v1.0](./public/docs/TELEBURN_SPEC_v1.0.md) - Technical specification
+- [API Reference](./public/docs/API_REFERENCE.md) - API endpoints
+- [Integration Guide](./public/docs/INTEGRATION_GUIDE.md) - Developer integration
 
 ## 🌐 Environment Variables
 
@@ -183,6 +203,6 @@ MIT License - See [LICENSE](./LICENSE)
 
 **Built for the Solana and Bitcoin communities**
 
-*Last updated: December 3, 2025*  
+*Last updated: July 23, 2026*  
 *Version: 1.0*  
 *Status: Production Ready*

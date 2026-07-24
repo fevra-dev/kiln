@@ -1,6 +1,6 @@
 /**
  * Inscription Immutability Tests
- * 
+ *
  * Tests for inscription immutability validation and snapshot tracking.
  */
 
@@ -104,7 +104,7 @@ describe('Inscription Immutability', () => {
 
     it('should detect changed content', async () => {
       const originalHash = 'original123';
-      const changedHash = 'changed456';
+      const _changedHash = 'changed456';
       const mockContent = new ArrayBuffer(100);
 
       // Mock fetch to return different content
@@ -143,10 +143,10 @@ describe('Inscription Immutability', () => {
       // Store snapshot with timestamp
       storeInscriptionSnapshot('abc123i0', originalHash, 'seal-operation');
       const snapshot = getInscriptionSnapshot('abc123i0');
-      const storedTime = snapshot?.fetchedAt || Date.now();
+      const _storedTime = snapshot?.fetchedAt || Date.now();
 
       // Wait a bit
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       (fetchInscriptionWithFailover as jest.Mock).mockResolvedValue({
         success: true,
@@ -270,4 +270,3 @@ describe('Inscription Immutability', () => {
     });
   });
 });
-

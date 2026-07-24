@@ -2,10 +2,10 @@
 
 /**
  * Wallet Button Component
- * 
+ *
  * Connect/disconnect wallet button with red matrix theme styling.
  * Shows wallet address when connected.
- * 
+ *
  * @description Terminal-style wallet connection button
  * @version 0.1.1
  */
@@ -21,24 +21,20 @@ interface WalletButtonProps {
 
 /**
  * Wallet Button Component
- * 
+ *
  * Styled wallet connection button matching red matrix theme.
  */
-export const WalletButton: FC<WalletButtonProps> = ({ 
-  className = '',
-  showBalance = false 
-}) => {
+export const WalletButton: FC<WalletButtonProps> = ({ className = '', showBalance = false }) => {
   const { publicKey } = useWallet();
 
   return (
     <div className={`wallet-button-container ${className}`}>
-      <WalletMultiButton 
-        className="terminal-button wallet-adapter-button-trigger"
-      />
-      
+      <WalletMultiButton className="terminal-button wallet-adapter-button-trigger" />
+
       {publicKey && showBalance && (
         <div className="mt-2 text-xs text-terminal-text opacity-70 font-mono">
-          <span className="text-terminal-prompt">$</span> Connected: {publicKey.toBase58().slice(0, 8)}...
+          <span className="text-terminal-prompt">$</span> Connected:{' '}
+          {publicKey.toBase58().slice(0, 8)}...
         </div>
       )}
 
@@ -131,4 +127,3 @@ export const WalletButton: FC<WalletButtonProps> = ({
     </div>
   );
 };
-

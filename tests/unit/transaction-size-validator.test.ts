@@ -1,6 +1,6 @@
 /**
  * Transaction Size Validator Tests
- * 
+ *
  * Tests for transaction size validation to ensure transactions
  * don't exceed Solana's 1232 byte limit.
  */
@@ -25,7 +25,7 @@ describe('Transaction Size Validator', () => {
           fromPubkey: PublicKey.default,
           toPubkey: PublicKey.default,
           lamports: 1000,
-        })
+        }),
       );
 
       const result = validateTransactionSize(tx);
@@ -40,7 +40,7 @@ describe('Transaction Size Validator', () => {
       // Create a transaction that's too large
       // This is hard to do in a test without mocking, but we can test the logic
       const tx = new Transaction();
-      
+
       // Add many instructions to make it large
       for (let i = 0; i < 100; i++) {
         tx.add(
@@ -48,7 +48,7 @@ describe('Transaction Size Validator', () => {
             fromPubkey: PublicKey.default,
             toPubkey: PublicKey.default,
             lamports: 1000,
-          })
+          }),
         );
       }
 
@@ -63,12 +63,12 @@ describe('Transaction Size Validator', () => {
 
     it('should provide warning when approaching limit', () => {
       const tx = new Transaction();
-      
+
       // Add instructions until we're close to warning threshold
       // This is a simplified test - in practice, we'd need to measure actual size
-      
+
       const result = validateTransactionSize(tx);
-      
+
       // If transaction is large enough, should have warning
       if (result.size > TRANSACTION_SIZE_WARNING_THRESHOLD) {
         expect(result.warning).toBeDefined();
@@ -77,7 +77,7 @@ describe('Transaction Size Validator', () => {
 
     it('should provide recommendations for oversized transactions', () => {
       const tx = new Transaction();
-      
+
       // Add many instructions
       for (let i = 0; i < 200; i++) {
         tx.add(
@@ -85,7 +85,7 @@ describe('Transaction Size Validator', () => {
             fromPubkey: PublicKey.default,
             toPubkey: PublicKey.default,
             lamports: 1000,
-          })
+          }),
         );
       }
 
@@ -106,7 +106,7 @@ describe('Transaction Size Validator', () => {
           fromPubkey: PublicKey.default,
           toPubkey: PublicKey.default,
           lamports: 1000,
-        })
+        }),
       );
 
       expect(() => assertTransactionSizeValid(tx)).not.toThrow();
@@ -114,7 +114,7 @@ describe('Transaction Size Validator', () => {
 
     it('should throw for invalid transactions', () => {
       const tx = new Transaction();
-      
+
       // Add many instructions to exceed limit
       for (let i = 0; i < 500; i++) {
         tx.add(
@@ -122,7 +122,7 @@ describe('Transaction Size Validator', () => {
             fromPubkey: PublicKey.default,
             toPubkey: PublicKey.default,
             lamports: 1000,
-          })
+          }),
         );
       }
 
@@ -142,7 +142,7 @@ describe('Transaction Size Validator', () => {
           fromPubkey: PublicKey.default,
           toPubkey: PublicKey.default,
           lamports: 1000,
-        })
+        }),
       );
 
       const size = getTransactionSize(tx);
@@ -155,10 +155,10 @@ describe('Transaction Size Validator', () => {
       // This would require a malformed transaction, which is hard to create
       // But we can test the error handling
       const tx = new Transaction();
-      
+
       // Try to serialize an empty transaction
       const size = getTransactionSize(tx);
-      
+
       // Should return a valid size (even if 0)
       expect(typeof size).toBe('number');
     });
@@ -172,7 +172,7 @@ describe('Transaction Size Validator', () => {
           fromPubkey: PublicKey.default,
           toPubkey: PublicKey.default,
           lamports: 1000,
-        })
+        }),
       );
 
       const canAdd = canAddInstruction(tx, 200);
@@ -182,7 +182,7 @@ describe('Transaction Size Validator', () => {
 
     it('should return false when transaction is full', () => {
       const tx = new Transaction();
-      
+
       // Fill transaction
       for (let i = 0; i < 500; i++) {
         tx.add(
@@ -190,7 +190,7 @@ describe('Transaction Size Validator', () => {
             fromPubkey: PublicKey.default,
             toPubkey: PublicKey.default,
             lamports: 1000,
-          })
+          }),
         );
       }
 
@@ -207,7 +207,7 @@ describe('Transaction Size Validator', () => {
   describe('getSizeOptimizationRecommendations', () => {
     it('should return recommendations for large transactions', () => {
       const tx = new Transaction();
-      
+
       // Add many instructions
       for (let i = 0; i < 200; i++) {
         tx.add(
@@ -215,14 +215,14 @@ describe('Transaction Size Validator', () => {
             fromPubkey: PublicKey.default,
             toPubkey: PublicKey.default,
             lamports: 1000,
-          })
+          }),
         );
       }
 
       const recommendations = getSizeOptimizationRecommendations(tx);
 
       expect(Array.isArray(recommendations)).toBe(true);
-      
+
       if (recommendations.length > 0) {
         expect(recommendations[0]).toContain('Address Lookup Tables');
       }
@@ -235,7 +235,7 @@ describe('Transaction Size Validator', () => {
           fromPubkey: PublicKey.default,
           toPubkey: PublicKey.default,
           lamports: 1000,
-        })
+        }),
       );
 
       const recommendations = getSizeOptimizationRecommendations(tx);
@@ -258,4 +258,3 @@ describe('Transaction Size Validator', () => {
     });
   });
 });
-

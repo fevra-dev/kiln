@@ -86,7 +86,9 @@ export class TransactionBuilder {
   /**
    * Get actual timestamp + slot for a confirmed transaction.
    */
-  async getTransactionTimestamp(signature: string): Promise<{ timestamp: number; block_height: number }> {
+  async getTransactionTimestamp(
+    signature: string,
+  ): Promise<{ timestamp: number; block_height: number }> {
     const tx = await withRpcFailover(async (conn) => {
       return await conn.getTransaction(signature, {
         commitment: 'confirmed',

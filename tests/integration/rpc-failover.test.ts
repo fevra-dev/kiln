@@ -1,6 +1,6 @@
 /**
  * Integration Tests: RPC Failover
- * 
+ *
  * Tests RPC failover in transaction building scenarios.
  */
 
@@ -19,15 +19,14 @@ describe('RPC Failover Integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Clean up global manager
     const manager = getRpcManager();
     if (manager) {
       manager.stop();
     }
 
-    mockConnection = jest.fn();
-    (Connection as unknown as jest.Mock) = mockConnection;
+    mockConnection = Connection as unknown as jest.Mock;
   });
 
   afterEach(() => {
@@ -60,7 +59,7 @@ describe('RPC Failover Integration', () => {
       });
 
       const builder = new TransactionBuilder('https://primary.example.com');
-      
+
       // Should succeed via failover
       await expect(
         builder.buildSealTransaction({
@@ -68,7 +67,7 @@ describe('RPC Failover Integration', () => {
           mint: PublicKey.default,
           inscriptionId: 'abc123i0',
           sha256: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
-        })
+        }),
       ).resolves.toBeDefined();
     });
 
@@ -92,7 +91,7 @@ describe('RPC Failover Integration', () => {
       });
 
       const builder = new TransactionBuilder('https://primary.example.com');
-      
+
       // Mock isPNFT to return false
       jest.mock('@/lib/metaplex-burn', () => ({
         isPNFT: jest.fn().mockResolvedValue(false),
@@ -106,7 +105,7 @@ describe('RPC Failover Integration', () => {
           inscriptionId: 'abc123i0',
           sha256: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
           method: 'burn',
-        })
+        }),
       ).resolves.toBeDefined();
     });
   });
@@ -119,7 +118,7 @@ describe('RPC Failover Integration', () => {
       });
 
       let callCount = 0;
-      const result = await withRpcFailover(async (conn) => {
+      const result = await withRpcFailover(async (_conn) => {
         callCount++;
         if (callCount === 1) {
           throw new Error('Primary RPC failed');
@@ -132,4 +131,3 @@ describe('RPC Failover Integration', () => {
     });
   });
 });
-

@@ -2,16 +2,16 @@
 
 /**
  * Teleburn Wizard Page
- * 
+ *
  * Main page for KILN.1 teleburn protocol wizard.
  * Orchestrates complete multi-step flow with state management.
- * 
+ *
  * Flow:
  * 1. Input Form → Enter mint, inscription ID
  * 2. Connect Wallet → Connect Solana wallet
  * 3. Preview → Dry run simulation
  * 4. Execute → Sign and broadcast transactions
- * 
+ *
  * @description Complete teleburn wizard interface
  * @version 0.1.1
  */
@@ -25,7 +25,7 @@ import { Step4Execute } from '@/components/wizard/Step4Execute';
 
 /**
  * Teleburn Wizard Page
- * 
+ *
  * Complete state management for wizard flow.
  * Note: No localStorage persistence - each session starts fresh.
  */
@@ -38,7 +38,7 @@ export default function TeleburnPage() {
   // Clear any stale localStorage data on mount
   useEffect(() => {
     setIsClient(true);
-    
+
     // Clear any old saved state to prevent stale data issues
     try {
       localStorage.removeItem('kiln_teleburn_form');
@@ -81,28 +81,28 @@ export default function TeleburnPage() {
     return (
       <div className="min-h-screen bg-terminal-bg text-terminal-text font-mono p-6 w-full max-w-full overflow-x-hidden">
         <div className="max-w-6xl mx-auto w-full">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <a 
-                href="/" 
-                className="home-button text-4xl hover:text-matrix-red transition-colors duration-200"
-                title="Return to KILN Home"
-              >
-                ঌ
-              </a>
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
-                [ Configure Teleburn ]
-              </h1>
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <a
+                  href="/"
+                  className="home-button text-4xl hover:text-matrix-red transition-colors duration-200"
+                  title="Return to KILN Home"
+                >
+                  ঌ
+                </a>
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-terminal-text glow-text whitespace-nowrap">
+                  [ Configure Teleburn ]
+                </h1>
+              </div>
+              <div className="status-badge">
+                <span>ONLINE</span>
+              </div>
             </div>
-            <div className="status-badge">
-              <span>ONLINE</span>
-            </div>
+            <p className="text-lg text-matrix-red/80 mb-2">
+              <span className="text-terminal-prompt">$</span> configure_teleburn_parameters
+            </p>
           </div>
-          <p className="text-lg text-matrix-red/80 mb-2">
-            <span className="text-terminal-prompt">$</span> configure_teleburn_parameters
-          </p>
-        </div>
 
           <div className="terminal-window">
             <div className="terminal-window-header">
@@ -111,15 +111,10 @@ export default function TeleburnPage() {
                 <div className="w-3 h-3 rounded-full bg-matrix-red/50"></div>
                 <div className="w-3 h-3 rounded-full bg-matrix-red/30"></div>
               </div>
-              <div className="text-xs opacity-50">
-                TELEBURN_CONFIG // Parameter Input
-              </div>
+              <div className="text-xs opacity-50">TELEBURN_CONFIG // Parameter Input</div>
             </div>
             <div className="terminal-window-content p-8">
-              <TeleburnForm 
-                onSubmit={handleFormSubmit}
-                initialData={formData || undefined}
-              />
+              <TeleburnForm onSubmit={handleFormSubmit} initialData={formData || undefined} />
             </div>
           </div>
         </div>
@@ -154,22 +149,20 @@ export default function TeleburnPage() {
   }
 
   return (
-    <WizardLayout 
+    <WizardLayout
       currentStep={currentStep}
       onStepChange={(step) => {
         // Only allow navigation to previous steps
         const steps: WizardStep[] = ['connect', 'preview', 'execute'];
         const currentIndex = steps.indexOf(currentStep);
         const targetIndex = steps.indexOf(step);
-        
+
         if (targetIndex < currentIndex) {
           setCurrentStep(step);
         }
       }}
     >
-      {currentStep === 'connect' && (
-        <Step1Connect onComplete={handleConnectComplete} />
-      )}
+      {currentStep === 'connect' && <Step1Connect onComplete={handleConnectComplete} />}
 
       {currentStep === 'preview' && formData && (
         <Step3Preview

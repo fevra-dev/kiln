@@ -1,8 +1,5 @@
 import { detectAssetKind } from '@/lib/local-burn/detect';
-import {
-  MalformedDasResponseError,
-  NotAnNftError,
-} from '@/lib/local-burn/errors';
+import { MalformedDasResponseError, NotAnNftError } from '@/lib/local-burn/errors';
 import dasRegular from '../fixtures/das-regular-nft.json';
 import dasPnft from '../fixtures/das-pnft.json';
 import dasCnft from '../fixtures/das-cnft.json';
@@ -95,7 +92,11 @@ describe('detectAssetKind error paths', () => {
       ok: true,
       status: 200,
       headers: new Headers({ 'content-type': 'application/json' }),
-      json: async () => ({ jsonrpc: '2.0', id: '1', error: { code: -32602, message: 'Invalid params' } }),
+      json: async () => ({
+        jsonrpc: '2.0',
+        id: '1',
+        error: { code: -32602, message: 'Invalid params' },
+      }),
     });
     await expect(detectAssetKind('test-id', RPC_URL)).rejects.toThrow(/RPC error -32602/);
   });
@@ -108,7 +109,9 @@ describe('detectAssetKind error paths', () => {
       content: { metadata: {} },
       compression: { compressed: true }, // missing tree/leaf_id/data_hash/creator_hash
     });
-    await expect(detectAssetKind('test-id', RPC_URL)).rejects.toBeInstanceOf(MalformedDasResponseError);
+    await expect(detectAssetKind('test-id', RPC_URL)).rejects.toBeInstanceOf(
+      MalformedDasResponseError,
+    );
   });
 
   it('throws on fetch timeout', async () => {

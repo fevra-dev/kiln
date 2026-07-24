@@ -3,17 +3,11 @@
  * See: docs/superpowers/specs/2026-05-17-pre-burn-inscription-check-design.md §4.2
  */
 
-export type SatRarity =
-  | 'common' | 'uncommon' | 'rare'
-  | 'epic' | 'legendary' | 'mythic';
+export type SatRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 export type IndexerName = 'ordinals.com' | 'ordinalswallet';
 
-export type IndexerCheckStatus =
-  | 'not_found'
-  | 'timeout'
-  | 'error'
-  | 'rate_limited';
+export type IndexerCheckStatus = 'not_found' | 'timeout' | 'error' | 'rate_limited';
 
 export interface IndexerCheck {
   name: IndexerName;
@@ -45,7 +39,7 @@ export interface PreflightNotFound {
   inscriptionId: string;
   reason: 'not_found' | 'all_unreachable';
   indexersChecked: IndexerCheck[];
-  cached: boolean;          // present on both union arms so spread { ...cached, cached: true } is always valid
+  cached: boolean; // present on both union arms so spread { ...cached, cached: true } is always valid
   checkedAt: number;
 }
 

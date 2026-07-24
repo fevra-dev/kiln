@@ -19,7 +19,11 @@ export const InscriptionStatusRow: FC<InscriptionStatusRowProps> = ({ state, res
     return <div style={{ fontSize: 13, opacity: 0.7 }}>⏳ Checking Bitcoin…</div>;
   }
   if (state === 'error') {
-    return <div style={{ fontSize: 13, color: '#d68910' }}>⚠️ Could not verify — {error ?? 'unknown error'}</div>;
+    return (
+      <div style={{ fontSize: 13, color: '#d68910' }}>
+        ⚠️ Could not verify — {error ?? 'unknown error'}
+      </div>
+    );
   }
   if (!result) return null;
 

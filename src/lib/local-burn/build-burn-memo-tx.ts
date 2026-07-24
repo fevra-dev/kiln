@@ -19,7 +19,7 @@ import type { BuiltBurnTx } from './types';
 
 export interface BuildBurnMemoArgs {
   rpcUrl: string;
-  mint: string;            // mint OR cNFT assetId OR Core assetId
+  mint: string; // mint OR cNFT assetId OR Core assetId
   owner: string;
   inscriptionId: string;
   priorityMicrolamports?: number;

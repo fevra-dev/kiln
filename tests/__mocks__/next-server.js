@@ -52,4 +52,3 @@ class NextResponse {
 }
 
 module.exports = { NextRequest, NextResponse };
-

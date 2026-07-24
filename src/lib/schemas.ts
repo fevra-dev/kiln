@@ -1,6 +1,6 @@
 /**
  * Zod validation schemas for KILN.1 Teleburn Standard
- * 
+ *
  * @description Input validation for all external data sources
  * @version 0.1.1
  */
@@ -14,45 +14,49 @@ import { STANDARD, STANDARD_VERSION } from './types';
 
 /**
  * Validates Bitcoin inscription ID format: <64-hex-txid>i<index>
- * 
+ *
  * @example "abc123...def789i0"
  */
-export const InscriptionIdSchema = z.string().regex(
-  /^[0-9a-fA-F]{64}i\d+$/,
-  'Invalid inscription ID format. Must be: <64-char-hex-txid>i<index>'
-);
+export const InscriptionIdSchema = z
+  .string()
+  .regex(
+    /^[0-9a-fA-F]{64}i\d+$/,
+    'Invalid inscription ID format. Must be: <64-char-hex-txid>i<index>',
+  );
 
 /**
  * Validates Solana public key (Base58, 32-44 characters)
- * 
+ *
  * @example "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr"
  */
-export const PublicKeySchema = z.string().regex(
-  /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
-  'Invalid Solana public key format'
-);
+export const PublicKeySchema = z
+  .string()
+  .regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, 'Invalid Solana public key format');
 
 /**
  * Validates SHA-256 hash (64 character hex string)
- * 
+ *
  * @example "a1b2c3d4e5f6..." (64 chars)
  */
-export const Sha256Schema = z.string().regex(
-  /^[0-9a-f]{64}$/i,
-  'Invalid SHA-256 format. Must be 64-character hex string'
-);
+export const Sha256Schema = z
+  .string()
+  .regex(/^[0-9a-f]{64}$/i, 'Invalid SHA-256 format. Must be 64-character hex string');
 
 /**
  * Validates Unix epoch timestamp (reasonable range)
  * Must be after 2020-01-01 and before 2100-01-01
  */
-export const TimestampSchema = z.number().int().min(
-  1577836800, // 2020-01-01
-  'Timestamp too far in the past'
-).max(
-  4102444800, // 2100-01-01
-  'Timestamp too far in the future'
-);
+export const TimestampSchema = z
+  .number()
+  .int()
+  .min(
+    1577836800, // 2020-01-01
+    'Timestamp too far in the past',
+  )
+  .max(
+    4102444800, // 2100-01-01
+    'Timestamp too far in the future',
+  );
 
 /**
  * Validates Solana slot/block height
@@ -77,7 +81,13 @@ export const UrlSchema = z.string().url('Invalid URL format');
 /**
  * Validates teleburn method
  */
-export const TeleburnMethodSchema = z.enum(['teleburn-burn', 'teleburn-incinerate', 'teleburn-derived', 'burn', 'incinerate']); // Includes old values for backward compatibility
+export const TeleburnMethodSchema = z.enum([
+  'teleburn-burn',
+  'teleburn-incinerate',
+  'teleburn-derived',
+  'burn',
+  'incinerate',
+]); // Includes old values for backward compatibility
 
 /**
  * Validates chain network
@@ -86,13 +96,21 @@ export const ChainNetworkSchema = z.enum([
   'solana-mainnet',
   'solana-devnet',
   'bitcoin-mainnet',
-  'bitcoin-testnet'
+  'bitcoin-testnet',
 ]);
 
 /**
  * Validates memo action
  */
-export const MemoActionSchema = z.enum(['teleburn-seal', 'teleburn-burn', 'teleburn-incinerate', 'teleburn-derived', 'seal', 'burn', 'incinerate']); // Includes old values for backward compatibility
+export const MemoActionSchema = z.enum([
+  'teleburn-seal',
+  'teleburn-burn',
+  'teleburn-incinerate',
+  'teleburn-derived',
+  'seal',
+  'burn',
+  'incinerate',
+]); // Includes old values for backward compatibility
 
 // ============================================================================
 // MEMO PAYLOAD SCHEMAS
@@ -112,55 +130,61 @@ export const Sbt01SealSchema = z.object({
   block_height: BlockHeightSchema,
   inscription: z.object({
     id: InscriptionIdSchema,
-    network: z.enum(['bitcoin-mainnet', 'bitcoin-testnet'])
+    network: z.enum(['bitcoin-mainnet', 'bitcoin-testnet']),
   }),
   solana: z.object({
     mint: PublicKeySchema,
-    collection: PublicKeySchema.optional()
+    collection: PublicKeySchema.optional(),
   }),
   media: z.object({
-    sha256: Sha256Schema
+    sha256: Sha256Schema,
   }),
-  extra: z.object({
-    signers: z.array(PublicKeySchema).optional(),
-    note: z.string().max(200).optional()
-  }).optional()
+  extra: z
+    .object({
+      signers: z.array(PublicKeySchema).optional(),
+      note: z.string().max(200).optional(),
+    })
+    .optional(),
 });
 
 /**
  * Validates Retire memo payload structure
  */
-export const Sbt01RetireSchema = z.object({
-  standard: z.literal(STANDARD),
-  version: z.literal(STANDARD_VERSION),
-  action: TeleburnMethodSchema,
-  timestamp: TimestampSchema,
-  block_height: BlockHeightSchema,
-  inscription: z.object({
-    id: InscriptionIdSchema
-  }),
-  solana: z.object({
-    mint: PublicKeySchema
-  }),
-  media: z.object({
-    sha256: Sha256Schema
-  }),
-  derived: z.object({
-    bump: BumpSchema
-  }).optional()
-}).refine(
-  (data) => {
-    // If action is 'teleburn-derived', derived.bump is REQUIRED
-    if (data.action === 'teleburn-derived') {
-      return data.derived?.bump !== undefined;
-    }
-    return true;
-  },
-  {
-    message: 'derived.bump is required when action is "teleburn-derived"',
-    path: ['derived']
-  }
-);
+export const Sbt01RetireSchema = z
+  .object({
+    standard: z.literal(STANDARD),
+    version: z.literal(STANDARD_VERSION),
+    action: TeleburnMethodSchema,
+    timestamp: TimestampSchema,
+    block_height: BlockHeightSchema,
+    inscription: z.object({
+      id: InscriptionIdSchema,
+    }),
+    solana: z.object({
+      mint: PublicKeySchema,
+    }),
+    media: z.object({
+      sha256: Sha256Schema,
+    }),
+    derived: z
+      .object({
+        bump: BumpSchema,
+      })
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      // If action is 'teleburn-derived', derived.bump is REQUIRED
+      if (data.action === 'teleburn-derived') {
+        return data.derived?.bump !== undefined;
+      }
+      return true;
+    },
+    {
+      message: 'derived.bump is required when action is "teleburn-derived"',
+      path: ['derived'],
+    },
+  );
 
 // ============================================================================
 // API REQUEST SCHEMAS
@@ -175,32 +199,34 @@ export const SealTransactionRequestSchema = z.object({
   inscriptionId: InscriptionIdSchema,
   sha256: Sha256Schema,
   network: z.enum(['mainnet', 'devnet']).optional().default('mainnet'),
-  signers: z.array(PublicKeySchema).optional()
+  signers: z.array(PublicKeySchema).optional(),
 });
 
 /**
  * Validates retire transaction build request
  */
-export const RetireTransactionRequestSchema = z.object({
-  feePayer: PublicKeySchema,
-  mint: PublicKeySchema,
-  inscriptionId: InscriptionIdSchema,
-  sha256: Sha256Schema,
-  method: TeleburnMethodSchema,
-  bump: BumpSchema.optional()
-}).refine(
-  (data) => {
-    // Bump is REQUIRED for teleburn-derived method
-    if (data.method === 'teleburn-derived') {
-      return data.bump !== undefined;
-    }
-    return true;
-  },
-  {
-    message: 'bump is required when method is "teleburn-derived"',
-    path: ['bump']
-  }
-);
+export const RetireTransactionRequestSchema = z
+  .object({
+    feePayer: PublicKeySchema,
+    mint: PublicKeySchema,
+    inscriptionId: InscriptionIdSchema,
+    sha256: Sha256Schema,
+    method: TeleburnMethodSchema,
+    bump: BumpSchema.optional(),
+  })
+  .refine(
+    (data) => {
+      // Bump is REQUIRED for teleburn-derived method
+      if (data.method === 'teleburn-derived') {
+        return data.bump !== undefined;
+      }
+      return true;
+    },
+    {
+      message: 'bump is required when method is "teleburn-derived"',
+      path: ['bump'],
+    },
+  );
 
 /**
  * Validates update metadata URI request
@@ -209,7 +235,7 @@ export const UpdateUriRequestSchema = z.object({
   feePayer: PublicKeySchema,
   mint: PublicKeySchema,
   newUri: UrlSchema,
-  updateAuthority: PublicKeySchema
+  updateAuthority: PublicKeySchema,
 });
 
 /**
@@ -218,7 +244,7 @@ export const UpdateUriRequestSchema = z.object({
 export const VerifyRequestSchema = z.object({
   mint: PublicKeySchema,
   inscriptionId: InscriptionIdSchema.optional(),
-  rpcUrls: z.array(UrlSchema).optional()
+  rpcUrls: z.array(UrlSchema).optional(),
 });
 
 /**
@@ -226,7 +252,7 @@ export const VerifyRequestSchema = z.object({
  */
 export const InscriptionVerifyRequestSchema = z.object({
   inscriptionId: InscriptionIdSchema,
-  expectedSha256: Sha256Schema
+  expectedSha256: Sha256Schema,
 });
 
 /**
@@ -239,7 +265,7 @@ export const DryRunRequestSchema = z.object({
   sha256: Sha256Schema,
   method: TeleburnMethodSchema,
   pointerUri: UrlSchema.optional(),
-  updateMetadata: z.boolean().optional().default(false)
+  updateMetadata: z.boolean().optional().default(false),
 });
 
 // ============================================================================
@@ -255,7 +281,7 @@ export const BatchItemSchema = z.object({
   sha256: Sha256Schema,
   method: TeleburnMethodSchema,
   pointerUri: UrlSchema.optional(),
-  updateMetadata: z.boolean().optional().default(false)
+  updateMetadata: z.boolean().optional().default(false),
 });
 
 /**
@@ -265,7 +291,7 @@ export const BatchRequestSchema = z.object({
   feePayer: PublicKeySchema,
   items: z.array(BatchItemSchema).min(1).max(100, 'Batch size limited to 100 items'),
   maxConcurrent: z.number().int().min(1).max(5).optional().default(3),
-  maxRetries: z.number().int().min(0).max(5).optional().default(3)
+  maxRetries: z.number().int().min(0).max(5).optional().default(3),
 });
 
 // ============================================================================
@@ -277,7 +303,7 @@ export const BatchRequestSchema = z.object({
  */
 export const DeriveOwnerRequestSchema = z.object({
   inscriptionId: InscriptionIdSchema,
-  startBump: BumpSchema.optional().default(0)
+  startBump: BumpSchema.optional().default(0),
 });
 
 // ============================================================================
@@ -289,7 +315,7 @@ export const DeriveOwnerRequestSchema = z.object({
  */
 export const DecodeRequestSchema = z.object({
   transaction: z.string().min(1, 'Transaction string cannot be empty'),
-  encoding: z.enum(['base64', 'base58']).optional().default('base64')
+  encoding: z.enum(['base64', 'base58']).optional().default('base64'),
 });
 
 /**
@@ -298,7 +324,7 @@ export const DecodeRequestSchema = z.object({
 export const SimulateRequestSchema = z.object({
   transaction: z.string().min(1, 'Transaction string cannot be empty'),
   encoding: z.enum(['base64', 'base58']).optional().default('base64'),
-  commitment: z.enum(['processed', 'confirmed', 'finalized']).optional().default('confirmed')
+  commitment: z.enum(['processed', 'confirmed', 'finalized']).optional().default('confirmed'),
 });
 
 // ============================================================================
@@ -314,27 +340,39 @@ export const PointerJsonSchema = z.object({
   description: z.string().max(500),
   image: UrlSchema,
   external_url: UrlSchema.optional(),
-  attributes: z.array(z.object({
-    trait_type: z.string(),
-    value: z.union([z.string(), z.number()])
-  })).optional(),
-  properties: z.object({
-    ordinal: z.object({
-      inscription_id: InscriptionIdSchema,
-      sha256: Sha256Schema,
-      network: z.enum(['bitcoin-mainnet', 'bitcoin-testnet'])
-    }),
-    files: z.array(z.object({
-      uri: UrlSchema,
-      type: z.string()
-    })).optional()
-  }).optional(),
-  recovery: z.object({
-    originalMetadataUri: UrlSchema.optional(),
-    originalMetadataHash: z.string().optional(),
-    teleburn_date: z.string().datetime().optional(),
-    authority: PublicKeySchema.optional()
-  }).optional()
+  attributes: z
+    .array(
+      z.object({
+        trait_type: z.string(),
+        value: z.union([z.string(), z.number()]),
+      }),
+    )
+    .optional(),
+  properties: z
+    .object({
+      ordinal: z.object({
+        inscription_id: InscriptionIdSchema,
+        sha256: Sha256Schema,
+        network: z.enum(['bitcoin-mainnet', 'bitcoin-testnet']),
+      }),
+      files: z
+        .array(
+          z.object({
+            uri: UrlSchema,
+            type: z.string(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+  recovery: z
+    .object({
+      originalMetadataUri: UrlSchema.optional(),
+      originalMetadataHash: z.string().optional(),
+      teleburn_date: z.string().datetime().optional(),
+      authority: PublicKeySchema.optional(),
+    })
+    .optional(),
 });
 
 // ============================================================================
@@ -344,30 +382,27 @@ export const PointerJsonSchema = z.object({
 /**
  * Safely parse and validate data with zod schema
  * Returns parsed data or throws descriptive error
- * 
+ *
  * @param schema - Zod schema to validate against
  * @param data - Data to validate
  * @returns Parsed and validated data
  * @throws ZodError with detailed validation errors
  */
-export function validateInput<T>(
-  schema: z.ZodSchema<T>,
-  data: unknown
-): T {
+export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): T {
   return schema.parse(data);
 }
 
 /**
  * Safely parse and validate data with zod schema (safe version)
  * Returns success/error object instead of throwing
- * 
+ *
  * @param schema - Zod schema to validate against
  * @param data - Data to validate
  * @returns Result object with success flag and data or errors
  */
 export function safeValidateInput<T>(
   schema: z.ZodSchema<T>,
-  data: unknown
+  data: unknown,
 ): { success: true; data: T } | { success: false; errors: z.ZodError } {
   const result = schema.safeParse(data);
   if (result.success) {
@@ -378,7 +413,7 @@ export function safeValidateInput<T>(
 
 /**
  * Format zod validation errors into user-friendly messages
- * 
+ *
  * @param error - ZodError from failed validation
  * @returns Array of human-readable error messages
  */
@@ -391,7 +426,7 @@ export function formatValidationErrors(error: z.ZodError): string[] {
 
 /**
  * Validate inscription ID format (quick check without full schema)
- * 
+ *
  * @param id - Inscription ID to validate
  * @returns true if format is valid
  */
@@ -401,7 +436,7 @@ export function isValidInscriptionId(id: string): boolean {
 
 /**
  * Validate Solana public key format (quick check without full schema)
- * 
+ *
  * @param key - Public key to validate
  * @returns true if format is valid
  */
@@ -411,7 +446,7 @@ export function isValidPublicKey(key: string): boolean {
 
 /**
  * Validate SHA-256 hash format (quick check without full schema)
- * 
+ *
  * @param hash - Hash to validate
  * @returns true if format is valid
  */
@@ -422,7 +457,7 @@ export function isValidSha256(hash: string): boolean {
 /**
  * Validate timestamp is within acceptable range (±5 minutes from now)
  * Used to detect clock drift issues
- * 
+ *
  * @param timestamp - Unix epoch timestamp in seconds
  * @returns true if timestamp is within acceptable range
  */
@@ -446,4 +481,3 @@ export type BatchRequest = z.infer<typeof BatchRequestSchema>;
 export type DecodeRequest = z.infer<typeof DecodeRequestSchema>;
 export type SimulateRequest = z.infer<typeof SimulateRequestSchema>;
 export type PointerJson = z.infer<typeof PointerJsonSchema>;
-

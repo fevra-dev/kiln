@@ -1,9 +1,9 @@
 /**
  * Inscription Resilience Layer
- * 
+ *
  * Provides multiple data sources, caching, and failover for inscription fetching.
  * Handles ordinals.com downtime and API failures gracefully.
- * 
+ *
  * @version 0.1.1
  */
 
@@ -152,7 +152,7 @@ function setCachedContent(
   content: ArrayBuffer,
   contentType: string,
   sha256: string,
-  source: string
+  source: string,
 ): void {
   inscriptionCache.set(inscriptionId, {
     content,
@@ -174,10 +174,9 @@ function setCachedContent(
  */
 async function fetchFromSource(
   source: InscriptionSource,
-  inscriptionId: string
+  inscriptionId: string,
 ): Promise<
-  | { success: true; content: ArrayBuffer; contentType: string }
-  | { success: false; error: string }
+  { success: true; content: ArrayBuffer; contentType: string } | { success: false; error: string }
 > {
   try {
     const controller = new AbortController();
@@ -188,7 +187,7 @@ async function fetchFromSource(
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'Accept': '*/*',
+          Accept: '*/*',
           'User-Agent': 'KILN.1-Verifier/0.1.1',
         },
       });
@@ -265,7 +264,7 @@ async function fetchFromSource(
  * Fetch inscription content with failover across multiple sources
  */
 export async function fetchInscriptionWithFailover(
-  inscriptionId: string
+  inscriptionId: string,
 ): Promise<
   | { success: true; content: ArrayBuffer; contentType: string; source: string }
   | { success: false; error: string }
@@ -273,7 +272,9 @@ export async function fetchInscriptionWithFailover(
   // Check cache first
   const cached = getCachedContent(inscriptionId);
   if (cached) {
-    console.log(`✅ Using cached inscription content for ${inscriptionId} (source: ${cached.source})`);
+    console.log(
+      `✅ Using cached inscription content for ${inscriptionId} (source: ${cached.source})`,
+    );
     return {
       success: true,
       content: cached.content,
@@ -377,12 +378,14 @@ export function getCacheStats(): {
 /**
  * Health check all inscription sources
  */
-export async function healthCheckSources(): Promise<Array<{
-  name: string;
-  healthy: boolean;
-  latency?: number;
-  error?: string;
-}>> {
+export async function healthCheckSources(): Promise<
+  Array<{
+    name: string;
+    healthy: boolean;
+    latency?: number;
+    error?: string;
+  }>
+> {
   const results = await Promise.allSettled(
     INSCRIPTION_SOURCES.map(async (source) => {
       const startTime = Date.now();
@@ -427,11 +430,10 @@ export async function healthCheckSources(): Promise<Array<{
           error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
-    })
+    }),
   );
 
   return results.map((result) =>
-    result.status === 'fulfilled' ? result.value : { name: 'unknown', healthy: false }
+    result.status === 'fulfilled' ? result.value : { name: 'unknown', healthy: false },
   );
 }
-

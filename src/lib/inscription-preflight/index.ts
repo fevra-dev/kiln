@@ -111,7 +111,11 @@ export async function preflight(rawId: string): Promise<PreflightResponse> {
     cached: false,
     checkedAt: Date.now(),
   };
-  preflightCache.set(inscriptionId, response, reason === 'not_found' ? TTL_NOT_FOUND : TTL_UNREACHABLE);
+  preflightCache.set(
+    inscriptionId,
+    response,
+    reason === 'not_found' ? TTL_NOT_FOUND : TTL_UNREACHABLE,
+  );
   const ms = Date.now() - startTime;
   console.log(
     `[preflight] id=${inscriptionId} result=${response.reason} indexer=none ms=${ms} cached=false`,

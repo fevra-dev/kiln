@@ -1,9 +1,9 @@
 /**
  * API Route: /api/history
- * 
+ *
  * Fetches teleburn history for a given wallet address.
  * Queries transaction history looking for Kiln teleburn memos.
- * 
+ *
  * @description Get teleburn history by wallet (supports v1.0 and legacy formats)
  * @version 1.0
  */
@@ -56,10 +56,13 @@ export async function POST(request: NextRequest) {
     try {
       walletPubkey = new PublicKey(validated.wallet);
     } catch {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid wallet address',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid wallet address',
+        },
+        { status: 400 },
+      );
     }
 
     // Connect to RPC
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
         const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
         const message = tx.transaction.message;
         const accountKeys: PublicKey[] = [];
-        
+
         // Handle versioned message with staticAccountKeys
         if ('staticAccountKeys' in message) {
           accountKeys.push(...message.staticAccountKeys);
@@ -104,26 +107,27 @@ export async function POST(request: NextRequest) {
             }
           }
         }
-        
+
         // Get compiled instructions
         const msgAny = message as unknown as Record<string, unknown>;
-        const compiledInstructions = msgAny['compiledInstructions'] 
-          ?? msgAny['instructions'] 
-          ?? [];
-        
+        const compiledInstructions = msgAny['compiledInstructions'] ?? msgAny['instructions'] ?? [];
+
         let inscriptionId: string | null = null;
         let memoFormat: 'v1' | 'legacy-prefix' | 'legacy-json' | null = null;
         let legacyMemo: KilnMemo | null = null;
         let rawMemo: string | null = null;
-        
+
         // First, find the teleburn memo (v1.0 or legacy)
-        for (const ix of compiledInstructions as Array<{ programIdIndex: number; data: Uint8Array | string }>) {
+        for (const ix of compiledInstructions as Array<{
+          programIdIndex: number;
+          data: Uint8Array | string;
+        }>) {
           const programIdIndex = ix.programIdIndex;
           if (programIdIndex >= accountKeys.length) continue;
-          
+
           const programId = accountKeys[programIdIndex];
           if (!programId || !programId.equals(MEMO_PROGRAM_ID)) continue;
-          
+
           try {
             // Decode memo data
             let memoBytes: Uint8Array;
@@ -138,9 +142,9 @@ export async function POST(request: NextRequest) {
             } else {
               continue;
             }
-            
+
             const memoData = new TextDecoder().decode(memoBytes);
-            
+
             // Try v1.0 format first (teleburn: prefix)
             try {
               const parseResult = parseAnyTeleburnMemo(memoData);
@@ -152,16 +156,18 @@ export async function POST(request: NextRequest) {
               // Not v1.0 format, try legacy JSON
               try {
                 const memo = JSON.parse(memoData) as KilnMemo;
-                
+
                 // Check if it's a Kiln teleburn memo (legacy JSON format)
-                if ((memo.standard === 'Kiln' || memo.standard === 'KILN') && 
-                    (memo.action === 'teleburn' || 
-                     memo.action === 'teleburn-burn' || 
-                     memo.action === 'teleburn-incinerate' || 
-                     memo.action === 'teleburn-derived' ||
-                     memo.action === 'burn' || 
-                     memo.action === 'incinerate' || 
-                     memo.action === 'retire')) {
+                if (
+                  (memo.standard === 'Kiln' || memo.standard === 'KILN') &&
+                  (memo.action === 'teleburn' ||
+                    memo.action === 'teleburn-burn' ||
+                    memo.action === 'teleburn-incinerate' ||
+                    memo.action === 'teleburn-derived' ||
+                    memo.action === 'burn' ||
+                    memo.action === 'incinerate' ||
+                    memo.action === 'retire')
+                ) {
                   inscriptionId = memo.inscription?.id || null;
                   memoFormat = 'legacy-json';
                   legacyMemo = memo;
@@ -176,13 +182,13 @@ export async function POST(request: NextRequest) {
             continue;
           }
         }
-        
+
         // If we found a teleburn memo, extract mint and create record
         if (inscriptionId) {
           // Extract mint address from transaction
           // Look for burn/transfer instructions or token balances
           let mintAddress: string | null = null;
-          
+
           // Identify the burned mint: a token whose pre-balance > 0 and post-balance == 0
           // (or whose token account was closed, i.e. no matching postTokenBalance entry).
           // This is robust against multi-token transactions where unrelated balances are present.
@@ -192,8 +198,9 @@ export async function POST(request: NextRequest) {
               if (!preBalance.mint) continue;
               if (preBalance.uiTokenAmount.uiAmount === 0) continue;
 
-              const post = postBalances.find(p => p.accountIndex === preBalance.accountIndex);
-              const wentToZero = !post || post.uiTokenAmount.uiAmount === 0 || post.uiTokenAmount.amount === '0';
+              const post = postBalances.find((p) => p.accountIndex === preBalance.accountIndex);
+              const wentToZero =
+                !post || post.uiTokenAmount.uiAmount === 0 || post.uiTokenAmount.amount === '0';
               if (wentToZero) {
                 mintAddress = preBalance.mint;
                 break;
@@ -209,12 +216,12 @@ export async function POST(request: NextRequest) {
               }
             }
           }
-          
+
           // Fallback: Extract from legacy memo if available
           if (!mintAddress && legacyMemo?.solana?.mint) {
             mintAddress = legacyMemo.solana.mint;
           }
-          
+
           // Create teleburn record
           if (mintAddress) {
             const versionFor = (f: typeof memoFormat) =>
@@ -253,21 +260,25 @@ export async function POST(request: NextRequest) {
       count: teleburns.length,
       teleburns,
     });
-
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid request parameters',
-        details: error.errors,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid request parameters',
+          details: error.errors,
+        },
+        { status: 400 },
+      );
     }
 
     console.error('History API error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch teleburn history',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch teleburn history',
+      },
+      { status: 500 },
+    );
   }
 }
-

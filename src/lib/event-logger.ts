@@ -1,15 +1,15 @@
 /**
  * Kiln Event Logger
- * 
+ *
  * Simple event logging for analytics and debugging.
  * Logs to console in development, can be extended to send to analytics endpoint.
- * 
+ *
  * @description Event logging/analytics for Kiln
  * @version 0.1.1
  */
 
 // Event types for type safety
-export type KilnEventType = 
+export type KilnEventType =
   // Form events
   | 'form_submitted'
   | 'form_validation_error'
@@ -51,7 +51,7 @@ export interface KilnEvent {
 // Simple session ID generator
 function generateSessionId(): string {
   if (typeof window === 'undefined') return 'server';
-  
+
   let sessionId = sessionStorage.getItem('kiln_session_id');
   if (!sessionId) {
     sessionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -62,7 +62,7 @@ function generateSessionId(): string {
 
 /**
  * Kiln Event Logger
- * 
+ *
  * Provides structured event logging for analytics and debugging.
  */
 export class KilnEventLogger {
@@ -76,10 +76,10 @@ export class KilnEventLogger {
   static init(analyticsEndpoint?: string) {
     this.sessionId = generateSessionId();
     this.analyticsEndpoint = analyticsEndpoint || null;
-    
+
     // Log page view on init
     if (typeof window !== 'undefined') {
-      this.log('page_view', { 
+      this.log('page_view', {
         path: window.location.pathname,
         referrer: document.referrer || 'direct',
       });
@@ -132,14 +132,14 @@ export class KilnEventLogger {
    * Get events by type
    */
   static getEventsByType(type: KilnEventType): KilnEvent[] {
-    return this.events.filter(e => e.type === type);
+    return this.events.filter((e) => e.type === type);
   }
 
   /**
    * Get event count by type
    */
   static getEventCount(type: KilnEventType): number {
-    return this.events.filter(e => e.type === type).length;
+    return this.events.filter((e) => e.type === type).length;
   }
 
   /**
@@ -167,11 +167,15 @@ export class KilnEventLogger {
    * Export events as JSON
    */
   static export(): string {
-    return JSON.stringify({
-      sessionId: this.sessionId,
-      exportedAt: new Date().toISOString(),
-      events: this.events,
-    }, null, 2);
+    return JSON.stringify(
+      {
+        sessionId: this.sessionId,
+        exportedAt: new Date().toISOString(),
+        events: this.events,
+      },
+      null,
+      2,
+    );
   }
 
   /**
@@ -179,7 +183,7 @@ export class KilnEventLogger {
    */
   private static persistEvents() {
     if (typeof window === 'undefined') return;
-    
+
     try {
       // Only persist last 50 events
       const toStore = this.events.slice(-50);
@@ -194,7 +198,7 @@ export class KilnEventLogger {
    */
   static loadPersistedEvents() {
     if (typeof window === 'undefined') return;
-    
+
     try {
       const stored = localStorage.getItem('kiln_events');
       if (stored) {
@@ -227,4 +231,3 @@ if (typeof window !== 'undefined') {
   KilnEventLogger.init();
   KilnEventLogger.loadPersistedEvents();
 }
-

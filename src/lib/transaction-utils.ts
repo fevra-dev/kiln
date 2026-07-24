@@ -1,6 +1,6 @@
 /**
  * Transaction Utilities
- * 
+ *
  * Enhanced transaction handling with:
  * - Priority fees and compute unit budgets
  * - Blockhash refresh and expiry handling
@@ -8,7 +8,7 @@
  * - Confirmation timeout with polling
  * - Compute unit limit validation
  * - Account state validation
- * 
+ *
  * @version 0.1.1
  */
 
@@ -81,18 +81,18 @@ export interface TransactionUtilsConfig {
 
 /**
  * Dynamic Priority Fee Calculator
- * 
+ *
  * Calculates optimal priority fees based on recent network conditions.
  * Uses percentile-based pricing to balance cost vs. speed.
  */
 export class DynamicPriorityFeeCalculator {
   /**
    * Get recommended priority fee based on network conditions
-   * 
+   *
    * @param connection - Solana connection
    * @param priority - Priority level: 'low' | 'medium' | 'high'
    * @returns Recommended priority fee in microlamports
-   * 
+   *
    * @example
    * ```typescript
    * const calculator = new DynamicPriorityFeeCalculator();
@@ -102,7 +102,7 @@ export class DynamicPriorityFeeCalculator {
    */
   async getRecommendedFee(
     connection: Connection,
-    priority: 'low' | 'medium' | 'high' = 'medium'
+    priority: 'low' | 'medium' | 'high' = 'medium',
   ): Promise<number> {
     try {
       // Sample recent prioritization fees from network
@@ -133,7 +133,7 @@ export class DynamicPriorityFeeCalculator {
       // Calculate percentile based on priority
       const percentile = {
         low: 0.25, // 25th percentile (cheaper, slower)
-        medium: 0.50, // 50th percentile (balanced)
+        medium: 0.5, // 50th percentile (balanced)
         high: 0.75, // 75th percentile (faster, more expensive)
       }[priority];
 
@@ -167,11 +167,11 @@ export class DynamicPriorityFeeCalculator {
 
 /**
  * Add priority fee and compute unit budget instructions to transaction
- * 
+ *
  * @param transaction - Transaction to enhance
  * @param config - Priority fee configuration
  * @returns Transaction with priority fee instructions added
- * 
+ *
  * @example
  * ```typescript
  * const tx = new Transaction();
@@ -181,7 +181,7 @@ export class DynamicPriorityFeeCalculator {
  */
 export function addPriorityFee(
   transaction: Transaction,
-  config: PriorityFeeConfig = {}
+  config: PriorityFeeConfig = {},
 ): Transaction {
   const microlamports = config.microlamports ?? DEFAULT_PRIORITY_FEE_MICROLAMPORTS;
   const computeUnits = config.computeUnits ?? DEFAULT_COMPUTE_UNIT_LIMIT;
@@ -190,14 +190,14 @@ export function addPriorityFee(
   transaction.add(
     ComputeBudgetProgram.setComputeUnitPrice({
       microLamports: microlamports,
-    })
+    }),
   );
 
   // Add compute unit limit instruction
   transaction.add(
     ComputeBudgetProgram.setComputeUnitLimit({
       units: computeUnits,
-    })
+    }),
   );
 
   return transaction;
@@ -205,13 +205,13 @@ export function addPriorityFee(
 
 /**
  * Add dynamic priority fee based on network conditions
- * 
+ *
  * @param transaction - Transaction to enhance
  * @param connection - Solana connection
  * @param priority - Priority level (default: 'medium')
  * @param computeUnits - Optional compute unit limit
  * @returns Transaction with dynamic priority fee instructions added
- * 
+ *
  * @example
  * ```typescript
  * const tx = new Transaction();
@@ -223,7 +223,7 @@ export async function addDynamicPriorityFee(
   transaction: Transaction,
   connection: Connection,
   priority: 'low' | 'medium' | 'high' = 'medium',
-  computeUnits?: number
+  computeUnits?: number,
 ): Promise<Transaction> {
   const calculator = new DynamicPriorityFeeCalculator();
   const microlamports = await calculator.getRecommendedFee(connection, priority);
@@ -240,12 +240,12 @@ export async function addDynamicPriorityFee(
 
 /**
  * Refresh blockhash if transaction is stale or missing
- * 
+ *
  * @param transaction - Transaction to refresh
  * @param connection - Solana connection
  * @param maxAgeMs - Maximum age in milliseconds before refresh (default: 20s)
  * @returns Transaction with fresh blockhash
- * 
+ *
  * @example
  * ```typescript
  * const freshTx = await refreshBlockhashIfNeeded(tx, connection);
@@ -254,7 +254,7 @@ export async function addDynamicPriorityFee(
 export async function refreshBlockhashIfNeeded(
   transaction: Transaction,
   connection: Connection,
-  maxAgeMs: number = BLOCKHASH_EXPIRY_MS
+  maxAgeMs: number = BLOCKHASH_EXPIRY_MS,
 ): Promise<Transaction> {
   // If transaction doesn't have blockhash, always refresh
   if (!transaction.recentBlockhash) {
@@ -272,7 +272,7 @@ export async function refreshBlockhashIfNeeded(
     const currentSlot = await connection.getSlot();
     const slotsRemaining = transaction.lastValidBlockHeight - currentSlot;
     const estimatedAgeMs = slotsRemaining * 400; // ~400ms per slot
-    
+
     // If less than maxAgeMs remaining, refresh
     if (estimatedAgeMs < maxAgeMs) {
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
@@ -295,7 +295,7 @@ export async function refreshBlockhashIfNeeded(
 
 /**
  * Check if blockhash is expired or about to expire
- * 
+ *
  * @param transaction - Transaction to check
  * @param connection - Solana connection
  * @param bufferMs - Buffer time in milliseconds before considering expired
@@ -304,7 +304,7 @@ export async function refreshBlockhashIfNeeded(
 export async function isBlockhashExpired(
   transaction: Transaction,
   connection: Connection,
-  bufferMs: number = 5000
+  bufferMs: number = 5000,
 ): Promise<boolean> {
   if (!transaction.recentBlockhash || !transaction.lastValidBlockHeight) {
     return true; // No blockhash = expired
@@ -323,14 +323,14 @@ export async function isBlockhashExpired(
 
 /**
  * Validate compute unit usage and check if transaction will exceed limits
- * 
+ *
  * @param transaction - Transaction to validate
  * @param connection - Solana connection
  * @returns Validation result with CU usage and recommendations
  */
 export async function validateComputeUnits(
   transaction: Transaction,
-  connection: Connection
+  connection: Connection,
 ): Promise<{
   valid: boolean;
   unitsUsed?: number;
@@ -343,7 +343,7 @@ export async function validateComputeUnits(
       const recentBlockhash = await connection.getLatestBlockhash();
       transaction.recentBlockhash = recentBlockhash.blockhash;
     }
-    
+
     // simulateTransaction signature: (transaction, commitment?, includeAccounts?)
     const simulation = await connection.simulateTransaction(transaction, undefined, true);
 
@@ -374,7 +374,7 @@ export async function validateComputeUnits(
       unitsUsed,
       limit,
     };
-  } catch (error) {
+  } catch {
     // Simulation failed, but don't block transaction
     return {
       valid: true,
@@ -390,7 +390,7 @@ export async function validateComputeUnits(
 
 /**
  * Check if an error is retryable
- * 
+ *
  * @param error - Error to check
  * @param retryableErrors - List of error patterns to consider retryable
  * @returns true if error is retryable
@@ -406,7 +406,7 @@ function isRetryableError(
     'ETIMEDOUT',
     'Transaction was not confirmed',
     'Transaction expired',
-  ]
+  ],
 ): boolean {
   const message = error instanceof Error ? error.message : String(error);
   const lowerMessage = message.toLowerCase();
@@ -416,13 +416,13 @@ function isRetryableError(
 
 /**
  * Send transaction with automatic retry and blockhash refresh
- * 
+ *
  * @param connection - Solana connection
  * @param transaction - Transaction to send
  * @param signer - Signer function (called before each retry)
  * @param config - Retry configuration
  * @returns Transaction signature
- * 
+ *
  * @example
  * ```typescript
  * const signature = await sendTransactionWithRetry(
@@ -437,7 +437,7 @@ export async function sendTransactionWithRetry(
   connection: Connection,
   transaction: Transaction,
   signer: (tx: Transaction) => Promise<Transaction>,
-  config: RetryConfig = {}
+  config: RetryConfig = {},
 ): Promise<TransactionSignature> {
   const maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
   const baseDelayMs = config.baseDelayMs ?? DEFAULT_BASE_RETRY_DELAY_MS;
@@ -478,7 +478,7 @@ export async function sendTransactionWithRetry(
         // eslint-disable-next-line no-console
         console.log(
           `⚠️ Transaction send failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delayMs}ms...`,
-          error
+          error,
         );
       }
 
@@ -495,12 +495,12 @@ export async function sendTransactionWithRetry(
 
 /**
  * Confirm transaction with timeout and polling
- * 
+ *
  * @param connection - Solana connection
  * @param signature - Transaction signature
  * @param config - Confirmation configuration
  * @returns Confirmation result
- * 
+ *
  * @example
  * ```typescript
  * const result = await confirmTransactionWithTimeout(
@@ -516,7 +516,7 @@ export async function sendTransactionWithRetry(
 export async function confirmTransactionWithTimeout(
   connection: Connection,
   signature: TransactionSignature,
-  config: ConfirmationConfig = {}
+  config: ConfirmationConfig = {},
 ): Promise<{
   confirmed: boolean;
   error?: string;
@@ -587,7 +587,7 @@ export async function confirmTransactionWithTimeout(
 
 /**
  * Validate account state before sending transaction
- * 
+ *
  * @param connection - Solana connection
  * @param mint - Mint address
  * @param owner - Token owner address
@@ -598,7 +598,7 @@ export async function validateAccountStateBeforeSend(
   connection: Connection,
   mint: PublicKey,
   owner: PublicKey,
-  _expectedSlot?: number
+  _expectedSlot?: number,
 ): Promise<{
   valid: boolean;
   reason?: string;
@@ -671,7 +671,7 @@ export async function validateAccountStateBeforeSend(
 
 /**
  * Send transaction with all enhancements (priority fees, retry, timeout, validation)
- * 
+ *
  * @param connection - Solana connection
  * @param transaction - Transaction to send
  * @param signer - Signer function
@@ -682,7 +682,7 @@ export async function sendTransactionEnhanced(
   connection: Connection,
   transaction: Transaction,
   signer: (tx: Transaction) => Promise<Transaction>,
-  config: TransactionUtilsConfig = {}
+  config: TransactionUtilsConfig = {},
 ): Promise<{
   signature: TransactionSignature;
   confirmed: boolean;
@@ -715,7 +715,7 @@ export async function sendTransactionEnhanced(
   const confirmation = await confirmTransactionWithTimeout(
     connection,
     signature,
-    config.confirmation
+    config.confirmation,
   );
 
   return {
@@ -723,4 +723,3 @@ export async function sendTransactionEnhanced(
     ...confirmation,
   };
 }
-

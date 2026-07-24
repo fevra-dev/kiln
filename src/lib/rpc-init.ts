@@ -1,9 +1,9 @@
 /**
  * RPC Initialization
- * 
+ *
  * Initializes RPC failover manager on server startup.
  * Reads configuration from environment variables.
- * 
+ *
  * @version 0.1.1
  */
 
@@ -11,7 +11,7 @@ import { initializeRpcFailover } from './rpc-failover';
 
 /**
  * Initialize RPC failover system
- * 
+ *
  * Reads RPC endpoints from environment variables:
  * - SOLANA_RPC_URL (primary)
  * - SOLANA_RPC_BACKUP_1, SOLANA_RPC_BACKUP_2, etc. (backups)
@@ -26,7 +26,7 @@ export function initializeRpcSystem(): void {
 
   // Get backup RPCs from environment
   const backups: string[] = [];
-  
+
   // Check for numbered backup variables (SOLANA_RPC_BACKUP_1, SOLANA_RPC_BACKUP_2, etc.)
   let backupIndex = 1;
   // eslint-disable-next-line no-constant-condition
@@ -42,7 +42,7 @@ export function initializeRpcSystem(): void {
     backups.push(
       'https://solana-rpc.publicnode.com',
       'https://api.mainnet-beta.solana.com',
-      'https://rpc.ankr.com/solana'
+      'https://rpc.ankr.com/solana',
     );
   }
 
@@ -65,4 +65,3 @@ export function initializeRpcSystem(): void {
 if (typeof window === 'undefined') {
   initializeRpcSystem();
 }
-

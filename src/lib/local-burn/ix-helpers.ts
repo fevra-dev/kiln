@@ -12,11 +12,13 @@ const MEMO_PROGRAM_ID = publicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr')
 export function withComputeBudget(
   umi: Umi,
   tb: ReturnType<typeof transactionBuilder>,
-  opts?: { cu?: number; microLamports?: number }
+  opts?: { cu?: number; microLamports?: number },
 ) {
   const cu = opts?.cu ?? 500_000;
   const microLamports = opts?.microLamports ?? 2_000;
-  return tb.add(setComputeUnitLimit(umi, { units: cu })).add(setComputeUnitPrice(umi, { microLamports }));
+  return tb
+    .add(setComputeUnitLimit(umi, { units: cu }))
+    .add(setComputeUnitPrice(umi, { microLamports }));
 }
 
 /**
@@ -24,10 +26,7 @@ export function withComputeBudget(
  *
  * Used for KILN Teleburn Protocol v1.0: teleburn:<inscription_id>
  */
-export function withSplMemoString(
-  tb: ReturnType<typeof transactionBuilder>,
-  memoString: string
-) {
+export function withSplMemoString(tb: ReturnType<typeof transactionBuilder>, memoString: string) {
   const data = new TextEncoder().encode(memoString);
   return tb.add({
     instruction: {
@@ -39,5 +38,3 @@ export function withSplMemoString(
     bytesCreatedOnChain: 0,
   });
 }
-
-

@@ -22,7 +22,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const id = url.searchParams.get('id');
 
   if (!id) {
-    return NextResponse.json({ error: 'missing id param' }, { status: 400, headers: NO_STORE_HEADERS });
+    return NextResponse.json(
+      { error: 'missing id param' },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
   }
 
   try {
@@ -31,9 +34,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown error';
     if (/invalid inscription id format/i.test(message)) {
-      return NextResponse.json({ error: 'invalid inscription id format' }, { status: 400, headers: NO_STORE_HEADERS });
+      return NextResponse.json(
+        { error: 'invalid inscription id format' },
+        { status: 400, headers: NO_STORE_HEADERS },
+      );
     }
     console.error('[preflight] unexpected route error:', err);
-    return NextResponse.json({ error: 'preflight failed' }, { status: 500, headers: NO_STORE_HEADERS });
+    return NextResponse.json(
+      { error: 'preflight failed' },
+      { status: 500, headers: NO_STORE_HEADERS },
+    );
   }
 }

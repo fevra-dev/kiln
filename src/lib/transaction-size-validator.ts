@@ -1,12 +1,12 @@
 /**
  * Transaction Size Validator
- * 
+ *
  * Validates that transactions don't exceed Solana's size limits.
  * Legacy and versioned transactions both have a 1232 byte limit.
- * 
+ *
  * For complex pNFT burns with many accounts, provides recommendations
  * for using Address Lookup Tables (ALTs) or splitting transactions.
- * 
+ *
  * @version 0.1.1
  */
 
@@ -45,32 +45,32 @@ export interface TransactionSizeValidationResult {
 
 /**
  * Validate transaction size
- * 
+ *
  * Checks if transaction exceeds Solana's 1232 byte limit.
  * Provides warnings and recommendations if transaction is large.
- * 
+ *
  * @param transaction - Transaction to validate
  * @returns Validation result with size information
- * 
+ *
  * @example
  * ```typescript
  * const validation = validateTransactionSize(transaction);
  * if (!validation.valid) {
  *   throw new Error(`Transaction too large: ${validation.recommendation}`);
  * }
- * 
+ *
  * if (validation.warning) {
  *   console.warn(validation.warning);
  * }
  * ```
  */
 export function validateTransactionSize(
-  transaction: Transaction | VersionedTransaction
+  transaction: Transaction | VersionedTransaction,
 ): TransactionSizeValidationResult {
   try {
     // Serialize transaction to get size
     let serialized: Uint8Array;
-    
+
     if (transaction instanceof VersionedTransaction) {
       serialized = transaction.serialize();
     } else {
@@ -119,20 +119,18 @@ export function validateTransactionSize(
 
 /**
  * Assert transaction size is valid
- * 
+ *
  * Throws an error if transaction exceeds size limit, otherwise returns silently.
- * 
+ *
  * @param transaction - Transaction to validate
  * @throws Error if transaction is too large
  */
-export function assertTransactionSizeValid(
-  transaction: Transaction | VersionedTransaction
-): void {
+export function assertTransactionSizeValid(transaction: Transaction | VersionedTransaction): void {
   const validation = validateTransactionSize(transaction);
 
   if (!validation.valid) {
     throw new Error(
-      `Transaction size validation failed: ${validation.recommendation || 'Transaction too large'}`
+      `Transaction size validation failed: ${validation.recommendation || 'Transaction too large'}`,
     );
   }
 
@@ -143,13 +141,11 @@ export function assertTransactionSizeValid(
 
 /**
  * Get transaction size in bytes
- * 
+ *
  * @param transaction - Transaction to measure
  * @returns Size in bytes
  */
-export function getTransactionSize(
-  transaction: Transaction | VersionedTransaction
-): number {
+export function getTransactionSize(transaction: Transaction | VersionedTransaction): number {
   try {
     if (transaction instanceof VersionedTransaction) {
       return transaction.serialize().length;
@@ -166,33 +162,33 @@ export function getTransactionSize(
 
 /**
  * Check if transaction can accommodate additional instructions
- * 
+ *
  * Estimates remaining space in transaction for additional instructions.
- * 
+ *
  * @param transaction - Current transaction
  * @param estimatedInstructionSize - Estimated size of additional instruction
  * @returns Whether there's enough space
  */
 export function canAddInstruction(
   transaction: Transaction | VersionedTransaction,
-  estimatedInstructionSize: number = 200 // Typical instruction size
+  estimatedInstructionSize: number = 200, // Typical instruction size
 ): boolean {
   const currentSize = getTransactionSize(transaction);
   const projectedSize = currentSize + estimatedInstructionSize;
-  
+
   return projectedSize <= MAX_TRANSACTION_SIZE;
 }
 
 /**
  * Get recommendations for reducing transaction size
- * 
+ *
  * Provides actionable recommendations based on transaction size.
- * 
+ *
  * @param transaction - Transaction to analyze
  * @returns Array of recommendations
  */
 export function getSizeOptimizationRecommendations(
-  transaction: Transaction | VersionedTransaction
+  transaction: Transaction | VersionedTransaction,
 ): string[] {
   const validation = validateTransactionSize(transaction);
   const recommendations: string[] = [];
@@ -207,4 +203,3 @@ export function getSizeOptimizationRecommendations(
 
   return recommendations;
 }
-

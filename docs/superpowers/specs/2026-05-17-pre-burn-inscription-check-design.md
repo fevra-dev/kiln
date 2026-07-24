@@ -5,7 +5,7 @@
 | Spec | `2026-05-17-pre-burn-inscription-check-design.md` |
 | Date | 2026-05-17 |
 | Owner | fevra-dev |
-| Sub-spec of | `public/docs/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.1 |
+| Sub-spec of | `docs/internal/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.1 |
 | Status | Draft, pending implementation plan |
 | Estimated effort | 2 days (1 PR for route + tests, 1 PR for wizard integration) |
 
@@ -337,7 +337,7 @@ No cross-spec helpers are pre-built. YAGNI for shared abstractions until two spe
 
 ## 13. References
 
-- Parent proposal: `public/docs/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.1
+- Parent proposal: `docs/internal/KILN_PROTOCOL_ENHANCEMENT_PROPOSAL.md` §2.1
 - KILN spec: `public/docs/TELEBURN_SPEC_v1.0.md`
 - Ordinals API: https://docs.ordinals.com/guides/api.html
 - Ordinals Wallet API: https://turbo.ordinalswallet.com (live endpoint; no published docs)

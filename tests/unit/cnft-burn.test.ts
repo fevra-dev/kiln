@@ -1,10 +1,7 @@
 import { PublicKey } from '@solana/web3.js';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { buildCnftBurn, estimateCnftBurnSize } from '@/lib/local-burn/cnft-burn';
-import {
-  CnftOwnershipMismatchError,
-  CnftDelegatedError,
-} from '@/lib/local-burn/errors';
+import { CnftOwnershipMismatchError, CnftDelegatedError } from '@/lib/local-burn/errors';
 import type { DasAsset, NftKind } from '@/lib/local-burn/types';
 
 const RPC_URL = 'https://mock-rpc';
@@ -43,29 +40,33 @@ function makeKindInfo(): Extract<NftKind, { kind: 'cnft' }> {
 describe('buildCnftBurn pre-flight checks', () => {
   it('throws CnftOwnershipMismatchError when DAS owner != signer', async () => {
     const umi = createUmi(RPC_URL);
-    await expect(buildCnftBurn({
-      umi,
-      asset: makeAsset(NOT_OWNER), // DAS says NotOwner
-      kindInfo: makeKindInfo(),
-      inscriptionId: 'inscid',
-      ownerPubkey: OWNER, // signer says Owner
-      priorityMicrolamports: 2000,
-      rpcUrl: RPC_URL,
-    })).rejects.toBeInstanceOf(CnftOwnershipMismatchError);
+    await expect(
+      buildCnftBurn({
+        umi,
+        asset: makeAsset(NOT_OWNER), // DAS says NotOwner
+        kindInfo: makeKindInfo(),
+        inscriptionId: 'inscid',
+        ownerPubkey: OWNER, // signer says Owner
+        priorityMicrolamports: 2000,
+        rpcUrl: RPC_URL,
+      }),
+    ).rejects.toBeInstanceOf(CnftOwnershipMismatchError);
   });
 
   it('throws CnftDelegatedError when active delegate is different from owner', async () => {
     const umi = createUmi(RPC_URL);
     const delegateAddr = '11111111111111111111111111111114';
-    await expect(buildCnftBurn({
-      umi,
-      asset: makeAsset(OWNER.toBase58(), delegateAddr),
-      kindInfo: makeKindInfo(),
-      inscriptionId: 'inscid',
-      ownerPubkey: OWNER,
-      priorityMicrolamports: 2000,
-      rpcUrl: RPC_URL,
-    })).rejects.toBeInstanceOf(CnftDelegatedError);
+    await expect(
+      buildCnftBurn({
+        umi,
+        asset: makeAsset(OWNER.toBase58(), delegateAddr),
+        kindInfo: makeKindInfo(),
+        inscriptionId: 'inscid',
+        ownerPubkey: OWNER,
+        priorityMicrolamports: 2000,
+        rpcUrl: RPC_URL,
+      }),
+    ).rejects.toBeInstanceOf(CnftDelegatedError);
   });
 
   it('does NOT throw delegate error when delegate equals owner', async () => {
