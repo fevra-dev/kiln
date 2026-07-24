@@ -61,7 +61,7 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "oxlint": "^1.75.0",
-    "postcss": "^8.4.33",
+    "postcss": "^8.5.12",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
@@ -75,6 +75,9 @@
   "pnpm": {
     "patchedDependencies": {
       "@solana/spl-account-compression@0.4.1": "patches/@solana__spl-account-compression@0.4.1.patch"
+    },
+    "overrides": {
+      "postcss": ">=8.5.12"
     }
   }
 }
