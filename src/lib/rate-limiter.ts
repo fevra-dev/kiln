@@ -104,8 +104,9 @@ function getClientIdentifier(request: NextRequest): string {
   const realIp = request.headers.get('x-real-ip');
   const cfConnectingIp = request.headers.get('cf-connecting-ip');
 
-  const ip =
-    forwarded?.split(',')[0]?.trim() || realIp || cfConnectingIp || request.ip || 'unknown';
+  // Next 15 removed NextRequest.ip; on Vercel/proxies the IP arrives via these
+  // forwarded headers, which already covered the common path.
+  const ip = forwarded?.split(',')[0]?.trim() || realIp || cfConnectingIp || 'unknown';
 
   // Fallback: use user agent + IP for better uniqueness
   const userAgent = request.headers.get('user-agent') || 'unknown';

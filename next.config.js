@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
 
   // Webpack configuration for Solana and crypto libraries
   webpack: (config) => {
@@ -34,7 +33,7 @@ const nextConfig = {
 
   // Image optimization configuration
   images: {
-    domains: ['ordinals.com'],
+    remotePatterns: [{ protocol: 'https', hostname: 'ordinals.com' }],
     formats: ['image/avif', 'image/webp'],
   },
 
