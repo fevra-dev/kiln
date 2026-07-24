@@ -1,0 +1,63 @@
+name: gate
+
+# Server-side mirror of the local pre-push gate (.githooks/lint-gate.sh), per
+# ADR-0017. The local hook is advisory — core.hooksPath is local config and
+# `git push --no-verify` bypasses it. This job makes the same checks
+# enforceable on the branch and on every PR, and — unlike the local hook, which
+# self-skips absent tools — it FAILS CLOSED when a security scanner is missing.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: security-paths range + SECURITY-REVIEW trailers
+
+      - name: Make origin/main available for range checks
+        run: git fetch origin main:refs/remotes/origin/main || true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.3
+        with:
+          version: v0.71.0
+
+      # Fail closed (ADR-0017): the local hook may self-skip when a scanner is
+      # absent for dev ergonomics; CI must not. A missing scanner here is a
+      # gate failure, not a silent pass.
+      - name: Assert security scanners present (fail closed)
+        run: |
+          command -v node  >/dev/null || { echo "::error::node missing — gate fails closed"; exit 1; }
+          command -v trivy >/dev/null || { echo "::error::trivy missing — gate fails closed (ADR-0017)"; exit 1; }
+          trivy --version
+
+      # trivy downloads a fresh vuln DB on this run (no --skip-db-update in the
+      # gate), so the ADR-0017 "DB not >7 days stale" requirement holds by
+      # construction on a clean CI runner.
+      - name: Run the gate (mirrors .githooks/lint-gate.sh)
+        run: bash .githooks/lint-gate.sh
